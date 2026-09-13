@@ -10,7 +10,9 @@ import {
   LogOut,
   ScrollText,
 } from "lucide-react";
+import { signOutAction } from "@/app/(admin)/admin/actions";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -20,7 +22,13 @@ const nav = [
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({
+  clubName,
+  userEmail,
+}: {
+  clubName?: string | null;
+  userEmail?: string | null;
+}) {
   const pathname = usePathname();
 
   return (
@@ -29,9 +37,11 @@ export function AdminSidebar() {
         <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
           LV
         </span>
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-semibold">LeoVerify</p>
-          <p className="text-xs text-white/60">Club admin</p>
+          <p className="truncate text-xs text-white/60">
+            {clubName ?? "Club admin"}
+          </p>
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
@@ -58,14 +68,20 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-white/10 p-3">
-        <Link
-          href="/login"
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign out
-        </Link>
+      <div className="space-y-2 border-t border-white/10 p-3">
+        {userEmail && (
+          <p className="truncate px-3 text-xs text-white/50">{userEmail}</p>
+        )}
+        <form action={signOutAction}>
+          <Button
+            type="submit"
+            variant="ghost"
+            className="w-full justify-start gap-2.5 px-3 text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+        </form>
       </div>
     </aside>
   );

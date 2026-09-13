@@ -21,12 +21,17 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 ```bash
 npm install
 cp .env.example .env
-# Fill DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32), Supabase keys
+# Fill DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32), Supabase keys, R2, Resend
+# For local UI without Supabase Auth: AUTH_DEV_BYPASS=true (never in production)
 npx prisma generate
-npx prisma migrate dev --name init   # when Postgres is available
-# Apply supabase/rls-policies.sql in the Supabase SQL editor after migrate
+npx prisma migrate dev --name init
+npm run db:seed
+# On Supabase: apply supabase/rls-policies.sql in the SQL editor
+# Link SEED_ADMIN_SUPABASE_ID to your Auth user UUID, then disable AUTH_DEV_BYPASS
 npm run dev
 ```
+
+Deploy: set the same env vars in the Vercel project, connect the Git repo, and deploy. After deploy, smoke-check `/`, `/login`, and gated `/admin`.
 
 Useful scripts:
 

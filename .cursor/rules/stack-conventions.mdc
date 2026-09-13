@@ -9,12 +9,13 @@ alwaysApply: true
 
 - **App:** Next.js 16 App Router + React 19 + TypeScript (`src/`)
 - **DB:** PostgreSQL via Supabase; Prisma 7 with `@prisma/adapter-pg`
-- **Auth:** Supabase Auth only — never NextAuth / Auth.js
+- **Auth:** Supabase Auth only — never NextAuth / Auth.js. Use `src/proxy.ts` (Next 16; not middleware) to gate `/admin/*`.
 - **Storage:** Cloudflare R2 via S3-compatible API (zero egress)
 - **PDFs:** `pdf-lib` overlay rendering + `qrcode` package
-- **Designer (later):** Fabric.js or Konva — layout JSON, not HTML-to-PDF
-- **Jobs (later):** Inngest / Trigger.dev / BullMQ for bulk CSV + email
+- **Designer:** Fabric.js — layout JSON, not HTML-to-PDF
+- **Jobs:** Inngest for bulk CSV + email
 - **Email:** Resend (Phase 0) or SES at higher volume
+- **Rate limit:** Upstash Ratelimit on public `/v/*`
 - **Host:** Vercel (app) + Supabase (DB/Auth) + R2 (files)
 - **Runtime:** Node.js ≥ 24
 
@@ -23,9 +24,10 @@ alwaysApply: true
 - `src/app/(public)/` — landing, `/v/[id]`, login
 - `src/app/(admin)/admin/` — club admin dashboard
 - `src/lib/certificates/` — HMAC token, ID, verify decision
+- `src/lib/auth.ts` · `src/lib/audit.ts` · `src/proxy.ts`
 - `src/lib/supabase/` — browser + server clients
 - `prisma/schema.prisma` + `prisma7.config.ts`
-- `supabase/rls-policies.sql` — apply after migrate
+- `supabase/rls-policies.sql` — apply after migrate on Supabase
 
 ## Prisma 7 notes
 

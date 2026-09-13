@@ -1,17 +1,26 @@
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { requireClubAdmin } from "@/lib/auth";
 
-export default function AdminLayout({
+export const dynamic = "force-dynamic";
+
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await requireClubAdmin();
+
   return (
     <div className="flex min-h-full flex-1 bg-background">
-      <AdminSidebar />
+      <AdminSidebar
+        clubName={user.club?.name ?? user.district?.name}
+        userEmail={user.email}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center border-b border-border bg-card px-6">
           <p className="text-sm text-muted-foreground">
-            Leo Club of University of Moratuwa · Phase 0
+            {user.club?.name ?? "LeoVerify"} ·{" "}
+            {user.role === "district_admin" ? "District admin" : "Phase 0"}
           </p>
         </header>
         <div className="flex-1 overflow-auto p-6">{children}</div>
