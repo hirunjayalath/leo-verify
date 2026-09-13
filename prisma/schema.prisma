@@ -27,6 +27,17 @@ enum TemplateStatus {
   rejected
 }
 
+enum ClubType {
+  leo
+  public
+}
+
+enum PlanTier {
+  free
+  club
+  district
+}
+
 model District {
   id        String   @id @default(cuid())
   name      String
@@ -43,6 +54,9 @@ model Club {
   districtId String
   name       String
   code       String   @unique
+  type       ClubType @default(leo)
+  plan       PlanTier @default(free)
+  monthlyCertLimit Int @default(100)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -1,3 +1,4 @@
+import { assertWithinCertLimit } from "@/app/(public)/signup/actions";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";
@@ -54,6 +55,8 @@ export async function issueCertificate(
     },
   });
   if (!event) throw new Error("Event not found for club");
+
+  await assertWithinCertLimit(input.clubId);
 
   if (input.recipientEmail) {
     const existing = await prisma.certificate.findFirst({
