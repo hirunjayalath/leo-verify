@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -10,6 +11,10 @@ import {
 } from "@/components/ui/card";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { prisma } from "@/lib/db";
+import {
+  clientIpFromHeaders,
+  rateLimitVerification,
+} from "@/lib/rate-limit";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -65,12 +70,30 @@ async function lookupCertificate(uniqueId: string) {
       eventName: row.event.name,
     };
   } catch {
-    // DB unavailable during local shell / pre-migration — fall through to invalid.
     return null;
   }
 }
 
 export default async function VerificationPage({ params, searchParams }: PageProps) {
+  const headerList = await headers();
+  const limit = await rateLimitVerification(clientIpFromHeaders(headerList));
+  if (!limit.success) {
+    return (
+      <div className="surface-grid">
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Too many requests</CardTitle>
+              <CardDescription>
+                Please wait a minute before verifying again.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   const { id } = await params;
   const { t } = await searchParams;
   const uniqueId = decodeURIComponent(id);
