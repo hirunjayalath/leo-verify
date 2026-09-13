@@ -1,0 +1,35 @@
+---
+description: Certificate HMAC, public verification, and RLS security requirements
+globs: src/lib/certificates/**,src/app/**/v/**,prisma/**,supabase/**
+alwaysApply: false
+---
+
+# Certificate & verification security
+
+## HMAC mechanism (§4)
+
+1. Canonical string: `uniqueId|recipientName|eventId|clubId|issueDate(YYYY-MM-DD)|role`
+2. Token = HMAC-SHA256 hex with `CERT_HMAC_SECRET`
+3. QR/URL: `/v/{uniqueId}?t={token}`
+4. Verify: recompute from **current DB fields**, compare with `timingSafeEqual`
+5. Also accept tokens signed with `CERT_HMAC_SECRET_PREVIOUS` during rotation
+
+## Public verification page
+
+- Always live DB read (Rule 1)
+- Require token; sequential ID alone must fail
+- **Valid:** name, club, event, date, role/achievement, status — nothing else
+- **Revoked:** only “This certificate has been revoked.” (no name/event/details)
+- **Invalid / missing token:** generic failure — do not leak whether the ID exists beyond “not found” vs “bad token” if avoidable; never return email
+- Rate-limit the public endpoint by IP when wiring API routes
+
+## Schema / RLS
+
+- Keep `clubId` on Certificate, Event, CertificateTemplate, AuditLog
+- Never hard-delete certificates
+- Admin dashboard queries must be club-scoped; RLS in `supabase/rls-policies.sql` is mandatory before production
+- Public verify uses server-side Prisma / service role — not the anon key against Certificate tables
+
+## Tests required (Rule 11)
+
+Before merging changes here: valid token passes, tampered token fails, revoked display policy holds.

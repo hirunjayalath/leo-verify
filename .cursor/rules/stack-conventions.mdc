@@ -1,0 +1,42 @@
+---
+description: LeoVerify pinned stack and project structure conventions
+alwaysApply: true
+---
+
+# Stack conventions
+
+## Pinned stack
+
+- **App:** Next.js 16 App Router + React 19 + TypeScript (`src/`)
+- **DB:** PostgreSQL via Supabase; Prisma 7 with `@prisma/adapter-pg`
+- **Auth:** Supabase Auth only — never NextAuth / Auth.js
+- **Storage:** Cloudflare R2 via S3-compatible API (zero egress)
+- **PDFs:** `pdf-lib` overlay rendering + `qrcode` package
+- **Designer (later):** Fabric.js or Konva — layout JSON, not HTML-to-PDF
+- **Jobs (later):** Inngest / Trigger.dev / BullMQ for bulk CSV + email
+- **Email:** Resend (Phase 0) or SES at higher volume
+- **Host:** Vercel (app) + Supabase (DB/Auth) + R2 (files)
+- **Runtime:** Node.js ≥ 24
+
+## Project layout
+
+- `src/app/(public)/` — landing, `/v/[id]`, login
+- `src/app/(admin)/admin/` — club admin dashboard
+- `src/lib/certificates/` — HMAC token, ID, verify decision
+- `src/lib/supabase/` — browser + server clients
+- `prisma/schema.prisma` + `prisma7.config.ts`
+- `supabase/rls-policies.sql` — apply after migrate
+
+## Prisma 7 notes
+
+- Import client from `@/generated/prisma/client`
+- Always pass a driver adapter: `new PrismaClient({ adapter })`
+- Datasource URL lives in `prisma7.config.ts`, not `schema.prisma`
+- Run `npx prisma generate` after schema changes
+
+## Do not
+
+- Commit `.env` or real secrets
+- Add blockchain / exotic crypto for Phase 0/1
+- Put login walls on `/v/*`
+- Use Puppeteer for certificate rendering (overlay approach only)

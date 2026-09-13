@@ -1,0 +1,26 @@
+---
+description: LeoVerify non-negotiable product rules — the constitution for every build
+alwaysApply: true
+---
+
+# LeoVerify Constitution
+
+Treat these as hard constraints, not suggestions.
+
+1. **Database is authoritative** — Verification always reads live from the DB, never from a PDF or static cache. PDF/DB mismatch after revoke/correct is the feature.
+2. **Unguessable IDs** — Human-readable IDs (`LEO-UOM-2026-000123`) are labels only. Lookups require the HMAC verification token in the URL/QR.
+3. **RBAC at the DB layer** — Enforce club/district isolation with Postgres RLS (see `supabase/rls-policies.sql`), not only app `if` checks.
+4. **Multi-tenancy from day one** — Every scoped table/migration includes `clubId` / `districtId` FKs even while Phase 0 has one club.
+5. **Templates are data** — Store background URL + layout JSON. Never hardcode per-event layout code.
+6. **Bulk ops are idempotent** — Validate CSV rows up front; process independently; re-runs must not duplicate succeeded rows.
+7. **Attributed writes, no silent deletes** — AuditLog every issue/revoke/reissue/template-edit. Revocation = status flag + reason + actor, never row deletion.
+8. **Minimal public data + rate limits** — Public verify returns name, club, event, date, role/achievement, status only — never email/phone/rosters.
+9. **Secrets stay out of the repo** — HMAC secret, DB URLs, SMTP/R2 keys only in env / secret manager; never client bundles.
+10. **Privacy by default** — Public recipient profiles are opt-in (`publicProfile` default false). Single-certificate verify stays open.
+11. **Golden-path tests before merge** — Issuance/verification changes must cover: valid ID+token retrieves; tampered token fails; revoked shows revoked; club A cannot read club B.
+
+## Client-confirmed policies
+
+- Revoked public page: show only “This certificate has been revoked.” — no further detail.
+- Email volume: typically under 100/event — Resend is fine for Phase 0.
+- HMAC rotation: support `CERT_HMAC_SECRET` + `CERT_HMAC_SECRET_PREVIOUS`.

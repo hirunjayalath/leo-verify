@@ -1,0 +1,171 @@
+// LeoVerify multi-tenant schema — club_id / district_id on every scoped table from day one (Rule 4).
+// Templates are data (layout JSON), not hardcoded layouts (Rule 5).
+// Certificates are never deleted; revocation is a status flag (Rule 7).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  club_admin
+  district_admin
+}
+
+enum CertificateStatus {
+  issued
+  revoked
+}
+
+model District {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clubs Club[]
+  users User[]
+}
+
+model Club {
+  id         String   @id @default(cuid())
+  districtId String
+  name       String
+  code       String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  district District @relation(fields: [districtId], references: [id])
+  users    User[]
+  events   Event[]
+
+  @@index([districtId])
+}
+
+model User {
+  id         String   @id @default(cuid())
+  supabaseId String   @unique
+  email      String   @unique
+  name       String?
+  role       UserRole
+  clubId     String?
+  districtId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  club            Club?         @relation(fields: [clubId], references: [id])
+  district        District?     @relation(fields: [districtId], references: [id])
+  auditLogs       AuditLog[]
+  revokedCerts    Certificate[] @relation("CertificateRevoker")
+  templatesEdited CertificateTemplate[] @relation("TemplateEditor")
+
+  @@index([clubId])
+  @@index([districtId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  clubId      String
+  name        String
+  description String?
+  eventDate   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  club       Club                 @relation(fields: [clubId], references: [id])
+  templates  CertificateTemplate[]
+  certificates Certificate[]
+
+  @@index([clubId])
+}
+
+model CertificateTemplate {
+  id               String   @id @default(cuid())
+  eventId          String
+  clubId           String
+  name             String
+  backgroundUrl    String
+  /// Structured field positions: [{ field, x, y, fontSize, fontFamily, color, align, ... }]
+  layout           Json
+  createdById      String?
+  lastEditedById   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  event      Event @relation(fields: [eventId], references: [id])
+  lastEditor User? @relation("TemplateEditor", fields: [lastEditedById], references: [id])
+
+  @@index([eventId])
+  @@index([clubId])
+}
+
+model Recipient {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  /// Opt-in public profile (default private) — PDPA / Rule 10
+  publicProfile Boolean  @default(false)
+  claimedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  certificates Certificate[]
+}
+
+model Certificate {
+  id                String            @id @default(cuid())
+  /// Human-readable label, e.g. LEO-UOM-2026-000123 — never sole lookup key (Rule 2)
+  uniqueId          String            @unique
+  /// HMAC-SHA256 token required for verification lookup (Rule 2 / §4)
+  verificationToken String
+  clubId            String
+  eventId           String
+  recipientName     String
+  recipientEmail    String?
+  role              String
+  achievement       String?
+  issueDate         DateTime
+  status            CertificateStatus @default(issued)
+  revokedReason     String?
+  revokedAt         DateTime?
+  revokedById       String?
+  recipientId       String?
+  /// Hide from aggregated public profile without affecting single-certificate verification
+  unlisted          Boolean           @default(false)
+  pdfUrl            String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  event     Event      @relation(fields: [eventId], references: [id])
+  recipient Recipient? @relation(fields: [recipientId], references: [id])
+  revokedBy User?      @relation("CertificateRevoker", fields: [revokedById], references: [id])
+
+  @@unique([eventId, recipientEmail, recipientName])
+  @@index([clubId])
+  @@index([eventId])
+  @@index([recipientId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  action      String
+  targetType  String
+  targetId    String
+  clubId      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([clubId])
+  @@index([createdAt])
+}
