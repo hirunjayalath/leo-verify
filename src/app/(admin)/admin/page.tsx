@@ -5,15 +5,55 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireClubAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { CertificateStatus } from "@/generated/prisma/client";
 
-const stats = [
-  { label: "Events", value: "—", hint: "Create your first event to begin" },
-  { label: "Certificates issued", value: "—", hint: "Bulk CSV issuance comes next" },
-  { label: "Templates", value: "—", hint: "Upload a background and position fields" },
-  { label: "Revocations", value: "—", hint: "Status flag only — never deleted" },
-];
+export default async function AdminDashboardPage() {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
 
-export default function AdminDashboardPage() {
+  const [events, certificatesIssued, templates, revocations] =
+    await Promise.all([
+      prisma.event.count({ where: { clubId } }),
+      prisma.certificate.count({
+        where: { clubId, status: CertificateStatus.issued },
+      }),
+      prisma.certificateTemplate.count({ where: { clubId } }),
+      prisma.certificate.count({
+        where: { clubId, status: CertificateStatus.revoked },
+      }),
+    ]);
+
+  const stats = [
+    {
+      label: "Events",
+      value: String(events),
+      hint: events === 0 ? "Create your first event to begin" : "Active event records",
+    },
+    {
+      label: "Certificates issued",
+      value: String(certificatesIssued),
+      hint:
+        certificatesIssued === 0
+          ? "Bulk CSV issuance comes next"
+          : "Currently valid certificates",
+    },
+    {
+      label: "Templates",
+      value: String(templates),
+      hint:
+        templates === 0
+          ? "Upload a background and position fields"
+          : "Saved certificate layouts",
+    },
+    {
+      label: "Revocations",
+      value: String(revocations),
+      hint: "Status flag only — never deleted",
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div>
@@ -21,8 +61,7 @@ export default function AdminDashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Issue and manage certificates for your club. Multi-tenant schema is ready
-          for district expansion.
+          Issue and manage certificates for {user.club?.name ?? "your club"}.
         </p>
       </div>
 
@@ -39,22 +78,6 @@ export default function AdminDashboardPage() {
           </Card>
         ))}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Next steps</CardTitle>
-          <CardDescription>
-            This shell is ready for issuance, template designer, and CSV import builds.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-            <li>Connect Supabase (database + Auth + RLS policies).</li>
-            <li>Create an event and upload a certificate template background.</li>
-            <li>Import a roster and run bulk issuance via a background job.</li>
-          </ol>
-        </CardContent>
-      </Card>
     </div>
   );
 }

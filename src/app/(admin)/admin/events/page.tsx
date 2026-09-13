@@ -1,27 +1,86 @@
+import { CreateEventForm } from "@/components/create-event-form";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireClubAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-export default function AdminEventsPage() {
+export default async function AdminEventsPage() {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
+
+  const events = await prisma.event.findMany({
+    where: { clubId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { certificates: true, templates: true } },
+    },
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-primary">Events</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-primary">
+          Events
+        </h1>
         <p className="mt-1 text-muted-foreground">
-          Events scope templates and certificate batches to a club.
+          Events scope templates and certificate batches to your club.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>No events yet</CardTitle>
-          <CardDescription>
-            Event creation and roster upload land in the next build.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Your events</CardTitle>
+            <CardDescription>
+              {events.length === 0
+                ? "No events yet — create one to begin."
+                : `${events.length} event${events.length === 1 ? "" : "s"}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {events.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Create an event, then attach a certificate template.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {events.map((event) => (
+                  <li
+                    key={event.id}
+                    className="flex flex-col gap-1 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-foreground">{event.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.eventDate
+                          ? event.eventDate.toISOString().slice(0, 10)
+                          : "No date"}{" "}
+                        · {event._count.templates} templates ·{" "}
+                        {event._count.certificates} certificates
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>New event</CardTitle>
+            <CardDescription>Creates an audit log entry.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CreateEventForm />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

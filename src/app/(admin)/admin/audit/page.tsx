@@ -1,11 +1,24 @@
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireClubAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
-export default function AdminAuditPage() {
+export default async function AdminAuditPage() {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
+
+  const logs = await prisma.auditLog.findMany({
+    where: { clubId },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: { actor: { select: { name: true, email: true } } },
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,12 +31,38 @@ export default function AdminAuditPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>No activity yet</CardTitle>
+          <CardTitle>Recent activity</CardTitle>
           <CardDescription>
-            Certificates are never silently deleted — revocation is a status flag with
-            reason and actor.
+            {logs.length === 0
+              ? "No activity yet"
+              : `Showing ${logs.length} most recent entries`}
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Creates and updates will appear here.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {logs.map((log) => (
+                <li key={log.id} className="py-3 text-sm">
+                  <p className="font-medium">
+                    {log.action}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      on {log.targetType}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    {log.actor?.email ?? "system"} ·{" "}
+                    {log.createdAt.toISOString().replace("T", " ").slice(0, 19)}{" "}
+                    UTC
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
       </Card>
     </div>
   );
