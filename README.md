@@ -63,9 +63,11 @@ npm run dev
 - Revoked public page: only “This certificate has been revoked.”
 - Templates are layout JSON + background URL (Rule 5).
 - Bulk CSV validates all rows before any write; re-runs skip duplicates.
+- Public org signup: `/signup` (Club.type=`public`, plan entitlements).
+- Open Badges 3.0 export: `GET /api/credentials/[uniqueId]/badge?t=<token>` (HMAC still primary).
 
 ## Roadmap
 
 - **Phase 0:** UOM issuance + verification + revoke + CSV + email (implemented)
-- **Phase 1:** Multi-club · district admin · opt-in public profiles
-- **Phase 2:** Public org SaaS · Open Badges 3.0 export
+- **Phase 1:** Multi-club · district admin · opt-in public profiles (implemented)
+- **Phase 2:** Public org SaaS · Open Badges 3.0 export (implemented)
