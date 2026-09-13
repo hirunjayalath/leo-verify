@@ -10,9 +10,12 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 |---|---|
 | App | Next.js 16 · React 19 · TypeScript · App Router |
 | Database | PostgreSQL via Supabase · Prisma 7 |
-| Auth | Supabase Auth |
-| Storage | Cloudflare R2 (wired in a later build) |
-| PDF / QR | pdf-lib · qrcode |
+| Auth | Supabase Auth (`src/proxy.ts`) |
+| Storage | Cloudflare R2 (local `/public/uploads` fallback) |
+| PDF / QR | pdf-lib · qrcode · Fabric.js designer |
+| Jobs | Inngest (sync fallback when unset) |
+| Email | Resend |
+| Rate limit | Upstash (in-memory fallback) |
 | Hosting | Vercel + Supabase + R2 |
 | Runtime | Node.js ≥ 24 |
 
@@ -21,39 +24,48 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 ```bash
 npm install
 cp .env.example .env
-# Fill DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32), Supabase keys, R2, Resend
-# For local UI without Supabase Auth: AUTH_DEV_BYPASS=true (never in production)
+# Fill DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32), Supabase, R2, Resend
+# Local UI without Auth: AUTH_DEV_BYPASS=true (never in production)
 npx prisma generate
-npx prisma migrate dev --name init
+npx prisma migrate deploy   # or migrate dev locally
 npm run db:seed
-# On Supabase: apply supabase/rls-policies.sql in the SQL editor
-# Link SEED_ADMIN_SUPABASE_ID to your Auth user UUID, then disable AUTH_DEV_BYPASS
+# Supabase SQL editor: apply supabase/rls-policies.sql
+# Set SEED_ADMIN_SUPABASE_ID to your Auth user UUID; disable AUTH_DEV_BYPASS
 npm run dev
 ```
 
-Deploy: set the same env vars in the Vercel project, connect the Git repo, and deploy. After deploy, smoke-check `/`, `/login`, and gated `/admin`.
+### UOM production launch checklist
 
-Useful scripts:
+1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase, R2, Resend, `NEXT_PUBLIC_APP_URL`).
+2. Migrations applied + RLS policies applied.
+3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false**.
+4. MFA enabled for club admins in Supabase Auth.
+5. Smoke: login → create event → upload template → issue one → open `/v/...` → revoke → public revoked-only message.
+6. Optional: Inngest + Upstash for bulk import and rate limits at scale.
 
-- `npm run dev` — local app
-- `npm run build` — production build
-- `npm test` — golden-path certificate verification tests
-- `npm run db:generate` / `npm run db:validate` — Prisma helpers
+### HMAC secret rotation
 
-## Architecture notes
+1. Set `CERT_HMAC_SECRET_PREVIOUS` to the current secret.
+2. Set `CERT_HMAC_SECRET` to a new `openssl rand -hex 32` value.
+3. Redeploy. Existing QR links verify via the previous secret; new issues use the current secret.
+4. After all outstanding PDFs are acceptable to re-issue (or enough time has passed), clear `CERT_HMAC_SECRET_PREVIOUS`.
 
-- Multi-tenant schema from day one (`clubId` / `districtId` on scoped tables).
-- Verification tokens are HMAC-SHA256 over canonical certificate fields (`src/lib/certificates/`).
-- Public verify route: `/v/[id]?t=<token>` — no login wall.
-- Revoked certificates publicly show only: “This certificate has been revoked.”
-- Agent rules live in `.cursor/rules/` and encode the 11 non-negotiable build rules.
+## Scripts
 
-## Phased roadmap
+- `npm run dev` / `build` / `start`
+- `npm test` — golden-path verification + CSV + issue tests
+- `npm run db:seed` / `db:migrate` / `db:generate`
 
-- **Phase 0 (this repo foundation):** UOM Leos — issuance + verification + revocation shell
-- **Phase 1:** Multi-club Sri Lanka · district analytics · opt-in public recipient profiles
-- **Phase 2:** Multi-tenant SaaS · Open Badges 3.0 export
+## Architecture
 
-## Out of scope in this initialization
+- Multi-tenant schema (`clubId` / `districtId`) from day one.
+- Verification: `/v/[id]?t=<token>` — live DB + HMAC; no login wall.
+- Revoked public page: only “This certificate has been revoked.”
+- Templates are layout JSON + background URL (Rule 5).
+- Bulk CSV validates all rows before any write; re-runs skip duplicates.
 
-Issuance flow, template designer canvas, CSV import, email dispatch, background jobs, and R2 upload wiring. Dependencies and schema are ready for those builds.
+## Roadmap
+
+- **Phase 0:** UOM issuance + verification + revoke + CSV + email (implemented)
+- **Phase 1:** Multi-club · district admin · opt-in public profiles
+- **Phase 2:** Public org SaaS · Open Badges 3.0 export
