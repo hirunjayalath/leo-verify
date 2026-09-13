@@ -128,7 +128,7 @@ export async function issueCertificate(
   }
 
   await writeAuditLog({
-    actorUserId: input.actorUserId,
+    actorUserId: input.actorUserId === "system" ? null : input.actorUserId,
     action: "certificate.issue",
     targetType: "Certificate",
     targetId: certificate.id,

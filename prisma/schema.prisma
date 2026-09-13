@@ -80,6 +80,7 @@ model Event {
   club       Club                 @relation(fields: [clubId], references: [id])
   templates  CertificateTemplate[]
   certificates Certificate[]
+  importJobs ImportJob[]
 
   @@index([clubId])
 }
@@ -150,6 +151,63 @@ model Certificate {
   @@index([eventId])
   @@index([recipientId])
   @@index([status])
+}
+
+enum ImportJobStatus {
+  pending
+  validating
+  running
+  completed
+  failed
+}
+
+enum ImportRowStatus {
+  pending
+  issued
+  skipped
+  failed
+}
+
+model ImportJob {
+  id           String          @id @default(cuid())
+  clubId       String
+  eventId      String
+  createdById  String?
+  status       ImportJobStatus @default(pending)
+  totalRows    Int             @default(0)
+  successRows  Int             @default(0)
+  failedRows   Int             @default(0)
+  skippedRows  Int             @default(0)
+  errorSummary String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  event Event          @relation(fields: [eventId], references: [id])
+  rows  ImportJobRow[]
+
+  @@index([clubId])
+  @@index([eventId])
+  @@index([status])
+}
+
+model ImportJobRow {
+  id             String          @id @default(cuid())
+  jobId          String
+  rowNumber      Int
+  recipientName  String
+  recipientEmail String?
+  role           String
+  achievement    String?
+  status         ImportRowStatus @default(pending)
+  error          String?
+  certificateId  String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, rowNumber])
+  @@index([jobId, status])
 }
 
 model AuditLog {
