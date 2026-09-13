@@ -22,14 +22,21 @@ const nav = [
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
 ];
 
+const districtNav = [
+  { href: "/admin/district", label: "District", icon: LayoutDashboard },
+];
+
 export function AdminSidebar({
   clubName,
   userEmail,
+  showDistrict,
 }: {
   clubName?: string | null;
   userEmail?: string | null;
+  showDistrict?: boolean;
 }) {
   const pathname = usePathname();
+  const items = showDistrict ? [...districtNav, ...nav] : nav;
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-primary text-primary-foreground">
@@ -45,7 +52,7 @@ export function AdminSidebar({
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {nav.map((item) => {
+        {items.map((item) => {
           const active =
             item.href === "/admin"
               ? pathname === "/admin"

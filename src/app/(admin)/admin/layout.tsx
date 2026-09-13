@@ -15,6 +15,7 @@ export default async function AdminLayout({
       <AdminSidebar
         clubName={user.club?.name ?? user.district?.name}
         userEmail={user.email}
+        showDistrict={user.role === "district_admin"}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center border-b border-border bg-card px-6">

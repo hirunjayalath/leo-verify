@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -11,6 +12,9 @@ import { CertificateStatus } from "@/generated/prisma/client";
 
 export default async function AdminDashboardPage() {
   const user = await requireClubAdmin();
+  if (user.role === "district_admin" && !user.clubId) {
+    redirect("/admin/district");
+  }
   const clubId = user.clubId!;
 
   const [events, certificatesIssued, templates, revocations] =
