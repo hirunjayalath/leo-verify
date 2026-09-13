@@ -119,9 +119,11 @@ model Recipient {
   id            String   @id @default(cuid())
   email         String   @unique
   name          String?
+  slug          String?  @unique
   /// Opt-in public profile (default private) — PDPA / Rule 10
   publicProfile Boolean  @default(false)
   claimedAt     DateTime?
+  supabaseId    String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
