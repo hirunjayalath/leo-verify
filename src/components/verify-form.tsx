@@ -31,6 +31,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
           value={certificateId}
           onChange={(e) => setCertificateId(e.target.value)}
           autoComplete="off"
+          autoFocus
           required
         />
       </div>
@@ -38,7 +39,9 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
         <div className="space-y-2">
           <Label htmlFor="token">
             Verification token{" "}
-            <span className="font-normal text-muted-foreground">(from QR link)</span>
+            <span className="font-normal text-muted-foreground">
+              (from QR link)
+            </span>
           </Label>
           <Input
             id="token"

@@ -1,3 +1,4 @@
+import { CalendarDays } from "lucide-react";
 import { CreateEventForm } from "@/components/create-event-form";
 import {
   Card,
@@ -6,6 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -22,11 +32,9 @@ export default async function AdminEventsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-primary">
-          Events
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
         <p className="mt-1 text-muted-foreground">
           Events scope templates and certificate batches to your club.
         </p>
@@ -44,29 +52,59 @@ export default async function AdminEventsPage() {
           </CardHeader>
           <CardContent>
             {events.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Create an event, then attach a certificate template.
-              </p>
+              <EmptyState
+                icon={CalendarDays}
+                title="No events yet"
+                description="Create an event, then attach a certificate template."
+              />
             ) : (
-              <ul className="divide-y divide-border">
-                {events.map((event) => (
-                  <li
-                    key={event.id}
-                    className="flex flex-col gap-1 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{event.name}</p>
-                      <p className="text-sm text-muted-foreground">
+              <>
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Templates</TableHead>
+                        <TableHead>Certificates</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {events.map((event) => (
+                        <TableRow key={event.id}>
+                          <TableCell className="font-medium">
+                            {event.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground tabular-nums">
+                            {event.eventDate
+                              ? event.eventDate.toISOString().slice(0, 10)
+                              : "—"}
+                          </TableCell>
+                          <TableCell>{event._count.templates}</TableCell>
+                          <TableCell>{event._count.certificates}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ul className="space-y-3 sm:hidden">
+                  {events.map((event) => (
+                    <li
+                      key={event.id}
+                      className="rounded-xl border border-border p-4"
+                    >
+                      <p className="font-medium">{event.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {event.eventDate
                           ? event.eventDate.toISOString().slice(0, 10)
                           : "No date"}{" "}
                         · {event._count.templates} templates ·{" "}
                         {event._count.certificates} certificates
                       </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </CardContent>
         </Card>

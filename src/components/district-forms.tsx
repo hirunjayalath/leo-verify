@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useTransition } from "react";
+import { toast } from "sonner";
 import {
   createClubAction,
   inviteClubAdminAction,
@@ -10,23 +11,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 
 export function CreateClubForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    setError(null);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     startTransition(async () => {
       const result = await createClubAction(formData);
       if (!result.ok) {
-        setError(result.error);
+        toast.error(result.error);
         return;
       }
-      (e.target as HTMLFormElement).reset();
+      toast.success("Club onboarded");
+      form.reset();
       router.refresh();
     });
   }
@@ -41,8 +44,8 @@ export function CreateClubForm() {
         <Label htmlFor="club-code">Code</Label>
         <Input id="club-code" name="code" required placeholder="UOC" />
       </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
       <Button type="submit" disabled={pending}>
+        {pending && <Spinner />}
         {pending ? "Creating…" : "Onboard club"}
       </Button>
     </form>
@@ -55,20 +58,20 @@ export function InviteAdminForm({
   clubs: { id: string; name: string }[];
 }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    setError(null);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     startTransition(async () => {
       const result = await inviteClubAdminAction(formData);
       if (!result.ok) {
-        setError(result.error);
+        toast.error(result.error);
         return;
       }
-      (e.target as HTMLFormElement).reset();
+      toast.success("Club admin linked");
+      form.reset();
       router.refresh();
     });
   }
@@ -77,18 +80,13 @@ export function InviteAdminForm({
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-2">
         <Label htmlFor="invite-club">Club</Label>
-        <select
-          id="invite-club"
-          name="clubId"
-          required
-          className="flex h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-        >
+        <Select id="invite-club" name="clubId" required>
           {clubs.map((club) => (
             <option key={club.id} value={club.id}>
               {club.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="invite-email">Admin email</Label>
@@ -98,12 +96,17 @@ export function InviteAdminForm({
         <Label htmlFor="invite-name">Name</Label>
         <Input id="invite-name" name="name" />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="invite-supabase">Supabase Auth user UUID</Label>
-        <Input id="invite-supabase" name="supabaseId" required />
-      </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      <details className="rounded-lg border border-border">
+        <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-muted-foreground">
+          Advanced · Auth linking
+        </summary>
+        <div className="space-y-2 border-t border-border px-3 py-3">
+          <Label htmlFor="invite-supabase">Supabase Auth user UUID</Label>
+          <Input id="invite-supabase" name="supabaseId" required />
+        </div>
+      </details>
       <Button type="submit" disabled={pending}>
+        {pending && <Spinner />}
         {pending ? "Saving…" : "Link club admin"}
       </Button>
     </form>
@@ -119,7 +122,12 @@ export function ReviewTemplateButtons({ templateId }: { templateId: string }) {
     formData.set("id", templateId);
     formData.set("decision", decision);
     startTransition(async () => {
-      await reviewTemplateAction(formData);
+      const result = await reviewTemplateAction(formData);
+      if (result && "ok" in result && !result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(decision === "approved" ? "Template approved" : "Template rejected");
       router.refresh();
     });
   }
@@ -132,6 +140,7 @@ export function ReviewTemplateButtons({ templateId }: { templateId: string }) {
         disabled={pending}
         onClick={() => review("approved")}
       >
+        {pending && <Spinner />}
         Approve
       </Button>
       <Button

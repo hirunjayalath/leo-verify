@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { LayoutTemplate } from "lucide-react";
 import { CreateTemplateForm } from "@/components/create-template-form";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -7,6 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -28,11 +39,9 @@ export default async function AdminTemplatesPage() {
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-primary">
-          Templates
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
         <p className="mt-1 text-muted-foreground">
           Background image plus field-position JSON — never hardcoded layouts.
         </p>
@@ -50,31 +59,70 @@ export default async function AdminTemplatesPage() {
           </CardHeader>
           <CardContent>
             {templates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Upload a background to open the designer.
-              </p>
+              <EmptyState
+                icon={LayoutTemplate}
+                title="No templates yet"
+                description="Upload a background to open the designer."
+              />
             ) : (
-              <ul className="divide-y divide-border">
-                {templates.map((template) => (
-                  <li
-                    key={template.id}
-                    className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-                  >
-                    <div>
-                      <p className="font-medium">{template.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {template.event.name}
-                      </p>
-                    </div>
-                    <Link
-                      href={`/admin/templates/${template.id}/edit`}
-                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              <>
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {templates.map((template) => (
+                        <TableRow key={template.id}>
+                          <TableCell className="font-medium">
+                            {template.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {template.event.name}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="muted">{template.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link
+                              href={`/admin/templates/${template.id}/edit`}
+                              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                              Edit layout
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ul className="space-y-3 sm:hidden">
+                  {templates.map((template) => (
+                    <li
+                      key={template.id}
+                      className="flex items-center justify-between gap-4 rounded-xl border border-border p-4"
                     >
-                      Edit layout
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                      <div>
+                        <p className="font-medium">{template.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {template.event.name}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/admin/templates/${template.id}/edit`}
+                        className="text-sm font-medium text-primary"
+                      >
+                        Edit
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </CardContent>
         </Card>

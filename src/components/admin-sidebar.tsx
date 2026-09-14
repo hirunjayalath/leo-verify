@@ -8,13 +8,17 @@ import {
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
+  Map,
+  Menu,
   ScrollText,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 import { signOutAction } from "@/app/(admin)/admin/actions";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-const nav = [
+const clubNav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/events", label: "Events", icon: ClipboardList },
   { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
@@ -22,37 +26,52 @@ const nav = [
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
 ];
 
-const districtNav = [
-  { href: "/admin/district", label: "District", icon: LayoutDashboard },
-];
+function initials(email?: string | null, name?: string | null) {
+  const source = name || email || "A";
+  const parts = source.replace(/@.*/, "").split(/[.\s_-]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return source.slice(0, 2).toUpperCase();
+}
 
-export function AdminSidebar({
-  clubName,
-  userEmail,
+function SidebarNav({
+  pathname,
   showDistrict,
+  onNavigate,
 }: {
-  clubName?: string | null;
-  userEmail?: string | null;
+  pathname: string;
   showDistrict?: boolean;
+  onNavigate?: () => void;
 }) {
-  const pathname = usePathname();
-  const items = showDistrict ? [...districtNav, ...nav] : nav;
-
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-primary text-primary-foreground">
-      <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
-          LV
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">LeoVerify</p>
-          <p className="truncate text-xs text-white/60">
-            {clubName ?? "Club admin"}
+    <>
+      {showDistrict && (
+        <div className="mb-3">
+          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            District
           </p>
+          <Link
+            href="/admin/district"
+            onClick={onNavigate}
+            className={cn(
+              "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              pathname.startsWith("/admin/district")
+                ? "bg-white/15 text-white"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            {pathname.startsWith("/admin/district") && (
+              <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-accent" />
+            )}
+            <Map className="h-4 w-4" aria-hidden />
+            District
+          </Link>
         </div>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
-        {items.map((item) => {
+      )}
+      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+        Club
+      </p>
+      <div className="flex flex-col gap-0.5">
+        {clubNav.map((item) => {
           const active =
             item.href === "/admin"
               ? pathname === "/admin"
@@ -62,34 +81,152 @@ export function AdminSidebar({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
                 active
                   ? "bg-white/15 text-white"
                   : "text-white/70 hover:bg-white/10 hover:text-white",
               )}
             >
-              <Icon className="h-4 w-4" />
+              {active && (
+                <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-accent" />
+              )}
+              <Icon className="h-4 w-4" aria-hidden />
               {item.label}
             </Link>
           );
         })}
+      </div>
+    </>
+  );
+}
+
+export function AdminSidebar({
+  clubName,
+  userEmail,
+  userName,
+  showDistrict,
+}: {
+  clubName?: string | null;
+  userEmail?: string | null;
+  userName?: string | null;
+  showDistrict?: boolean;
+}) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const chip = initials(userEmail, userName);
+
+  const panel = (
+    <aside className="flex h-full w-64 flex-col bg-[#0b1f3a] text-white">
+      <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
+          LV
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">LeoVerify</p>
+          <p className="truncate text-xs text-white/55">
+            {clubName ?? "Club admin"}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-white/70 hover:bg-white/10 lg:hidden"
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <nav className="flex flex-1 flex-col overflow-y-auto p-3" aria-label="Admin">
+        <SidebarNav
+          pathname={pathname}
+          showDistrict={showDistrict}
+          onNavigate={() => setMobileOpen(false)}
+        />
       </nav>
       <div className="space-y-2 border-t border-white/10 p-3">
-        {userEmail && (
-          <p className="truncate px-3 text-xs text-white/50">{userEmail}</p>
-        )}
+        <div className="flex items-center gap-2.5 px-2 py-1.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-xs font-semibold text-accent">
+            {chip}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-white/90">
+              {userName || userEmail || "Admin"}
+            </p>
+            {userEmail && userName && (
+              <p className="truncate text-[11px] text-white/45">{userEmail}</p>
+            )}
+          </div>
+        </div>
         <form action={signOutAction}>
           <Button
             type="submit"
             variant="ghost"
             className="w-full justify-start gap-2.5 px-3 text-white/70 hover:bg-white/10 hover:text-white"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4" aria-hidden />
             Sign out
           </Button>
         </form>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        className="fixed bottom-4 left-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#0b1f3a] text-white shadow-float lg:hidden"
+        aria-label="Open navigation"
+        onClick={() => setMobileOpen(true)}
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      <div className="hidden lg:flex">{panel}</div>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close navigation overlay"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 shadow-float">{panel}</div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function AdminBreadcrumbs() {
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
+  const crumbs = segments.map((seg, i) => ({
+    label: seg === "admin" ? "Admin" : seg.charAt(0).toUpperCase() + seg.slice(1),
+    href: "/" + segments.slice(0, i + 1).join("/"),
+    current: i === segments.length - 1,
+  }));
+
+  return (
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
+      {crumbs.map((crumb, i) => (
+        <span key={crumb.href} className="flex items-center gap-1.5">
+          {i > 0 && <span className="text-muted-foreground/50">/</span>}
+          {crumb.current ? (
+            <span className="font-medium text-foreground">{crumb.label}</span>
+          ) : (
+            <Link
+              href={crumb.href}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {crumb.label}
+            </Link>
+          )}
+        </span>
+      ))}
+    </nav>
   );
 }

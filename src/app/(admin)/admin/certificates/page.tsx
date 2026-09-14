@@ -1,6 +1,6 @@
+import { CertificatesTable } from "@/components/certificates-table";
 import { CsvImportForm } from "@/components/csv-import-form";
 import { IssueCertificateForm } from "@/components/issue-certificate-form";
-import { RevokeButton } from "@/components/revoke-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -9,7 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CertificateStatus } from "@/generated/prisma/client";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
 import { buildVerificationPath } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
@@ -37,12 +44,22 @@ export default async function AdminCertificatesPage() {
     }),
   ]);
 
+  const rows = certificates.map((cert) => ({
+    id: cert.id,
+    uniqueId: cert.uniqueId,
+    recipientName: cert.recipientName,
+    role: cert.role,
+    status: cert.status as "issued" | "revoked",
+    eventName: cert.event.name,
+    verifyPath: buildVerificationPath(cert.uniqueId, cert.verificationToken),
+    pdfUrl: cert.pdfUrl,
+    issueDate: cert.issueDate.toISOString().slice(0, 10),
+  }));
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-up">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-primary">
-          Certificates
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Certificates</h1>
         <p className="mt-1 text-muted-foreground">
           Issue, revoke, and bulk-import — every write is attributed in the audit
           log.
@@ -61,64 +78,7 @@ export default async function AdminCertificatesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {certificates.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Issue one certificate or import a CSV roster.
-                </p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {certificates.map((cert) => (
-                    <li
-                      key={cert.id}
-                      className="space-y-2 py-4 first:pt-0 last:pb-0"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-mono text-sm font-medium">
-                          {cert.uniqueId}
-                        </p>
-                        <Badge
-                          variant={
-                            cert.status === CertificateStatus.issued
-                              ? "success"
-                              : "danger"
-                          }
-                        >
-                          {cert.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm">
-                        {cert.recipientName} · {cert.role} · {cert.event.name}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <a
-                          href={buildVerificationPath(
-                            cert.uniqueId,
-                            cert.verificationToken,
-                          )}
-                          className="font-medium text-primary underline-offset-4 hover:underline"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Open verify link
-                        </a>
-                        {cert.pdfUrl && (
-                          <a
-                            href={cert.pdfUrl}
-                            className="font-medium text-primary underline-offset-4 hover:underline"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            PDF
-                          </a>
-                        )}
-                        {cert.status === CertificateStatus.issued && (
-                          <RevokeButton certificateId={cert.id} />
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <CertificatesTable rows={rows} />
             </CardContent>
           </Card>
 
@@ -128,31 +88,43 @@ export default async function AdminCertificatesPage() {
                 <CardTitle>Recent imports</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="divide-y divide-border text-sm">
-                  {jobs.map((job) => (
-                    <li key={job.id} className="py-3">
-                      <p className="font-medium">
-                        {job.status} · {job.successRows}/{job.totalRows} issued
-                        {job.skippedRows > 0
-                          ? ` · ${job.skippedRows} skipped`
-                          : ""}
-                        {job.failedRows > 0
-                          ? ` · ${job.failedRows} failed`
-                          : ""}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {job.createdAt.toISOString().slice(0, 19)} UTC
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Progress</TableHead>
+                      <TableHead>When</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {jobs.map((job) => (
+                      <TableRow key={job.id}>
+                        <TableCell>
+                          <Badge variant="muted">{job.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {job.successRows}/{job.totalRows} issued
+                          {job.skippedRows > 0
+                            ? ` · ${job.skippedRows} skipped`
+                            : ""}
+                          {job.failedRows > 0
+                            ? ` · ${job.failedRows} failed`
+                            : ""}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground tabular-nums">
+                          {job.createdAt.toISOString().slice(0, 19)} UTC
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}
         </div>
 
         <div className="space-y-6">
-          <Card>
+          <Card id="issue">
             <CardHeader>
               <CardTitle>Issue one</CardTitle>
               <CardDescription>

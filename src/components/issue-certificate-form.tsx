@@ -1,11 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useTransition } from "react";
+import { toast } from "sonner";
 import { issueOneCertificateAction } from "@/app/(admin)/admin/certificates/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { buildVerificationPath } from "@/lib/certificates/token";
 
 export function IssueCertificateForm({
@@ -14,27 +17,25 @@ export function IssueCertificateForm({
   events: { id: string; name: string }[];
 }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
-    setError(null);
-    setSuccess(null);
     startTransition(async () => {
       const result = await issueOneCertificateAction(formData);
       if (!result.ok) {
-        setError(result.error);
+        toast.error(result.error);
         return;
       }
       const path = buildVerificationPath(
         result.uniqueId!,
         result.verificationToken!,
       );
-      setSuccess(`Issued ${result.uniqueId}. Verify at ${path}`);
+      toast.success(`Issued ${result.uniqueId}`, {
+        description: `Verify at ${path}`,
+      });
       form.reset();
       router.refresh();
     });
@@ -52,18 +53,13 @@ export function IssueCertificateForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="eventId">Event</Label>
-        <select
-          id="eventId"
-          name="eventId"
-          required
-          className="flex h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-        >
+        <Select id="eventId" name="eventId" required>
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="recipientName">Recipient name</Label>
@@ -85,9 +81,8 @@ export function IssueCertificateForm({
         <Label htmlFor="issueDate">Issue date</Label>
         <Input id="issueDate" name="issueDate" type="date" />
       </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
-      {success && <p className="text-sm text-success">{success}</p>}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" className="w-full" disabled={pending}>
+        {pending && <Spinner />}
         {pending ? "Issuing…" : "Issue certificate"}
       </Button>
     </form>

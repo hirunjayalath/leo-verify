@@ -1,10 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Canvas, FabricImage, FabricText, Rect } from "fabric";
+import {
+  AlignCenter,
+  AlignLeft,
+  Minus,
+  Plus,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { Canvas, FabricImage, FabricText, Rect, type FabricObject } from "fabric";
+import { toast } from "sonner";
 import { saveTemplateLayoutAction } from "@/app/(admin)/admin/templates/actions";
 import type { LayoutField, TemplateLayout } from "@/lib/certificates/layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 const FIELD_LABELS: Record<LayoutField["field"], string> = {
   recipientName: "Recipient name",
@@ -13,6 +25,9 @@ const FIELD_LABELS: Record<LayoutField["field"], string> = {
   uniqueId: "Certificate ID",
   qr: "QR code",
 };
+
+const CANVAS_W = 842;
+const CANVAS_H = 595;
 
 type Props = {
   templateId: string;
@@ -27,18 +42,32 @@ export function TemplateDesigner({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [selectedKey, setSelectedKey] = useState<LayoutField["field"] | null>(
+    null,
+  );
+  const [fontSize, setFontSize] = useState(18);
+  const [color, setColor] = useState("#0b1f3a");
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = new Canvas(canvasRef.current, {
-      width: 842,
-      height: 595,
+      width: CANVAS_W,
+      height: CANVAS_H,
       selection: true,
-      backgroundColor: "#f1f5f9",
+      backgroundColor: "#ffffff",
     });
     fabricRef.current = canvas;
+
+    const markDirty = () => setDirty(true);
+    canvas.on("object:modified", markDirty);
+    canvas.on("object:moving", markDirty);
+    canvas.on("object:scaling", markDirty);
+    canvas.on("selection:created", (e) => syncSelection(e.selected?.[0]));
+    canvas.on("selection:updated", (e) => syncSelection(e.selected?.[0]));
+    canvas.on("selection:cleared", () => setSelectedKey(null));
 
     let cancelled = false;
 
@@ -48,7 +77,10 @@ export function TemplateDesigner({
           crossOrigin: "anonymous",
         });
         if (cancelled) return;
-        const scale = Math.min(842 / (img.width || 842), 595 / (img.height || 595));
+        const scale = Math.min(
+          CANVAS_W / (img.width || CANVAS_W),
+          CANVAS_H / (img.height || CANVAS_H),
+        );
         img.set({
           selectable: false,
           evented: false,
@@ -89,8 +121,8 @@ export function TemplateDesigner({
         }
         canvas.requestRenderAll();
       } catch {
-        setMessage(
-          "Could not load background image (CORS). Layout can still be saved from defaults.",
+        toast.error(
+          "Could not load background image (CORS). Layout can still be saved.",
         );
       }
     }
@@ -103,6 +135,56 @@ export function TemplateDesigner({
       fabricRef.current = null;
     };
   }, [backgroundUrl, initialLayout]);
+
+  function syncSelection(obj?: FabricObject) {
+    if (!obj) {
+      setSelectedKey(null);
+      return;
+    }
+    const key = (obj as unknown as { fieldKey?: LayoutField["field"] }).fieldKey;
+    setSelectedKey(key ?? null);
+    if (obj instanceof FabricText) {
+      setFontSize(Math.round(obj.fontSize ?? 18));
+      setColor(String(obj.fill ?? "#0b1f3a"));
+    }
+  }
+
+  function findByKey(key: LayoutField["field"]) {
+    const canvas = fabricRef.current;
+    if (!canvas) return null;
+    return (
+      canvas
+        .getObjects()
+        .find(
+          (obj) =>
+            (obj as unknown as { fieldKey?: string }).fieldKey === key,
+        ) ?? null
+    );
+  }
+
+  function selectField(key: LayoutField["field"]) {
+    const canvas = fabricRef.current;
+    const obj = findByKey(key);
+    if (!canvas || !obj) return;
+    canvas.setActiveObject(obj);
+    canvas.requestRenderAll();
+    syncSelection(obj);
+  }
+
+  function updateActiveText(patch: {
+    fontSize?: number;
+    fill?: string;
+    originX?: "left" | "center";
+  }) {
+    const canvas = fabricRef.current;
+    const active = canvas?.getActiveObject();
+    if (!canvas || !(active instanceof FabricText)) return;
+    active.set(patch);
+    canvas.requestRenderAll();
+    setDirty(true);
+    if (patch.fontSize != null) setFontSize(patch.fontSize);
+    if (patch.fill != null) setColor(patch.fill);
+  }
 
   function collectLayout(): TemplateLayout {
     const canvas = fabricRef.current;
@@ -137,40 +219,202 @@ export function TemplateDesigner({
   }
 
   function onSave() {
-    setMessage(null);
     const layout = collectLayout();
     startTransition(async () => {
       const result = await saveTemplateLayoutAction({ templateId, layout });
       if (!result.ok) {
-        setMessage(result.error);
+        toast.error(result.error);
         return;
       }
-      setMessage("Layout saved.");
+      setDirty(false);
+      toast.success("Layout saved");
     });
   }
 
+  const textSelected = selectedKey != null && selectedKey !== "qr";
+
   return (
     <div className="space-y-4">
-      <div className="overflow-auto rounded-xl border border-border bg-muted/40 p-3">
-        <canvas ref={canvasRef} />
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-elevated">
+        <div className="flex flex-wrap gap-1">
+          {(Object.keys(FIELD_LABELS) as LayoutField["field"][]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => selectField(key)}
+              className={cn(
+                "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                selectedKey === key
+                  ? "bg-[#0b1f3a] text-white"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {FIELD_LABELS[key]}
+            </button>
+          ))}
+        </div>
+
+        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Decrease font size"
+            disabled={!textSelected}
+            onClick={() =>
+              updateActiveText({ fontSize: Math.max(8, fontSize - 1) })
+            }
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </Button>
+          <Input
+            type="number"
+            className="h-8 w-16 text-center"
+            value={fontSize}
+            disabled={!textSelected}
+            aria-label="Font size"
+            onChange={(e) =>
+              updateActiveText({
+                fontSize: Math.max(8, Number(e.target.value) || 18),
+              })
+            }
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Increase font size"
+            disabled={!textSelected}
+            onClick={() => updateActiveText({ fontSize: fontSize + 1 })}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+          <input
+            type="color"
+            value={color}
+            disabled={!textSelected}
+            aria-label="Text color"
+            className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent disabled:opacity-40"
+            onChange={(e) => updateActiveText({ fill: e.target.value })}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Align left"
+            disabled={!textSelected}
+            onClick={() => updateActiveText({ originX: "left" })}
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Align center"
+            disabled={!textSelected}
+            onClick={() => updateActiveText({ originX: "center" })}
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Zoom out"
+            onClick={() => setZoom((z) => Math.max(0.4, Number((z - 0.1).toFixed(2))))}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <button
+            type="button"
+            className="min-w-14 rounded-md px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted"
+            onClick={() => setZoom(1)}
+            aria-label="Reset zoom to 100%"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label="Zoom in"
+            onClick={() => setZoom((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setZoom(0.75)}
+          >
+            Fit
+          </Button>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <a
+            href={`/api/templates/${templateId}/preview`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Preview PDF
+          </a>
+          <Button type="button" onClick={onSave} disabled={pending}>
+            {pending && <Spinner />}
+            <span className="relative">
+              Save layout
+              {dirty && (
+                <span
+                  className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-accent"
+                  aria-label="Unsaved changes"
+                />
+              )}
+            </span>
+          </Button>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={onSave} disabled={pending}>
-          {pending ? "Saving…" : "Save layout"}
-        </Button>
-        <a
-          href={`/api/templates/${templateId}/preview`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+
+      <div className="checkerboard overflow-auto rounded-xl border border-border p-6">
+        <div
+          className="mx-auto origin-top shadow-float transition-transform"
+          style={{
+            width: CANVAS_W * zoom,
+            height: CANVAS_H * zoom,
+          }}
         >
-          Preview PDF
-        </a>
-        {message && <p className="text-sm text-muted-foreground">{message}</p>}
+          <div
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: "top left",
+              width: CANVAS_W,
+              height: CANVAS_H,
+            }}
+          >
+            <canvas ref={canvasRef} />
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Drag placeholders on the background. Coordinates are stored as layout JSON
-        (templates are data — Rule 5).
+
+      <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        Drag placeholders on the artboard. Use the field chips to select objects.
+        On touch devices, scroll horizontally if needed — pinch zoom is browser-native.
+        Coordinates are stored as layout JSON (templates are data — Rule 5).
       </p>
     </div>
   );
