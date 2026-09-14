@@ -19,13 +19,36 @@ const sourceSerif = Source_Serif_4({
   weight: ["400", "600", "700"],
 });
 
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: {
     default: "LeoVerify",
     template: "%s · LeoVerify",
   },
   description:
-    "Issue, archive, and verify Leo Club certificates — the database record is authoritative.",
+    "Issue, archive, and verify Leo Club certificates — the database record is authoritative. Operated by Leo Club of University of Moratuwa.",
+  applicationName: "LeoVerify",
+  openGraph: {
+    type: "website",
+    locale: "en_LK",
+    siteName: "LeoVerify",
+    title: "LeoVerify — Live certificate verification",
+    description:
+      "Anyone can check a Leo Club certificate against the live database — no login required.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeoVerify — Live certificate verification",
+    description:
+      "Anyone can check a Leo Club certificate against the live database — no login required.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

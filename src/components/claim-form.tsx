@@ -104,15 +104,37 @@ export function ClaimForm({
         <div className="space-y-4 rounded-xl border border-success/30 bg-success-muted/40 px-4 py-5">
           <p className="text-sm font-medium text-foreground">
             {claimed != null
-              ? `Claimed ${claimed} certificate(s). Profile slug ready.`
+              ? `Claimed ${claimed} certificate(s). Next steps below.`
               : "Your claim profile is ready."}
           </p>
-          <Link
-            href={`/u/${successSlug}`}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
-          >
-            View profile /u/{successSlug}
-          </Link>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+            <li>Toggle public profile if you want a shareable listing.</li>
+            <li>Mark certificates unlisted if they should stay private.</li>
+            <li>Copy or open your profile URL when you are ready to share.</li>
+          </ol>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/u/${successSlug}`}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
+            >
+              View profile /u/{successSlug}
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const url = `${window.location.origin}/u/${successSlug}`;
+                  await navigator.clipboard.writeText(url);
+                  toast.success("Profile URL copied");
+                } catch {
+                  toast.error("Could not copy link");
+                }
+              }}
+            >
+              Copy profile URL
+            </Button>
+          </div>
         </div>
       )}
 

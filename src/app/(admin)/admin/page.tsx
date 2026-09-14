@@ -48,6 +48,37 @@ export default async function AdminDashboardPage() {
   const needsOnboarding =
     events === 0 && templates === 0 && certificatesIssued === 0;
 
+  const firstIssueSteps = [
+    {
+      n: "1",
+      title: "Create an event",
+      body: "Scope templates and certificate batches.",
+      href: "/admin/events",
+      done: events > 0,
+    },
+    {
+      n: "2",
+      title: "Approve a template",
+      body: "Upload a background — club templates auto-approve on create.",
+      href: "/admin/templates",
+      done: templates > 0,
+    },
+    {
+      n: "3",
+      title: "Issue a certificate",
+      body: "Issue one recipient or import a CSV roster.",
+      href: "/admin/certificates",
+      done: certificatesIssued > 0,
+    },
+    {
+      n: "4",
+      title: "Open the verify link",
+      body: "After issue, copy the verify link from the success toast and open /v.",
+      href: "/admin/certificates",
+      done: certificatesIssued > 0,
+    },
+  ];
+
   const stats = [
     {
       label: "Events",
@@ -147,6 +178,49 @@ export default async function AdminDashboardPage() {
                     <span className="font-mono text-sm font-semibold text-accent">
                       {step.n}
                     </span>
+                    <p className="mt-2 font-medium">{step.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {step.body}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
+
+      {!needsOnboarding && certificatesIssued === 0 && (
+        <Card className="border-accent/40 bg-accent/5">
+          <CardHeader>
+            <CardTitle>First-issue checklist</CardTitle>
+            <CardDescription>
+              Finish the path: event → template → issue → open the public verify
+              page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {firstIssueSteps.map((step) => (
+                <li key={step.n}>
+                  <Link
+                    href={step.href}
+                    className="block h-full rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-sm font-semibold text-accent">
+                        {step.n}
+                      </span>
+                      <span
+                        className={
+                          step.done
+                            ? "text-xs font-medium text-success"
+                            : "text-xs text-muted-foreground"
+                        }
+                      >
+                        {step.done ? "Done" : "Todo"}
+                      </span>
+                    </div>
                     <p className="mt-2 font-medium">{step.title}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {step.body}

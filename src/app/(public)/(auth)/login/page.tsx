@@ -19,6 +19,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,6 +57,40 @@ function LoginForm() {
     }
   }
 
+  async function onForgotPassword() {
+    if (!email.trim()) {
+      toast.error("Enter your email above first");
+      return;
+    }
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      toast.error("Supabase is not configured in .env");
+      return;
+    }
+    setResetting(true);
+    try {
+      const { createBrowserSupabaseClient } = await import(
+        "@/lib/supabase/client"
+      );
+      const supabase = createBrowserSupabaseClient();
+      const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/login`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset email sent if that account exists");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   return (
     <>
       <form onSubmit={onSubmit} className="space-y-4">
@@ -72,7 +107,17 @@ function LoginForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="password">Password</Label>
+            <button
+              type="button"
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
+              onClick={onForgotPassword}
+              disabled={resetting}
+            >
+              {resetting ? "Sending…" : "Forgot password?"}
+            </button>
+          </div>
           <Input
             id="password"
             type="password"

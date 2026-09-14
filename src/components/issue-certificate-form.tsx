@@ -33,8 +33,21 @@ export function IssueCertificateForm({
         result.uniqueId!,
         result.verificationToken!,
       );
+      const absolute =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${path}`
+          : path;
       toast.success(`Issued ${result.uniqueId}`, {
-        description: `Verify at ${path}`,
+        description: "Copy the verify link to share or open the QR target.",
+        action: {
+          label: "Copy verify link",
+          onClick: () => {
+            void navigator.clipboard.writeText(absolute).then(
+              () => toast.success("Verify link copied"),
+              () => toast.error("Could not copy"),
+            );
+          },
+        },
       });
       form.reset();
       router.refresh();

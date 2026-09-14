@@ -57,6 +57,21 @@ const steps = [
   },
 ];
 
+const faqTeasers = [
+  {
+    q: "What is a verification token?",
+    a: "A secret from the QR or share link. The ID alone is not enough to look up a certificate.",
+  },
+  {
+    q: "What if it says revoked?",
+    a: "The club marked it invalid. The public page shows only that it has been revoked.",
+  },
+  {
+    q: "Lost your PDF?",
+    a: "Open the original verify link. If still issued, download the PDF from the verify page.",
+  },
+];
+
 function MockCertificate() {
   return (
     <div className="relative animate-fade-up-delay-2">
@@ -70,7 +85,7 @@ function MockCertificate() {
         </div>
         <div className="relative px-6 py-8">
           <div
-            className="pointer-events-none absolute right-4 top-4 text-6xl font-bold text-primary/[0.04]"
+            className="pointer-events-none absolute right-4 top-4 text-6xl font-bold text-primary/4"
             aria-hidden
           >
             LV
@@ -82,7 +97,8 @@ function MockCertificate() {
             Ada Lovelace
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
-            for outstanding service as <span className="font-medium text-foreground">Volunteer</span>
+            for outstanding service as{" "}
+            <span className="font-medium text-foreground">Volunteer</span>
           </p>
           <div className="mt-8 flex items-end justify-between gap-4">
             <div>
@@ -105,9 +121,48 @@ function MockCertificate() {
   );
 }
 
+function JsonLd() {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    "http://localhost:3000";
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: "LeoVerify",
+        url: base,
+        description:
+          "Credentialing platform for Leo Club certificates. Operated by Leo Club of University of Moratuwa.",
+        parentOrganization: {
+          "@type": "Organization",
+          name: "Leo Club of University of Moratuwa",
+        },
+      },
+      {
+        "@type": "WebSite",
+        name: "LeoVerify",
+        url: base,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${base}/#verify`,
+          "query-input": "required name=certificate_id",
+        },
+      },
+    ],
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
+
 export default function HomePage() {
   return (
     <div>
+      <JsonLd />
       <section className="surface-hero relative overflow-hidden">
         <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:grid-cols-2 lg:items-center">
           <div>
@@ -122,6 +177,9 @@ export default function HomePage() {
             <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               Issue signed certificates your community can trust. Anyone can check a
               record independently of the PDF — no login required.
+            </p>
+            <p className="animate-fade-up-delay-2 mt-3 text-sm text-muted-foreground">
+              Operated by Leo Club of University of Moratuwa · District 306 A2
             </p>
             <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap gap-3">
               <a
@@ -170,7 +228,8 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle>Lookup</CardTitle>
               <CardDescription>
-                Requires the unguessable token from the QR or share link.
+                Requires the unguessable token from the QR or share link. Paste the
+                full link from the QR if you have it — or enter ID and token below.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -204,6 +263,14 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+          <p className="mt-8 text-sm text-muted-foreground">
+            <Link
+              href="/how-it-works"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Read the full walkthrough
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -231,6 +298,40 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-t border-border bg-background">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                FAQ
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+                Common questions
+              </h2>
+            </div>
+            <Link
+              href="/faq"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              View all FAQ
+            </Link>
+          </div>
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {faqTeasers.map((item) => (
+              <div
+                key={item.q}
+                className="rounded-xl border border-border bg-card p-6 shadow-elevated"
+              >
+                <h3 className="font-semibold text-foreground">{item.q}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="border-t border-border bg-brand text-white">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-12 sm:flex-row sm:items-center sm:px-6">
           <div>
@@ -245,10 +346,10 @@ export default function HomePage() {
             </p>
           </div>
           <Link
-            href="/signup"
+            href="/about"
             className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-base font-medium text-accent-foreground shadow-sm transition-all hover:bg-accent/90 active:scale-[0.98]"
           >
-            Start for your club
+            About LeoVerify
           </Link>
         </div>
       </section>
