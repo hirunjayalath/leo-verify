@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { prisma } from "@/lib/db";
@@ -83,14 +80,16 @@ export default async function VerificationPage({
     return (
       <div className="surface-grid">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Too many requests</CardTitle>
-              <CardDescription>
-                Please wait a minute before verifying again.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <EmptyState
+            icon={Clock}
+            title="Too many requests"
+            description="Please wait a minute before verifying again. This limit protects the public verify endpoint."
+            action={
+              <Link href="/#verify">
+                <Button variant="outline">Back to verify</Button>
+              </Link>
+            }
+          />
         </div>
       </div>
     );
@@ -101,6 +100,7 @@ export default async function VerificationPage({
   const uniqueId = decodeURIComponent(id);
   const row = await lookupCertificate(uniqueId);
   const result = evaluateVerification(row, t);
+  const checkedAt = new Date().toISOString();
 
   return (
     <div className="surface-grid">
@@ -108,7 +108,7 @@ export default async function VerificationPage({
         <p className="mb-2 text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
           Independent authenticity check
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-[#0b1f3a] dark:text-foreground">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
           Certificate check
         </h1>
         <p className="mt-2 text-muted-foreground">
@@ -116,7 +116,11 @@ export default async function VerificationPage({
         </p>
 
         <div className="mt-8">
-          <VerificationResult uniqueId={uniqueId} result={result} />
+          <VerificationResult
+            uniqueId={uniqueId}
+            result={result}
+            checkedAt={checkedAt}
+          />
         </div>
 
         <p className="mt-8 text-sm text-muted-foreground">

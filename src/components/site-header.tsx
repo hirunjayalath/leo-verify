@@ -19,10 +19,10 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/70 bg-card/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0b1f3a] text-sm font-bold text-accent shadow-sm">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-accent shadow-sm">
             LV
           </span>
-          <span className="text-lg font-semibold tracking-tight text-[#0b1f3a] dark:text-foreground">
+          <span className="text-lg font-semibold tracking-tight text-foreground">
             LeoVerify
           </span>
         </Link>

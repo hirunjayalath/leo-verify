@@ -11,7 +11,7 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-[calc(100vh-4rem)] flex-1 lg:grid-cols-2">
+    <div className="grid min-h-full flex-1 lg:grid-cols-2">
       <aside className="auth-brand-panel relative hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div>
           <Link href="/" className="inline-flex items-center gap-2.5">
@@ -45,7 +45,7 @@ export function AuthShell({
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-8 lg:hidden">
             <Link href="/" className="inline-flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0b1f3a] text-sm font-bold text-accent">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-accent">
                 LV
               </span>
               <span className="font-semibold">LeoVerify</span>

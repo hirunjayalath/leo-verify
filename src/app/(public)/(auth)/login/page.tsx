@@ -8,6 +8,7 @@ import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 
 function LoginForm() {
@@ -86,11 +87,24 @@ function LoginForm() {
         </Button>
       </form>
       <p className="mt-5 text-center text-sm text-muted-foreground">
+        Need an account? Contact your club admin for access.
+      </p>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
           Back to public site
         </Link>
       </p>
     </>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+      <Skeleton className="h-11 w-full" />
+    </div>
   );
 }
 
@@ -100,7 +114,7 @@ export default function LoginPage() {
       title="Club admin login"
       description="Sign in with your LeoVerify club account. Enable MFA in Supabase Auth for production admins."
     >
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<LoginFallback />}>
         <LoginForm />
       </Suspense>
     </AuthShell>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  Ban,
+  CalendarDays,
   ClipboardList,
   FileBadge2,
   FileUp,
   LayoutTemplate,
-  Ban,
-  CalendarDays,
 } from "lucide-react";
 import {
   Card,
@@ -18,6 +18,7 @@ import {
 import { CertificateStatus } from "@/generated/prisma/client";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { formatAuditAction, formatRelativeTime } from "@/lib/format";
 
 export default async function AdminDashboardPage() {
   const user = await requireClubAdmin();
@@ -44,13 +45,16 @@ export default async function AdminDashboardPage() {
       }),
     ]);
 
+  const needsOnboarding =
+    events === 0 && templates === 0 && certificatesIssued === 0;
+
   const stats = [
     {
       label: "Events",
       value: events,
       hint: events === 0 ? "Create your first event" : "Active event records",
       icon: CalendarDays,
-      tint: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+      tint: "bg-info-muted text-info",
       href: "/admin/events",
     },
     {
@@ -72,7 +76,7 @@ export default async function AdminDashboardPage() {
           ? "Upload a background"
           : "Saved certificate layouts",
       icon: LayoutTemplate,
-      tint: "bg-accent/20 text-[#0b1f3a] dark:text-accent",
+      tint: "bg-accent/20 text-accent-foreground dark:text-accent",
       href: "/admin/templates",
     },
     {
@@ -92,6 +96,27 @@ export default async function AdminDashboardPage() {
     { href: "/admin/certificates", label: "Import CSV", icon: FileUp },
   ];
 
+  const onboarding = [
+    {
+      n: "1",
+      title: "Create an event",
+      body: "Scope templates and certificate batches.",
+      href: "/admin/events",
+    },
+    {
+      n: "2",
+      title: "Design a template",
+      body: "Upload a background and place fields.",
+      href: "/admin/templates",
+    },
+    {
+      n: "3",
+      title: "Issue or import",
+      body: "Issue one certificate or upload a CSV roster.",
+      href: "/admin/certificates",
+    },
+  ];
+
   return (
     <div className="space-y-8 animate-fade-up">
       <div>
@@ -102,6 +127,37 @@ export default async function AdminDashboardPage() {
           Issue and manage certificates for {user.club?.name ?? "your club"}.
         </p>
       </div>
+
+      {needsOnboarding && (
+        <Card className="border-accent/40 bg-accent/5">
+          <CardHeader>
+            <CardTitle>Get started in three steps</CardTitle>
+            <CardDescription>
+              Your club is ready — walk through the golden path once.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="grid gap-4 sm:grid-cols-3">
+              {onboarding.map((step) => (
+                <li key={step.n}>
+                  <Link
+                    href={step.href}
+                    className="block h-full rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted"
+                  >
+                    <span className="font-mono text-sm font-semibold text-accent">
+                      {step.n}
+                    </span>
+                    <p className="mt-2 font-medium">{step.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {step.body}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
@@ -145,16 +201,25 @@ export default async function AdminDashboardPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {recentAudit.map((log) => (
-                  <li key={log.id} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <li
+                    key={log.id}
+                    className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  >
                     <div>
-                      <p className="text-sm font-medium">{log.action}</p>
+                      <p className="text-sm font-medium">
+                        {formatAuditAction(log.action)}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {log.actor?.name || log.actor?.email || "system"} ·{" "}
                         {log.targetType}
                       </p>
                     </div>
-                    <time className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                      {log.createdAt.toISOString().slice(0, 16).replace("T", " ")}
+                    <time
+                      className="shrink-0 text-xs text-muted-foreground"
+                      dateTime={log.createdAt.toISOString()}
+                      title={log.createdAt.toISOString()}
+                    >
+                      {formatRelativeTime(log.createdAt)}
                     </time>
                   </li>
                 ))}

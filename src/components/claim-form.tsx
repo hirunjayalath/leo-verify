@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useTransition } from "react";
+import Link from "next/link";
+import { FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { claimCertificatesAction } from "@/app/(public)/claim/actions";
+import { claimCertificatesAction } from "@/app/(public)/(auth)/claim/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,8 @@ import { Spinner } from "@/components/ui/spinner";
 
 export function ClaimForm() {
   const [pending, startTransition] = useTransition();
+  const [successSlug, setSuccessSlug] = useState<string | null>(null);
+  const [claimed, setClaimed] = useState(0);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,10 +23,36 @@ export function ClaimForm() {
         toast.error(result.error);
         return;
       }
-      toast.success(
-        `Claimed ${result.claimed} certificate(s). Profile: /u/${result.slug}`,
-      );
+      setSuccessSlug(result.slug ?? null);
+      setClaimed(result.claimed ?? 0);
+      toast.success(`Claimed ${result.claimed} certificate(s)`);
     });
+  }
+
+  if (successSlug) {
+    return (
+      <div className="space-y-4 rounded-xl border border-success/30 bg-success-muted/40 px-4 py-5">
+        <p className="text-sm font-medium text-foreground">
+          Claimed {claimed} certificate(s). Your profile slug is ready.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Profiles stay private until you opt in. You can open the path below anytime.
+        </p>
+        <Link
+          href={`/u/${successSlug}`}
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
+        >
+          View profile /u/{successSlug}
+        </Link>
+        <button
+          type="button"
+          className="block text-sm text-muted-foreground underline-offset-4 hover:underline"
+          onClick={() => setSuccessSlug(null)}
+        >
+          Claim another email
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { formatAuditAction, formatRelativeTime } from "@/lib/format";
 
 export default async function AdminAuditPage() {
   const user = await requireClubAdmin();
@@ -68,19 +69,20 @@ export default async function AdminAuditPage() {
                   <TableBody>
                     {logs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.action}</TableCell>
+                        <TableCell className="font-medium">
+                          {formatAuditAction(log.action)}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {log.targetType}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {log.actor?.email ?? "system"}
                         </TableCell>
-                        <TableCell className="text-xs tabular-nums text-muted-foreground">
-                          {log.createdAt
-                            .toISOString()
-                            .replace("T", " ")
-                            .slice(0, 19)}{" "}
-                          UTC
+                        <TableCell
+                          className="text-xs text-muted-foreground"
+                          title={log.createdAt.toISOString()}
+                        >
+                          {formatRelativeTime(log.createdAt)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -94,15 +96,14 @@ export default async function AdminAuditPage() {
                     className="rounded-xl border border-border p-4 text-sm"
                   >
                     <p className="font-medium">
-                      {log.action}{" "}
+                      {formatAuditAction(log.action)}{" "}
                       <span className="font-normal text-muted-foreground">
                         on {log.targetType}
                       </span>
                     </p>
                     <p className="mt-1 text-muted-foreground">
                       {log.actor?.email ?? "system"} ·{" "}
-                      {log.createdAt.toISOString().replace("T", " ").slice(0, 19)}{" "}
-                      UTC
+                      {formatRelativeTime(log.createdAt)}
                     </p>
                   </li>
                 ))}

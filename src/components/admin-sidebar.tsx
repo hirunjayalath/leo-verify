@@ -118,7 +118,7 @@ export function AdminSidebar({
   const chip = initials(userEmail, userName);
 
   const panel = (
-    <aside className="flex h-full w-64 flex-col bg-[#0b1f3a] text-white">
+    <aside className="flex h-full w-64 flex-col bg-brand text-white">
       <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
         <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
           LV
@@ -177,7 +177,7 @@ export function AdminSidebar({
     <>
       <button
         type="button"
-        className="fixed bottom-4 left-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#0b1f3a] text-white shadow-float lg:hidden"
+        className="fixed bottom-4 left-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-float lg:hidden"
         aria-label="Open navigation"
         onClick={() => setMobileOpen(true)}
       >
@@ -204,11 +204,21 @@ export function AdminSidebar({
 export function AdminBreadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split("/").filter(Boolean);
-  const crumbs = segments.map((seg, i) => ({
-    label: seg === "admin" ? "Admin" : seg.charAt(0).toUpperCase() + seg.slice(1),
-    href: "/" + segments.slice(0, i + 1).join("/"),
-    current: i === segments.length - 1,
-  }));
+  const crumbs = segments.map((seg, i) => {
+    const prev = segments[i - 1];
+    let label =
+      seg === "admin" ? "Admin" : seg.charAt(0).toUpperCase() + seg.slice(1);
+    // Hide raw cuids on template edit routes
+    if (prev === "templates" && seg !== "edit" && /^[a-z0-9]{20,}$/i.test(seg)) {
+      label = "Template";
+    }
+    if (seg === "edit") label = "Edit template";
+    return {
+      label,
+      href: "/" + segments.slice(0, i + 1).join("/"),
+      current: i === segments.length - 1,
+    };
+  });
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">

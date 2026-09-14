@@ -1,4 +1,4 @@
-import { assertWithinCertLimit } from "@/app/(public)/signup/actions";
+import { assertWithinCertLimit } from "@/app/(public)/(auth)/signup/actions";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";

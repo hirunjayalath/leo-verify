@@ -15,6 +15,7 @@ import { saveTemplateLayoutAction } from "@/app/(admin)/admin/templates/actions"
 import type { LayoutField, TemplateLayout } from "@/lib/certificates/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +27,11 @@ const FIELD_LABELS: Record<LayoutField["field"], string> = {
   qr: "QR code",
 };
 
+const FIELD_KEYS = Object.keys(FIELD_LABELS) as LayoutField["field"][];
+
 const CANVAS_W = 842;
 const CANVAS_H = 595;
+const BRAND_HEX = "#0b1f3a";
 
 type Props = {
   templateId: string;
@@ -42,14 +46,29 @@ export function TemplateDesigner({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [dirty, setDirty] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.75);
   const [selectedKey, setSelectedKey] = useState<LayoutField["field"] | null>(
     null,
   );
   const [fontSize, setFontSize] = useState(18);
-  const [color, setColor] = useState("#0b1f3a");
+  const [color, setColor] = useState(BRAND_HEX);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    function fit() {
+      const el = stageRef.current;
+      if (!el) return;
+      const pad = 48;
+      const available = Math.max(280, el.clientWidth - pad);
+      const next = Math.min(1.25, Math.max(0.35, available / CANVAS_W));
+      setZoom(Number(next.toFixed(2)));
+    }
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -111,7 +130,7 @@ export function TemplateDesigner({
               left: field.x,
               top: field.y,
               fontSize: field.fontSize ?? 18,
-              fill: field.color ?? "#0b1f3a",
+              fill: field.color ?? BRAND_HEX,
               fontFamily: field.fontFamily ?? "Helvetica",
               originX: field.align === "center" ? "center" : "left",
             });
@@ -145,7 +164,7 @@ export function TemplateDesigner({
     setSelectedKey(key ?? null);
     if (obj instanceof FabricText) {
       setFontSize(Math.round(obj.fontSize ?? 18));
-      setColor(String(obj.fill ?? "#0b1f3a"));
+      setColor(String(obj.fill ?? BRAND_HEX));
     }
   }
 
@@ -210,7 +229,7 @@ export function TemplateDesigner({
           y: Math.round(text.top ?? 0),
           fontSize: Math.round(text.fontSize ?? 18),
           fontFamily: text.fontFamily ?? "Helvetica",
-          color: String(text.fill ?? "#0b1f3a"),
+          color: String(text.fill ?? BRAND_HEX),
           align: text.originX === "center" ? "center" : "left",
         });
       }
@@ -231,166 +250,200 @@ export function TemplateDesigner({
     });
   }
 
+  function fitZoom() {
+    const el = stageRef.current;
+    if (!el) return;
+    const available = Math.max(280, el.clientWidth - 48);
+    setZoom(Number(Math.min(1.25, Math.max(0.35, available / CANVAS_W)).toFixed(2)));
+  }
+
   const textSelected = selectedKey != null && selectedKey !== "qr";
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-elevated">
-        <div className="flex flex-wrap gap-1">
-          {(Object.keys(FIELD_LABELS) as LayoutField["field"][]).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => selectField(key)}
-              className={cn(
-                "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                selectedKey === key
-                  ? "bg-[#0b1f3a] text-white"
-                  : "bg-muted text-muted-foreground hover:text-foreground",
-              )}
+      <div className="sticky top-16 z-20 space-y-3 rounded-xl border border-border bg-card/95 p-3 shadow-elevated backdrop-blur">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden flex-wrap gap-1 md:flex">
+            {FIELD_KEYS.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => selectField(key)}
+                className={cn(
+                  "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  selectedKey === key
+                    ? "bg-brand text-brand-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {FIELD_LABELS[key]}
+              </button>
+            ))}
+          </div>
+          <div className="w-full md:hidden">
+            <Select
+              aria-label="Select field"
+              value={selectedKey ?? ""}
+              onChange={(e) => {
+                const key = e.target.value as LayoutField["field"];
+                if (key) selectField(key);
+              }}
             >
-              {FIELD_LABELS[key]}
-            </button>
-          ))}
+              <option value="">Select field…</option>
+              {FIELD_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {FIELD_LABELS[key]}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <a
+              href={`/api/templates/${templateId}/preview`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Preview PDF
+            </a>
+            <Button type="button" onClick={onSave} disabled={pending}>
+              {pending && <Spinner />}
+              <span className="relative">
+                Save layout
+                {dirty && (
+                  <span
+                    className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-accent"
+                    aria-label="Unsaved changes"
+                  />
+                )}
+              </span>
+            </Button>
+          </div>
         </div>
 
-        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
-
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Decrease font size"
-            disabled={!textSelected}
-            onClick={() =>
-              updateActiveText({ fontSize: Math.max(8, fontSize - 1) })
-            }
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </Button>
-          <Input
-            type="number"
-            className="h-8 w-16 text-center"
-            value={fontSize}
-            disabled={!textSelected}
-            aria-label="Font size"
-            onChange={(e) =>
-              updateActiveText({
-                fontSize: Math.max(8, Number(e.target.value) || 18),
-              })
-            }
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Increase font size"
-            disabled={!textSelected}
-            onClick={() => updateActiveText({ fontSize: fontSize + 1 })}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-          <input
-            type="color"
-            value={color}
-            disabled={!textSelected}
-            aria-label="Text color"
-            className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent disabled:opacity-40"
-            onChange={(e) => updateActiveText({ fill: e.target.value })}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Align left"
-            disabled={!textSelected}
-            onClick={() => updateActiveText({ originX: "left" })}
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Align center"
-            disabled={!textSelected}
-            onClick={() => updateActiveText({ originX: "center" })}
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
-
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Zoom out"
-            onClick={() => setZoom((z) => Math.max(0.4, Number((z - 0.1).toFixed(2))))}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <button
-            type="button"
-            className="min-w-14 rounded-md px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted"
-            onClick={() => setZoom(1)}
-            aria-label="Reset zoom to 100%"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Zoom in"
-            onClick={() => setZoom((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoom(0.75)}
-          >
-            Fit
-          </Button>
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          <a
-            href={`/api/templates/${templateId}/preview`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Preview PDF
-          </a>
-          <Button type="button" onClick={onSave} disabled={pending}>
-            {pending && <Spinner />}
-            <span className="relative">
-              Save layout
-              {dirty && (
-                <span
-                  className="absolute -right-2 -top-1 h-2 w-2 rounded-full bg-accent"
-                  aria-label="Unsaved changes"
-                />
-              )}
+        <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-xs font-medium text-muted-foreground">
+              Text
             </span>
-          </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Decrease font size"
+              disabled={!textSelected}
+              onClick={() =>
+                updateActiveText({ fontSize: Math.max(8, fontSize - 1) })
+              }
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <Input
+              type="number"
+              className="h-8 w-16 text-center"
+              value={fontSize}
+              disabled={!textSelected}
+              aria-label="Font size"
+              onChange={(e) =>
+                updateActiveText({
+                  fontSize: Math.max(8, Number(e.target.value) || 18),
+                })
+              }
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Increase font size"
+              disabled={!textSelected}
+              onClick={() => updateActiveText({ fontSize: fontSize + 1 })}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <input
+              type="color"
+              value={color}
+              disabled={!textSelected}
+              aria-label="Text color"
+              className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent disabled:opacity-40"
+              onChange={(e) => updateActiveText({ fill: e.target.value })}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Align left"
+              disabled={!textSelected}
+              onClick={() => updateActiveText({ originX: "left" })}
+            >
+              <AlignLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Align center"
+              disabled={!textSelected}
+              onClick={() => updateActiveText({ originX: "center" })}
+            >
+              <AlignCenter className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
+          <div className="flex items-center gap-1">
+            <span className="mr-1 text-xs font-medium text-muted-foreground">
+              Zoom
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Zoom out"
+              onClick={() =>
+                setZoom((z) => Math.max(0.35, Number((z - 0.1).toFixed(2))))
+              }
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              className="min-w-14 rounded-md px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted"
+              onClick={() => setZoom(1)}
+              aria-label="Reset zoom to 100%"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Zoom in"
+              onClick={() =>
+                setZoom((z) => Math.min(1.5, Number((z + 0.1).toFixed(2))))
+              }
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={fitZoom}>
+              Fit
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="checkerboard overflow-auto rounded-xl border border-border p-6">
+      <div
+        ref={stageRef}
+        className="checkerboard overflow-auto rounded-xl border border-border p-6"
+      >
         <div
           className="mx-auto origin-top shadow-float transition-transform"
           style={{
@@ -412,9 +465,9 @@ export function TemplateDesigner({
       </div>
 
       <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        Drag placeholders on the artboard. Use the field chips to select objects.
-        On touch devices, scroll horizontally if needed — pinch zoom is browser-native.
-        Coordinates are stored as layout JSON (templates are data — Rule 5).
+        Drag placeholders on the artboard. On narrow screens, use the field
+        selector and scroll horizontally if needed. Coordinates are stored as
+        layout JSON (templates are data — Rule 5).
       </p>
     </div>
   );

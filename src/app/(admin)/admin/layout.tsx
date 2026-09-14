@@ -39,7 +39,7 @@ export default async function AdminLayout({
               </p>
             </div>
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b1f3a] text-xs font-semibold text-accent"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-semibold text-accent"
               aria-hidden
             >
               {chip}

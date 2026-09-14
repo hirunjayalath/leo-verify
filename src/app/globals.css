@@ -16,6 +16,11 @@
   --success-muted: #dcfce7;
   --danger: #991b1b;
   --danger-muted: #fee2e2;
+  --info: #1d4ed8;
+  --info-muted: #dbeafe;
+  /* Non-inverting Leo brand chrome (stays navy in dark mode) */
+  --brand: #0b1f3a;
+  --brand-foreground: #f8fafc;
   --ring: #0b1f3a;
   --radius: 0.625rem;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
@@ -40,6 +45,10 @@
     --success-muted: #14532d;
     --danger: #f87171;
     --danger-muted: #7f1d1d;
+    --info: #60a5fa;
+    --info-muted: #1e3a5f;
+    --brand: #0b1f3a;
+    --brand-foreground: #f8fafc;
     --ring: #d4af37;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
@@ -53,7 +62,7 @@
   }
 
   .auth-brand-panel {
-    background: linear-gradient(160deg, #0b1f3a 0%, #061018 100%) !important;
+    background: linear-gradient(160deg, var(--brand) 0%, #061018 100%) !important;
   }
 }
 
@@ -73,9 +82,14 @@
   --color-success-muted: var(--success-muted);
   --color-danger: var(--danger);
   --color-danger-muted: var(--danger-muted);
+  --color-info: var(--info);
+  --color-info-muted: var(--info-muted);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
   --radius-lg: var(--radius);
 }
 
@@ -111,6 +125,10 @@ textarea:focus:not(:focus-visible) {
   color: var(--foreground);
 }
 
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+}
+
 .surface-grid {
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 162, 39, 0.18), transparent),
@@ -138,11 +156,10 @@ textarea:focus:not(:focus-visible) {
 }
 
 .auth-brand-panel {
-  background: linear-gradient(160deg, #0b1f3a 0%, #13294a 50%, #0b1f3a 100%);
   background-image:
     radial-gradient(circle at 20% 20%, rgba(201, 162, 39, 0.18), transparent 40%),
     radial-gradient(circle at 80% 80%, rgba(201, 162, 39, 0.1), transparent 35%),
-    linear-gradient(160deg, #0b1f3a 0%, #13294a 50%, #0b1f3a 100%);
+    linear-gradient(160deg, var(--brand) 0%, #13294a 50%, var(--brand) 100%);
 }
 
 .shadow-elevated {

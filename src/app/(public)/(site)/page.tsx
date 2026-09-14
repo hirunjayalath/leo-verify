@@ -62,7 +62,7 @@ function MockCertificate() {
     <div className="relative animate-fade-up-delay-2">
       <div className="absolute -inset-4 rounded-3xl bg-accent/10 blur-2xl" aria-hidden />
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
-        <div className="border-b border-border bg-[#0b1f3a] px-6 py-4 text-white">
+        <div className="border-b border-border bg-brand px-6 py-4 text-white">
           <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-accent">
             Leo Club certificate
           </p>
@@ -78,7 +78,7 @@ function MockCertificate() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Presented to
           </p>
-          <p className="mt-1 font-serif text-2xl font-semibold tracking-tight text-foreground">
+          <p className="mt-1 font-display text-2xl font-semibold tracking-tight text-foreground">
             Ada Lovelace
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
@@ -92,7 +92,7 @@ function MockCertificate() {
               <p className="mt-1 text-xs text-muted-foreground">15 Mar 2026</p>
             </div>
             <div className="flex h-16 w-16 items-center justify-center rounded-md border-2 border-dashed border-accent/60 bg-accent/10">
-              <QrCode className="h-8 w-8 text-[#0b1f3a] dark:text-accent" aria-hidden />
+              <QrCode className="h-8 w-8 text-brand" aria-hidden />
             </div>
           </div>
         </div>
@@ -111,11 +111,11 @@ export default function HomePage() {
       <section className="surface-hero relative overflow-hidden">
         <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:grid-cols-2 lg:items-center">
           <div>
-            <p className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-[#0b1f3a] dark:text-accent">
+            <p className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent-foreground dark:text-accent">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
               Credentialing for Leo Clubs
             </p>
-            <h1 className="animate-fade-up-delay-1 text-4xl font-semibold tracking-tight text-[#0b1f3a] dark:text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+            <h1 className="animate-fade-up-delay-1 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
               LeoVerify
               <span className="mt-2 block h-1 w-16 rounded-full bg-accent" aria-hidden />
             </h1>
@@ -139,6 +139,20 @@ export default function HomePage() {
             </div>
           </div>
           <MockCertificate />
+        </div>
+        <div className="relative mx-auto max-w-6xl px-4 pb-10 sm:px-6">
+          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border/60 pt-8 text-sm text-muted-foreground">
+            {[
+              "Live DB verification",
+              "Unguessable QR tokens",
+              "Attributed audit trail",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -202,7 +216,7 @@ export default function HomePage() {
                 key={pillar.title}
                 className="group space-y-3 rounded-xl p-2 transition-transform hover:-translate-y-0.5"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/5 text-[#0b1f3a] transition-colors group-hover:bg-accent/20 group-hover:text-[#0b1f3a] dark:text-accent">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand/5 text-brand transition-colors group-hover:bg-accent/20 dark:text-accent">
                   <Icon className="h-5 w-5" aria-hidden />
                 </div>
                 <h2 className="text-base font-semibold text-foreground">
@@ -217,7 +231,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-border bg-[#0b1f3a] text-white">
+      <section className="border-t border-border bg-brand text-white">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-12 sm:flex-row sm:items-center sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">

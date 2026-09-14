@@ -3,7 +3,7 @@
 import { FormEvent, useState, useTransition } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { signupPublicOrgAction } from "@/app/(public)/signup/actions";
+import { signupPublicOrgAction } from "@/app/(public)/(auth)/signup/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +74,9 @@ export function SignupForm() {
           <Label htmlFor="supabaseId">Supabase Auth user UUID</Label>
           <Input id="supabaseId" name="supabaseId" />
           <p className="text-xs text-muted-foreground">
-            Create the admin user in Supabase Auth first, then paste the UUID here.
+            Required for Phase 0 linking: create the admin user in Supabase Auth
+            first, then paste that user&apos;s UUID here so LeoVerify can attach
+            the organization.
           </p>
         </div>
       </div>
