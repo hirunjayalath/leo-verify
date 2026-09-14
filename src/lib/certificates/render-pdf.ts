@@ -4,6 +4,7 @@ import {
   templateLayoutSchema,
   type TemplateLayout,
 } from "@/lib/certificates/layout";
+import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildVerificationPath } from "@/lib/certificates/token";
 
 export type RenderCertificateInput = {
@@ -36,25 +37,6 @@ function hexToRgb(hex: string) {
   );
 }
 
-async function fetchBytes(url: string): Promise<Uint8Array> {
-  if (url.startsWith("/") || url.includes("/uploads/")) {
-    const { readFile } = await import("node:fs/promises");
-    const path = await import("node:path");
-    const filename = url.split("/uploads/").pop();
-    if (filename) {
-      const filePath = path.join(process.cwd(), "public", "uploads", filename);
-      try {
-        return new Uint8Array(await readFile(filePath));
-      } catch {
-        /* fall through to fetch */
-      }
-    }
-  }
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch background: ${res.status}`);
-  return new Uint8Array(await res.arrayBuffer());
-}
-
 export async function renderCertificatePdf(
   input: RenderCertificateInput,
 ): Promise<Uint8Array> {
@@ -66,7 +48,7 @@ export async function renderCertificatePdf(
   const { width, height } = page.getSize();
 
   try {
-    const bgBytes = await fetchBytes(input.backgroundUrl);
+    const bgBytes = await fetchBackgroundBytes(input.backgroundUrl);
     let image;
     try {
       image = await pdf.embedPng(bgBytes);

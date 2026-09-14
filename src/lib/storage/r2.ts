@@ -68,6 +68,54 @@ export async function uploadObject(input: {
   return { key: input.key, url: `${appUrl}/uploads/${filename}` };
 }
 
+export async function getShortLivedObjectUrl(
+  key: string,
+  expiresInSeconds = 120,
+): Promise<string | null> {
+  if (r2Configured()) {
+    const client = getR2Client();
+    const bucket = process.env.R2_BUCKET_NAME!;
+    return getSignedUrl(
+      client,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+  const filename = key.replace(/\//g, "_");
+  const filePath = path.join(process.cwd(), "public", "uploads", filename);
+  try {
+    const { access } = await import("node:fs/promises");
+    await access(filePath);
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    );
+    return `${appUrl}/uploads/${filename}`;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteObject(key: string): Promise<void> {
+  if (r2Configured()) {
+    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    const client = getR2Client();
+    const bucket = process.env.R2_BUCKET_NAME!;
+    await client.send(
+      new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+    );
+    return;
+  }
+  const filename = key.replace(/\//g, "_");
+  const filePath = path.join(process.cwd(), "public", "uploads", filename);
+  try {
+    const { unlink } = await import("node:fs/promises");
+    await unlink(filePath);
+  } catch {
+    /* already gone */
+  }
+}
+
 export function buildObjectKey(
   folder: "templates" | "certificates",
   clubId: string,

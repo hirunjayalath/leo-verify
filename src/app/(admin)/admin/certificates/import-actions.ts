@@ -24,6 +24,9 @@ export async function startCsvImportAction(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "CSV file is required" };
   }
+  if (file.size > 2 * 1024 * 1024) {
+    return { ok: false, error: "CSV must be 2 MB or smaller" };
+  }
 
   const event = await prisma.event.findFirst({ where: { id: eventId, clubId } });
   if (!event) return { ok: false, error: "Event not found" };

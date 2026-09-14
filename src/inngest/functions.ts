@@ -4,6 +4,7 @@ import {
   ImportRowStatus,
 } from "@/generated/prisma/client";
 import { issueCertificate } from "@/lib/certificates/issue";
+import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { sendCertificateEmail } from "@/lib/email/resend";
 import { prisma } from "@/lib/db";
 
@@ -38,6 +39,7 @@ export async function processImportJob(jobId: string) {
         recipientEmail: row.recipientEmail,
         role: row.role,
         achievement: row.achievement,
+        sendEmail: false,
       });
 
       if (issued.skipped) {
@@ -67,7 +69,10 @@ export async function processImportJob(jobId: string) {
             verificationToken: issued.verificationToken,
             eventName: job.event.name,
             clubName: job.event.club.name,
-            pdfUrl: issued.pdfUrl,
+            pdfUrl: buildPdfDownloadPath(
+              issued.uniqueId,
+              issued.verificationToken,
+            ),
           });
         }
       }

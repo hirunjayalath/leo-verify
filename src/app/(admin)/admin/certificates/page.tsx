@@ -18,7 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
-import { buildVerificationPath } from "@/lib/certificates/token";
+import {
+  buildPdfDownloadPath,
+  buildVerificationPath,
+} from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 
 export default async function AdminCertificatesPage() {
@@ -52,7 +55,10 @@ export default async function AdminCertificatesPage() {
     status: cert.status as "issued" | "revoked",
     eventName: cert.event.name,
     verifyPath: buildVerificationPath(cert.uniqueId, cert.verificationToken),
-    pdfUrl: cert.pdfUrl,
+    pdfUrl:
+      cert.status === "issued" && (cert.pdfKey || cert.pdfUrl)
+        ? buildPdfDownloadPath(cert.uniqueId, cert.verificationToken)
+        : null,
     issueDate: cert.issueDate.toISOString().slice(0, 10),
   }));
 

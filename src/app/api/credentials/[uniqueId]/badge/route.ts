@@ -1,8 +1,15 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { verifyVerificationToken } from "@/lib/certificates/token";
+import {
+  buildPdfDownloadPath,
+  verifyVerificationToken,
+} from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+import {
+  clientIpFromHeaders,
+  rateLimitBadge,
+} from "@/lib/rate-limit";
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
@@ -11,6 +18,13 @@ type Params = { params: Promise<{ uniqueId: string }> };
  * HMAC verification remains the primary UX; this is an interoperability layer.
  */
 export async function GET(request: Request, { params }: Params) {
+  const limit = await rateLimitBadge(
+    clientIpFromHeaders(new Headers(request.headers)),
+  );
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { uniqueId } = await params;
   const url = new URL(request.url);
   const token = url.searchParams.get("t");
@@ -50,13 +64,17 @@ export async function GET(request: Request, { params }: Params) {
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
   const verifyUrl = `${appUrl}/v/${encodeURIComponent(cert.uniqueId)}?t=${encodeURIComponent(token)}`;
+  const gatedPdf =
+    cert.pdfKey || cert.pdfUrl
+      ? `${appUrl}${buildPdfDownloadPath(cert.uniqueId, token)}`
+      : null;
 
   const badge = {
     "@context": [
       "https://www.w3.org/ns/credentials/v2",
       "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
     ],
-    id: `${appUrl}/api/credentials/${encodeURIComponent(cert.uniqueId)}/badge?t=${encodeURIComponent(token)}`,
+    id: `${appUrl}/api/credentials/${encodeURIComponent(cert.uniqueId)}/badge`,
     type: ["VerifiableCredential", "OpenBadgeCredential"],
     issuer: {
       id: `${appUrl}/org/${cert.event.club.code}`,
@@ -105,7 +123,7 @@ export async function GET(request: Request, { params }: Params) {
       leoverify: {
         uniqueId: cert.uniqueId,
         integrityHash,
-        pdfUrl: cert.pdfUrl,
+        ...(gatedPdf ? { pdfDownload: gatedPdf } : {}),
       },
     },
     {

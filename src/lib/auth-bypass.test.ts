@@ -10,7 +10,7 @@ describe("isAuthDevBypassEnabled", () => {
     ).toBe(false);
   });
 
-  it("is true only in development with AUTH_DEV_BYPASS=true", () => {
+  it("is true only in local development with AUTH_DEV_BYPASS=true", () => {
     expect(
       isAuthDevBypassEnabled({
         AUTH_DEV_BYPASS: "true",
@@ -31,6 +31,24 @@ describe("isAuthDevBypassEnabled", () => {
       isAuthDevBypassEnabled({
         AUTH_DEV_BYPASS: "true",
         NODE_ENV: "test",
+      }),
+    ).toBe(false);
+  });
+
+  it("refuses bypass on Vercel even if NODE_ENV is development", () => {
+    expect(
+      isAuthDevBypassEnabled({
+        AUTH_DEV_BYPASS: "true",
+        NODE_ENV: "development",
+        VERCEL: "1",
+      }),
+    ).toBe(false);
+
+    expect(
+      isAuthDevBypassEnabled({
+        AUTH_DEV_BYPASS: "true",
+        NODE_ENV: "development",
+        VERCEL_ENV: "preview",
       }),
     ).toBe(false);
   });

@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { safeInternalPath } from "@/lib/safe-redirect";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/admin";
+  const next = safeInternalPath(searchParams.get("next"), "/admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +48,7 @@ function LoginForm() {
         return;
       }
       toast.success("Signed in");
-      router.push(next.startsWith("/") ? next : "/admin");
+      router.push(next);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed.");

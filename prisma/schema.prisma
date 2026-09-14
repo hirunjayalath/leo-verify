@@ -165,6 +165,8 @@ model Certificate {
   /// Hide from aggregated public profile without affecting single-certificate verification
   unlisted          Boolean           @default(false)
   pdfUrl            String?
+  /// Object storage key for gated PDF download (preferred over durable public pdfUrl)
+  pdfKey            String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

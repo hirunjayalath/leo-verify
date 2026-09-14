@@ -91,7 +91,7 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
       issueDate: "2026-03-15",
       role: "Volunteer",
       achievement: "Community Service",
-      pdfUrl: "https://example.com/cert.pdf",
+      pdfUrl: `/api/certificates/${encodeURIComponent(fields.uniqueId)}/pdf?t=${encodeURIComponent(token)}`,
     });
   });
 
@@ -108,8 +108,18 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
     });
   });
 
-  it("fails lookup for a tampered token", () => {
-    const result = evaluateVerification(row, "deadbeef");
-    expect(result.status).toBe("invalid");
+  it("uses a uniform invalid message (no existence oracle)", () => {
+    expect(evaluateVerification(null, "deadbeef")).toEqual({
+      status: "invalid",
+      message: "Could not verify this certificate.",
+    });
+    expect(evaluateVerification(row, null)).toEqual({
+      status: "invalid",
+      message: "Could not verify this certificate.",
+    });
+    expect(evaluateVerification(row, "deadbeef")).toEqual({
+      status: "invalid",
+      message: "Could not verify this certificate.",
+    });
   });
 });

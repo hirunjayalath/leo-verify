@@ -67,3 +67,7 @@ export function verifyVerificationToken(
 export function buildVerificationPath(uniqueId: string, token: string): string {
   return `/v/${encodeURIComponent(uniqueId)}?t=${encodeURIComponent(token)}`;
 }
+
+export function buildPdfDownloadPath(uniqueId: string, token: string): string {
+  return `/api/certificates/${encodeURIComponent(uniqueId)}/pdf?t=${encodeURIComponent(token)}`;
+}

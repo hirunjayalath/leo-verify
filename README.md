@@ -58,6 +58,13 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 5. Run the operator smoke checklist above.
 6. Optional: Inngest + Upstash for bulk import and rate limits at scale.
 
+### Security launch gates
+
+1. Apply `supabase/rls-policies.sql` after migrate (PostgREST/anon path). **Prisma uses `DATABASE_URL` as a privileged role and bypasses RLS** — app-layer `clubId` / session checks are the real boundary for the Next.js app.
+2. Never set `AUTH_DEV_BYPASS` on Vercel (ignored when `VERCEL`/`VERCEL_ENV` is set, and outside `NODE_ENV=development`).
+3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads.
+4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.
+
 ### HMAC secret rotation
 
 1. Set `CERT_HMAC_SECRET_PREVIOUS` to the current secret.

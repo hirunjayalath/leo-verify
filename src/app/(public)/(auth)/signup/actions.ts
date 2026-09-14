@@ -1,10 +1,16 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ClubType, PlanTier, UserRole } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
+import { getSupabaseAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import {
+  clientIpFromHeaders,
+  rateLimitSignup,
+} from "@/lib/rate-limit";
 
 export type SignupResult =
   | { ok: true; clubId: string }
@@ -12,11 +18,25 @@ export type SignupResult =
 
 /**
  * Self-serve signup for public organizations (Phase 2).
- * Creates a public-type club under the PUBLIC district and a club_admin user stub.
+ * Requires an authenticated Supabase session; binds identity from the session only.
  */
 export async function signupPublicOrgAction(
   formData: FormData,
 ): Promise<SignupResult> {
+  const auth = await getSupabaseAuthUser();
+  if (!auth) {
+    return {
+      ok: false,
+      error: "Sign in before creating an organization.",
+    };
+  }
+
+  const headerList = await headers();
+  const limit = await rateLimitSignup(clientIpFromHeaders(headerList));
+  if (!limit.success) {
+    return { ok: false, error: "Too many signup attempts. Try again later." };
+  }
+
   const parsed = z
     .object({
       orgName: z.string().trim().min(2).max(200),
@@ -26,20 +46,39 @@ export async function signupPublicOrgAction(
         .min(2)
         .max(12)
         .regex(/^[A-Za-z0-9]+$/),
-      adminEmail: z.string().email(),
       adminName: z.string().trim().min(2).max(200),
-      supabaseId: z.string().min(1),
     })
     .safeParse({
       orgName: formData.get("orgName"),
       orgCode: formData.get("orgCode"),
-      adminEmail: formData.get("adminEmail"),
       adminName: formData.get("adminName"),
-      supabaseId: formData.get("supabaseId"),
     });
 
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const adminEmail = auth.email.toLowerCase();
+  const supabaseId = auth.id;
+
+  const existingByEmail = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+  if (existingByEmail) {
+    return {
+      ok: false,
+      error: "An account with this email already exists. Contact support if this is unexpected.",
+    };
+  }
+
+  const existingBySupabase = await prisma.user.findUnique({
+    where: { supabaseId },
+  });
+  if (existingBySupabase) {
+    return {
+      ok: false,
+      error: "This Auth user is already linked to an organization.",
+    };
   }
 
   const district = await prisma.district.upsert({
@@ -64,18 +103,10 @@ export async function signupPublicOrgAction(
     },
   });
 
-  await prisma.user.upsert({
-    where: { email: parsed.data.adminEmail.toLowerCase() },
-    update: {
-      supabaseId: parsed.data.supabaseId,
-      name: parsed.data.adminName,
-      role: UserRole.club_admin,
-      clubId: club.id,
-      districtId: district.id,
-    },
-    create: {
-      email: parsed.data.adminEmail.toLowerCase(),
-      supabaseId: parsed.data.supabaseId,
+  await prisma.user.create({
+    data: {
+      email: adminEmail,
+      supabaseId,
       name: parsed.data.adminName,
       role: UserRole.club_admin,
       clubId: club.id,
@@ -93,19 +124,4 @@ export async function signupPublicOrgAction(
 
   revalidatePath("/signup");
   return { ok: true, clubId: club.id };
-}
-
-export async function assertWithinCertLimit(clubId: string): Promise<void> {
-  const club = await prisma.club.findUniqueOrThrow({ where: { id: clubId } });
-  const start = new Date();
-  start.setUTCDate(1);
-  start.setUTCHours(0, 0, 0, 0);
-  const count = await prisma.certificate.count({
-    where: { clubId, createdAt: { gte: start } },
-  });
-  if (count >= club.monthlyCertLimit) {
-    throw new Error(
-      `Monthly certificate limit reached (${club.monthlyCertLimit}). Upgrade plan to continue.`,
-    );
-  }
 }

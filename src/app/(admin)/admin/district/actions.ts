@@ -73,18 +73,69 @@ export async function inviteClubAdminAction(formData: FormData): Promise<ActionR
   });
   if (!club) return { ok: false, error: "Club not found in your district" };
 
-  const invited = await prisma.user.upsert({
-    where: { email: parsed.data.email },
-    update: {
-      supabaseId: parsed.data.supabaseId,
-      role: UserRole.club_admin,
+  const email = parsed.data.email.toLowerCase();
+  const supabaseId = parsed.data.supabaseId.trim();
+
+  const bySupabase = await prisma.user.findUnique({ where: { supabaseId } });
+  if (bySupabase && bySupabase.email.toLowerCase() !== email) {
+    return {
+      ok: false,
+      error: "That Auth UUID is already linked to a different user.",
+    };
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    if (existing.role === UserRole.district_admin) {
+      return {
+        ok: false,
+        error: "Cannot reassign a district admin via invite.",
+      };
+    }
+    if (existing.districtId && existing.districtId !== user.districtId) {
+      return {
+        ok: false,
+        error: "That user belongs to another district.",
+      };
+    }
+    if (
+      existing.supabaseId &&
+      existing.supabaseId !== supabaseId
+    ) {
+      return {
+        ok: false,
+        error: "That email is already linked to a different Auth user.",
+      };
+    }
+
+    const invited = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        supabaseId,
+        role: UserRole.club_admin,
+        clubId: club.id,
+        districtId: user.districtId!,
+        name: parsed.data.name || existing.name,
+      },
+    });
+
+    await writeAuditLog({
+      actorUserId: user.id,
+      action: "user.invite",
+      targetType: "User",
+      targetId: invited.id,
       clubId: club.id,
-      districtId: user.districtId!,
-      name: parsed.data.name || undefined,
-    },
-    create: {
-      email: parsed.data.email,
-      supabaseId: parsed.data.supabaseId,
+      metadata: { email: invited.email, mode: "update" },
+    });
+
+    revalidatePath("/admin/district");
+    return { ok: true, id: invited.id };
+  }
+
+  const invited = await prisma.user.create({
+    data: {
+      email,
+      supabaseId,
       role: UserRole.club_admin,
       clubId: club.id,
       districtId: user.districtId!,
@@ -98,7 +149,7 @@ export async function inviteClubAdminAction(formData: FormData): Promise<ActionR
     targetType: "User",
     targetId: invited.id,
     clubId: club.id,
-    metadata: { email: invited.email },
+    metadata: { email: invited.email, mode: "create" },
   });
 
   revalidatePath("/admin/district");

@@ -8,13 +8,15 @@ export type SessionUser = AppUser & {
   district: { id: string; code: string; name: string } | null;
 };
 
-/** Dev bypass is local-only. Never honor outside NODE_ENV=development. */
+/** Dev bypass is local-only. Never honor outside NODE_ENV=development or on Vercel. */
 export function isAuthDevBypassEnabled(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
-  return (
-    env.AUTH_DEV_BYPASS === "true" && env.NODE_ENV === "development"
-  );
+  if (env.AUTH_DEV_BYPASS !== "true") return false;
+  if (env.NODE_ENV !== "development") return false;
+  // Fail closed on any Vercel deploy, even if NODE_ENV is wrongly set to development.
+  if (env.VERCEL || env.VERCEL_ENV) return false;
+  return true;
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {

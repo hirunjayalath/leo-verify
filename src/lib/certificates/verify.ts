@@ -1,8 +1,11 @@
 import { CertificateStatus } from "@/generated/prisma/client";
 import {
   type CertificateCanonicalFields,
+  buildPdfDownloadPath,
   verifyVerificationToken,
 } from "@/lib/certificates/token";
+
+const INVALID_MESSAGE = "Could not verify this certificate.";
 
 /** Fields safe to expose on the public verification page (Rule 8). */
 export type PublicVerificationResult =
@@ -15,6 +18,7 @@ export type PublicVerificationResult =
       issueDate: string;
       role: string;
       achievement: string | null;
+      /** Token-gated same-origin PDF path — never a raw storage URL. */
       pdfUrl: string | null;
     }
   | {
@@ -41,6 +45,7 @@ export type CertificateLookupRow = {
   clubName: string;
   eventName: string;
   pdfUrl: string | null;
+  pdfKey?: string | null;
 };
 
 /**
@@ -51,12 +56,8 @@ export function evaluateVerification(
   row: CertificateLookupRow | null,
   providedToken: string | null | undefined,
 ): PublicVerificationResult {
-  if (!row) {
-    return { status: "invalid", message: "Certificate not found." };
-  }
-
-  if (!providedToken) {
-    return { status: "invalid", message: "Missing verification token." };
+  if (!row || !providedToken) {
+    return { status: "invalid", message: INVALID_MESSAGE };
   }
 
   const fields: CertificateCanonicalFields = {
@@ -69,7 +70,7 @@ export function evaluateVerification(
   };
 
   if (!verifyVerificationToken(fields, providedToken)) {
-    return { status: "invalid", message: "Invalid or tampered verification link." };
+    return { status: "invalid", message: INVALID_MESSAGE };
   }
 
   if (row.status === CertificateStatus.revoked) {
@@ -80,6 +81,8 @@ export function evaluateVerification(
     };
   }
 
+  const hasPdf = Boolean(row.pdfKey || row.pdfUrl);
+
   return {
     status: "valid",
     uniqueId: row.uniqueId,
@@ -89,6 +92,8 @@ export function evaluateVerification(
     issueDate: fields.issueDate,
     role: row.role,
     achievement: row.achievement,
-    pdfUrl: row.pdfUrl,
+    pdfUrl: hasPdf
+      ? buildPdfDownloadPath(row.uniqueId, providedToken)
+      : null,
   };
 }

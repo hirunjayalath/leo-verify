@@ -11,6 +11,7 @@ import {
 } from "@/lib/certificates/layout";
 import { prisma } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
+import { sniffImageBytes } from "@/lib/certificates/image-sniff";
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -27,21 +28,22 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Background image is required" };
   }
+  if (file.size > 5 * 1024 * 1024) {
+    return { ok: false, error: "Image must be 5 MB or smaller" };
+  }
 
   const event = await prisma.event.findFirst({ where: { id: eventId, clubId } });
   if (!event) return { ok: false, error: "Event not found" };
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const ext = file.type.includes("png")
-    ? "png"
-    : file.type.includes("webp")
-      ? "webp"
-      : "jpg";
-  const key = buildObjectKey("templates", clubId, ext);
+  const sniffed = sniffImageBytes(bytes);
+  if (!sniffed.ok) return { ok: false, error: sniffed.error };
+
+  const key = buildObjectKey("templates", clubId, sniffed.ext);
   const uploaded = await uploadObject({
     key,
     body: bytes,
-    contentType: file.type || "image/jpeg",
+    contentType: sniffed.contentType,
   });
 
   // Club-created templates are auto-approved so UoM can issue immediately.

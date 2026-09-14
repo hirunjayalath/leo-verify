@@ -71,6 +71,18 @@ export function validateCertificateCsv(csvText: string): CsvValidationResult {
     return { ok: false, errors: [{ rowNumber: 0, message: "CSV has no data rows" }] };
   }
 
+  if (records.length > 500) {
+    return {
+      ok: false,
+      errors: [
+        {
+          rowNumber: 0,
+          message: "CSV exceeds the maximum of 500 rows per import",
+        },
+      ],
+    };
+  }
+
   const errors: { rowNumber: number; message: string }[] = [];
   const rows: CsvRecipientRow[] = [];
 

@@ -1,4 +1,4 @@
-import { assertWithinCertLimit } from "@/app/(public)/(auth)/signup/actions";
+import { assertWithinCertLimit } from "@/lib/certificates/limits";
 import {
   CertificateStatus,
   TemplateStatus,
@@ -6,10 +6,13 @@ import {
 import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";
 import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
-import { computeVerificationToken } from "@/lib/certificates/token";
+import {
+  buildPdfDownloadPath,
+  computeVerificationToken,
+} from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 import { sendCertificateEmail } from "@/lib/email/resend";
-import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
+import { buildObjectKey, deleteObject, uploadObject } from "@/lib/storage/r2";
 
 export type IssueCertificateInput = {
   eventId: string;
@@ -127,6 +130,7 @@ export async function issueCertificate(
   });
 
   let pdfUrl: string | null = null;
+  let pdfKey: string | null = null;
   const pdfBytes = await renderCertificatePdf({
     backgroundUrl: template.backgroundUrl,
     layout: template.layout,
@@ -143,9 +147,10 @@ export async function issueCertificate(
     contentType: "application/pdf",
   });
   pdfUrl = uploaded.url;
+  pdfKey = uploaded.key;
   await prisma.certificate.update({
     where: { id: certificate.id },
-    data: { pdfUrl },
+    data: { pdfUrl, pdfKey },
   });
 
   await writeAuditLog({
@@ -173,7 +178,10 @@ export async function issueCertificate(
       verificationToken: certificate.verificationToken,
       eventName: event.name,
       clubName: club.name,
-      pdfUrl,
+      pdfUrl: buildPdfDownloadPath(
+        certificate.uniqueId,
+        certificate.verificationToken,
+      ),
     });
     emailSent = emailResult.sent;
   }
@@ -206,8 +214,17 @@ export async function revokeCertificate(input: {
       revokedReason: input.reason,
       revokedAt: new Date(),
       revokedById: input.actorUserId,
+      pdfUrl: null,
     },
   });
+
+  if (cert.pdfKey) {
+    try {
+      await deleteObject(cert.pdfKey);
+    } catch {
+      /* best-effort; gated route already refuses revoked */
+    }
+  }
 
   await writeAuditLog({
     actorUserId: input.actorUserId,
@@ -265,11 +282,20 @@ export async function reissueCertificate(input: {
     contentType: "application/pdf",
   });
 
+  if (cert.pdfKey && cert.pdfKey !== uploaded.key) {
+    try {
+      await deleteObject(cert.pdfKey);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const updated = await prisma.certificate.update({
     where: { id: cert.id },
     data: {
       verificationToken,
       pdfUrl: uploaded.url,
+      pdfKey: uploaded.key,
     },
   });
 

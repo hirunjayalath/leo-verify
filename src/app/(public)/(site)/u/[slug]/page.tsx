@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileBadge2 } from "lucide-react";
+import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { buildVerificationPath } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -19,6 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${recipient.name ?? "Recipient"} · LeoVerify`,
     description: "Public LeoVerify credential profile",
+    robots: { index: false, follow: false },
     openGraph: {
       title: `${recipient.name ?? "Recipient"} credentials`,
       description: "Verified certificates on LeoVerify",
@@ -120,15 +120,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
                   <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                     {cert.issueDate.toISOString().slice(0, 10)}
                   </p>
-                  <Link
-                    href={buildVerificationPath(
-                      cert.uniqueId,
-                      cert.verificationToken,
-                    )}
-                    className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground hover:opacity-90"
-                  >
-                    Verify
-                  </Link>
+                  <form action={openPublicVerifyAction} className="mt-4">
+                    <input type="hidden" name="uniqueId" value={cert.uniqueId} />
+                    <button
+                      type="submit"
+                      className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground hover:opacity-90"
+                    >
+                      Verify
+                    </button>
+                  </form>
                 </li>
               ))}
             </ul>

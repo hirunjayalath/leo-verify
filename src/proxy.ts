@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { safeInternalPath } from "@/lib/safe-redirect";
 
 /**
  * Next.js 16 proxy (formerly middleware) — refreshes Supabase session cookies
@@ -14,10 +15,12 @@ export async function proxy(request: NextRequest) {
 
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
-  // Dev bypass — skip Supabase gate only in local development.
+  // Dev bypass — skip Supabase gate only in local development (never on Vercel).
   if (
     process.env.AUTH_DEV_BYPASS === "true" &&
-    process.env.NODE_ENV === "development"
+    process.env.NODE_ENV === "development" &&
+    !process.env.VERCEL &&
+    !process.env.VERCEL_ENV
   ) {
     return response;
   }
@@ -28,7 +31,10 @@ export async function proxy(request: NextRequest) {
   if (!url || !anonKey) {
     if (isAdminPath) {
       const login = new URL("/login", request.url);
-      login.searchParams.set("next", request.nextUrl.pathname);
+      login.searchParams.set(
+        "next",
+        safeInternalPath(request.nextUrl.pathname, "/admin"),
+      );
       return NextResponse.redirect(login);
     }
     return response;
@@ -61,7 +67,10 @@ export async function proxy(request: NextRequest) {
 
   if (isAdminPath && !user) {
     const login = new URL("/login", request.url);
-    login.searchParams.set("next", request.nextUrl.pathname);
+    login.searchParams.set(
+      "next",
+      safeInternalPath(request.nextUrl.pathname, "/admin"),
+    );
     return NextResponse.redirect(login);
   }
 
