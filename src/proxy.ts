@@ -14,10 +14,10 @@ export async function proxy(request: NextRequest) {
 
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
-  // Dev bypass — skip Supabase gate when explicitly enabled (never in production).
+  // Dev bypass — skip Supabase gate only in local development.
   if (
     process.env.AUTH_DEV_BYPASS === "true" &&
-    process.env.NODE_ENV !== "production"
+    process.env.NODE_ENV === "development"
   ) {
     return response;
   }

@@ -8,13 +8,17 @@ export type SessionUser = AppUser & {
   district: { id: string; code: string; name: string } | null;
 };
 
+/** Dev bypass is local-only. Never honor outside NODE_ENV=development. */
+export function isAuthDevBypassEnabled(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return (
+    env.AUTH_DEV_BYPASS === "true" && env.NODE_ENV === "development"
+  );
+}
+
 export async function getSessionUser(): Promise<SessionUser | null> {
-  // Local-only bypass so UI/API work before Supabase Auth is wired.
-  // Never enable in production.
-  if (
-    process.env.AUTH_DEV_BYPASS === "true" &&
-    process.env.NODE_ENV !== "production"
-  ) {
+  if (isAuthDevBypassEnabled()) {
     const email = process.env.SEED_ADMIN_EMAIL ?? "admin@uom.leoverify.local";
     try {
       return await prisma.user.findUnique({
@@ -58,6 +62,27 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 }
 
+/** Supabase Auth user for recipient journeys (claim/profile). Never uses admin bypass. */
+export async function getSupabaseAuthUser(): Promise<{
+  id: string;
+  email: string;
+} | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return null;
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.email) return null;
+    return { id: user.id, email: user.email };
+  } catch {
+    return null;
+  }
+}
+
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -69,7 +94,11 @@ export async function requireClubAdmin(): Promise<SessionUser> {
   if (user.role !== "club_admin" && user.role !== "district_admin") {
     redirect("/login");
   }
-  if (user.role === "club_admin" && !user.clubId) {
+  // District-only operators manage clubs from /admin/district
+  if (user.role === "district_admin" && !user.clubId) {
+    redirect("/admin/district");
+  }
+  if (!user.clubId) {
     throw new Error("Club admin is missing clubId");
   }
   return user;

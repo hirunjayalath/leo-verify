@@ -15,6 +15,7 @@ export type PublicVerificationResult =
       issueDate: string;
       role: string;
       achievement: string | null;
+      pdfUrl: string | null;
     }
   | {
       status: "revoked";
@@ -39,6 +40,7 @@ export type CertificateLookupRow = {
   eventId: string;
   clubName: string;
   eventName: string;
+  pdfUrl: string | null;
 };
 
 /**
@@ -87,5 +89,6 @@ export function evaluateVerification(
     issueDate: fields.issueDate,
     role: row.role,
     achievement: row.achievement,
+    pdfUrl: row.pdfUrl,
   };
 }

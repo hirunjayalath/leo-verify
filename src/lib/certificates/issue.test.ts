@@ -1,9 +1,17 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PrismaClient, UserRole } from "@/generated/prisma/client";
+import {
+  PrismaClient,
+  TemplateStatus,
+  UserRole,
+} from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { evaluateVerification } from "@/lib/certificates/verify";
-import { issueCertificate, revokeCertificate } from "@/lib/certificates/issue";
+import {
+  issueCertificate,
+  revokeCertificate,
+} from "@/lib/certificates/issue";
+import { DEFAULT_LAYOUT } from "@/lib/certificates/layout";
 import { resetServerEnvCache } from "@/lib/env";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
@@ -67,6 +75,19 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
       data: { clubId: clubA.id, name: "Test Event" },
     });
     eventAId = event.id;
+
+    await prisma.certificateTemplate.create({
+      data: {
+        eventId: event.id,
+        clubId: clubA.id,
+        name: "Approved Template A",
+        backgroundUrl: "https://example.com/bg.png",
+        layout: DEFAULT_LAYOUT,
+        status: TemplateStatus.approved,
+        createdById: admin.id,
+        lastEditedById: admin.id,
+      },
+    });
   });
 
   afterAll(async () => {
@@ -83,6 +104,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
       recipientEmail: "person@test.local",
       role: "Volunteer",
       achievement: "Service",
+      sendEmail: false,
     });
 
     const row = await prisma.certificate.findUniqueOrThrow({
@@ -103,6 +125,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
         eventId: row.eventId,
         clubName: row.event.club.name,
         eventName: row.event.name,
+        pdfUrl: row.pdfUrl,
       },
       issued.verificationToken,
     );
@@ -121,6 +144,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
       recipientName: "Revokee",
       recipientEmail: "revokee@test.local",
       role: "Volunteer",
+      sendEmail: false,
     });
     await revokeCertificate({
       certificateId: issued.id,
@@ -145,6 +169,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
         eventId: row.eventId,
         clubName: row.event.club.name,
         eventName: row.event.name,
+        pdfUrl: row.pdfUrl,
       },
       issued.verificationToken,
     );
@@ -155,7 +180,36 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
     });
   });
 
-  it("club A cannot read club B certificates via club-scoped query", async () => {
+  it("rejects issuance when only a draft template exists", async () => {
+    const draftEvent = await prisma.event.create({
+      data: { clubId: clubAId, name: "Draft-only Event" },
+    });
+    await prisma.certificateTemplate.create({
+      data: {
+        eventId: draftEvent.id,
+        clubId: clubAId,
+        name: "Draft Template",
+        backgroundUrl: "https://example.com/bg.png",
+        layout: DEFAULT_LAYOUT,
+        status: TemplateStatus.draft,
+        createdById: adminAId,
+        lastEditedById: adminAId,
+      },
+    });
+
+    await expect(
+      issueCertificate({
+        eventId: draftEvent.id,
+        clubId: clubAId,
+        actorUserId: adminAId,
+        recipientName: "Blocked",
+        role: "Volunteer",
+        sendEmail: false,
+      }),
+    ).rejects.toThrow(/approved template/i);
+  });
+
+  it("club A cannot revoke club B certificates", async () => {
     const eventB = await prisma.event.create({
       data: { clubId: clubBId, name: "Club B Event" },
     });
@@ -169,17 +223,39 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
         clubId: clubBId,
       },
     });
+    await prisma.certificateTemplate.create({
+      data: {
+        eventId: eventB.id,
+        clubId: clubBId,
+        name: "Approved Template B",
+        backgroundUrl: "https://example.com/bg.png",
+        layout: DEFAULT_LAYOUT,
+        status: TemplateStatus.approved,
+        createdById: adminB.id,
+        lastEditedById: adminB.id,
+      },
+    });
     const issued = await issueCertificate({
       eventId: eventB.id,
       clubId: clubBId,
       actorUserId: adminB.id,
       recipientName: "Secret",
       role: "Member",
+      sendEmail: false,
     });
 
     const leaked = await prisma.certificate.findFirst({
       where: { id: issued.id, clubId: clubAId },
     });
     expect(leaked).toBeNull();
+
+    await expect(
+      revokeCertificate({
+        certificateId: issued.id,
+        clubId: clubAId,
+        actorUserId: adminAId,
+        reason: "Cross-tenant attempt",
+      }),
+    ).rejects.toThrow(/not found/i);
   });
 });

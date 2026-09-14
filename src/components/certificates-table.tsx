@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FileBadge2, Search } from "lucide-react";
 import { RevokeButton } from "@/components/revoke-button";
+import { ReissueButton } from "@/components/reissue-button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -125,7 +126,10 @@ export function CertificatesTable({ rows }: { rows: CertRow[] }) {
                       </a>
                     )}
                     {cert.status === "issued" && (
-                      <RevokeButton certificateId={cert.id} />
+                      <>
+                        <ReissueButton certificateId={cert.id} />
+                        <RevokeButton certificateId={cert.id} />
+                      </>
                     )}
                   </div>
                 </TableCell>
@@ -177,7 +181,10 @@ export function CertificatesTable({ rows }: { rows: CertRow[] }) {
                 </a>
               )}
               {cert.status === "issued" && (
-                <RevokeButton certificateId={cert.id} />
+                <>
+                  <ReissueButton certificateId={cert.id} />
+                  <RevokeButton certificateId={cert.id} />
+                </>
               )}
             </div>
           </li>

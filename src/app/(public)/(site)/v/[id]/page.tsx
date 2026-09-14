@@ -41,6 +41,7 @@ async function lookupCertificate(uniqueId: string) {
         status: true,
         clubId: true,
         eventId: true,
+        pdfUrl: true,
         event: {
           select: {
             name: true,
@@ -64,6 +65,7 @@ async function lookupCertificate(uniqueId: string) {
       eventId: row.eventId,
       clubName: row.event.club.name,
       eventName: row.event.name,
+      pdfUrl: row.pdfUrl,
     };
   } catch {
     return null;

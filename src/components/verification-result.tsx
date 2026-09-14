@@ -3,6 +3,7 @@
 import {
   Check,
   Copy,
+  Download,
   Printer,
   ShieldAlert,
   ShieldCheck,
@@ -10,7 +11,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { PublicVerificationResult } from "@/lib/certificates/verify";
 
 export function VerificationResult({
@@ -38,6 +40,7 @@ export function VerificationResult({
   const issuerName =
     result.status === "valid" ? result.clubName : null;
   const eventName = result.status === "valid" ? result.eventName : null;
+  const pdfUrl = result.status === "valid" ? result.pdfUrl : null;
 
   return (
     <div className="animate-fade-up relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
@@ -59,7 +62,18 @@ export function VerificationResult({
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <StatusSeal status={result.status} />
-            <div className="no-print flex shrink-0 gap-2">
+            <div className="no-print flex shrink-0 flex-wrap gap-2">
+              {pdfUrl && (
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(buttonVariants({ size: "sm" }))}
+                >
+                  <Download className="h-4 w-4" aria-hidden />
+                  Download PDF
+                </a>
+              )}
               <Button type="button" variant="outline" size="sm" onClick={copyLink}>
                 {copied ? (
                   <Check className="h-4 w-4" aria-hidden />

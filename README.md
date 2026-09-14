@@ -34,13 +34,28 @@ npm run db:seed
 npm run dev
 ```
 
+### UOM operator smoke checklist
+
+Manual path for Leo Club of University of Moratuwa as platform operator:
+
+1. Login as UOM club admin (`AUTH_DEV_BYPASS` off in any shared/staging env).
+2. Create an event → upload a template (auto-approved on create) → optionally edit layout.
+3. Issue one certificate with recipient email → confirm Resend send when configured.
+4. Open `/v/[id]?t=…` → status Valid → **Download PDF**.
+5. Revoke → public page shows only “This certificate has been revoked.”
+6. Reissue an issued cert → new QR/token; old link fails HMAC.
+7. CSV import a small roster; confirm no duplicates on re-run.
+8. Claim: recipient signs in with matching email → claim → toggle public profile.
+9. District (optional): seed district admin → create club → paste Supabase Auth UUID to link club admin.
+10. Launch gate: `supabase/rls-policies.sql` applied after migrate.
+
 ### UOM production launch checklist
 
 1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase, R2, Resend, `NEXT_PUBLIC_APP_URL`).
-2. Migrations applied + RLS policies applied.
-3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false**.
+2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`).
+3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (ignored outside development anyway).
 4. MFA enabled for club admins in Supabase Auth.
-5. Smoke: login → create event → upload template → issue one → open `/v/...` → revoke → public revoked-only message.
+5. Run the operator smoke checklist above.
 6. Optional: Inngest + Upstash for bulk import and rate limits at scale.
 
 ### HMAC secret rotation

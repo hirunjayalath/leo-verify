@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LayoutTemplate } from "lucide-react";
+import { ApproveTemplateButton } from "@/components/approve-template-button";
 import { CreateTemplateForm } from "@/components/create-template-form";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,6 +45,7 @@ export default async function AdminTemplatesPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
         <p className="mt-1 text-muted-foreground">
           Background image plus field-position JSON — never hardcoded layouts.
+          New templates are approved on create; drafts cannot be used to issue.
         </p>
       </div>
 
@@ -86,15 +88,28 @@ export default async function AdminTemplatesPage() {
                             {template.event.name}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="muted">{template.status}</Badge>
+                            <Badge
+                              variant={
+                                template.status === "approved"
+                                  ? "success"
+                                  : "muted"
+                              }
+                            >
+                              {template.status}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Link
-                              href={`/admin/templates/${template.id}/edit`}
-                              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                            >
-                              Edit layout
-                            </Link>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              {template.status === "draft" && (
+                                <ApproveTemplateButton templateId={template.id} />
+                              )}
+                              <Link
+                                href={`/admin/templates/${template.id}/edit`}
+                                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                              >
+                                Edit layout
+                              </Link>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -110,15 +125,20 @@ export default async function AdminTemplatesPage() {
                       <div>
                         <p className="font-medium">{template.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {template.event.name}
+                          {template.event.name} · {template.status}
                         </p>
                       </div>
-                      <Link
-                        href={`/admin/templates/${template.id}/edit`}
-                        className="text-sm font-medium text-primary"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex flex-col items-end gap-2">
+                        {template.status === "draft" && (
+                          <ApproveTemplateButton templateId={template.id} />
+                        )}
+                        <Link
+                          href={`/admin/templates/${template.id}/edit`}
+                          className="text-sm font-medium text-primary"
+                        >
+                          Edit
+                        </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -130,7 +150,10 @@ export default async function AdminTemplatesPage() {
         <Card>
           <CardHeader>
             <CardTitle>New template</CardTitle>
-            <CardDescription>PNG or JPEG background recommended.</CardDescription>
+            <CardDescription>
+              PNG or JPEG background. Created templates are approved and ready to
+              issue.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <CreateTemplateForm events={events} />

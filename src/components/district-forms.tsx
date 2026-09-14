@@ -78,6 +78,11 @@ export function InviteAdminForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Operator steps: create the Auth user in Supabase → copy their UUID → paste
+        below to link them as club admin. Invite email is not sent automatically
+        in Phase 0.
+      </p>
       <div className="space-y-2">
         <Label htmlFor="invite-club">Club</Label>
         <Select id="invite-club" name="clubId" required>
@@ -96,15 +101,19 @@ export function InviteAdminForm({
         <Label htmlFor="invite-name">Name</Label>
         <Input id="invite-name" name="name" />
       </div>
-      <details className="rounded-lg border border-border">
-        <summary className="cursor-pointer px-3 py-2.5 text-sm font-medium text-muted-foreground">
-          Advanced · Auth linking
-        </summary>
-        <div className="space-y-2 border-t border-border px-3 py-3">
-          <Label htmlFor="invite-supabase">Supabase Auth user UUID</Label>
-          <Input id="invite-supabase" name="supabaseId" required />
-        </div>
-      </details>
+      <div className="space-y-2 rounded-lg border border-border px-3 py-3">
+        <Label htmlFor="invite-supabase">Supabase Auth user UUID</Label>
+        <Input
+          id="invite-supabase"
+          name="supabaseId"
+          required
+          placeholder="Paste Auth user UUID from Supabase"
+        />
+        <p className="text-xs text-muted-foreground">
+          Required. Create the user in Supabase Authentication first, then paste
+          the UUID here.
+        </p>
+      </div>
       <Button type="submit" disabled={pending}>
         {pending && <Spinner />}
         {pending ? "Saving…" : "Link club admin"}

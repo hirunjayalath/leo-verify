@@ -1,18 +1,34 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { ClaimForm } from "@/components/claim-form";
+import { getRecipientDashboard } from "@/app/(public)/(auth)/claim/actions";
+import { getSupabaseAuthUser } from "@/lib/auth";
 
-export default function ClaimPage() {
+export default async function ClaimPage() {
+  const auth = await getSupabaseAuthUser();
+  const dashboard = auth ? await getRecipientDashboard() : null;
+
   return (
     <AuthShell
       title="Claim your certificates"
-      description="Link certificates issued to your email. Public profiles stay private until you opt in."
+      description="Sign in with the email used on your certificates, then link them to a private profile you can opt into publishing."
     >
-      <ClaimForm />
+      <ClaimForm
+        authEmail={auth?.email ?? null}
+        initialSettings={
+          dashboard?.recipient
+            ? {
+                slug: dashboard.recipient.slug,
+                publicProfile: dashboard.recipient.publicProfile,
+                certificates: dashboard.recipient.certificates,
+              }
+            : null
+        }
+      />
       <p className="mt-5 text-center text-sm text-muted-foreground">
-        Already claimed?{" "}
+        Club admin?{" "}
         <Link href="/login" className="font-medium underline-offset-4 hover:underline">
-          Sign in
+          Sign in to dashboard
         </Link>
       </p>
     </AuthShell>

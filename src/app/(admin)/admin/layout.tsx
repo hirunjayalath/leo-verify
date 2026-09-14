@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin-sidebar";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireClubAdmin();
+  const user = await requireUser();
+  if (user.role !== "club_admin" && user.role !== "district_admin") {
+    redirect("/login");
+  }
+
   const chip = initials(user.email, user.name);
+  const hasClub = Boolean(user.clubId);
 
   return (
     <div className="flex min-h-full flex-1 bg-background">
@@ -25,6 +31,7 @@ export default async function AdminLayout({
         userEmail={user.email}
         userName={user.name}
         showDistrict={user.role === "district_admin"}
+        showClubNav={hasClub}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-card/90 px-4 backdrop-blur sm:px-6">

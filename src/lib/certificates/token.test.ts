@@ -76,6 +76,7 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
     eventId: fields.eventId,
     clubName: "Leo Club of University of Moratuwa",
     eventName: "Annual Service Day 2026",
+    pdfUrl: "https://example.com/cert.pdf",
   };
 
   it("returns valid public fields for a matching token", () => {
@@ -90,6 +91,7 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
       issueDate: "2026-03-15",
       role: "Volunteer",
       achievement: "Community Service",
+      pdfUrl: "https://example.com/cert.pdf",
     });
   });
 

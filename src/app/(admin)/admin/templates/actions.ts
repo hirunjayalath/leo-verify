@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { TemplateStatus } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { requireClubAdmin } from "@/lib/auth";
 import {
@@ -43,6 +44,8 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
     contentType: file.type || "image/jpeg",
   });
 
+  // Club-created templates are auto-approved so UoM can issue immediately.
+  // District review still applies to drafts; clubs can also submit drafts later.
   const template = await prisma.certificateTemplate.create({
     data: {
       eventId,
@@ -50,6 +53,7 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
       name,
       backgroundUrl: uploaded.url,
       layout: DEFAULT_LAYOUT,
+      status: TemplateStatus.approved,
       createdById: user.id,
       lastEditedById: user.id,
     },
@@ -61,13 +65,57 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
     targetType: "CertificateTemplate",
     targetId: template.id,
     clubId,
-    metadata: { name, eventId },
+    metadata: { name, eventId, status: TemplateStatus.approved },
+  });
+
+  await writeAuditLog({
+    actorUserId: user.id,
+    action: "template.approve",
+    targetType: "CertificateTemplate",
+    targetId: template.id,
+    clubId,
+    metadata: { auto: true },
   });
 
   revalidatePath("/admin/templates");
   revalidatePath("/admin");
   revalidatePath("/admin/audit");
   return { ok: true, id: template.id };
+}
+
+export async function approveOwnTemplateAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
+  const id = String(formData.get("id") || "");
+  if (!id) return { ok: false, error: "Template id required" };
+
+  const template = await prisma.certificateTemplate.findFirst({
+    where: { id, clubId },
+  });
+  if (!template) return { ok: false, error: "Template not found" };
+
+  await prisma.certificateTemplate.update({
+    where: { id },
+    data: {
+      status: TemplateStatus.approved,
+      lastEditedById: user.id,
+    },
+  });
+
+  await writeAuditLog({
+    actorUserId: user.id,
+    action: "template.approve",
+    targetType: "CertificateTemplate",
+    targetId: id,
+    clubId,
+  });
+
+  revalidatePath("/admin/templates");
+  revalidatePath("/admin/district");
+  revalidatePath("/admin/audit");
+  return { ok: true, id };
 }
 
 export async function saveTemplateLayoutAction(input: {

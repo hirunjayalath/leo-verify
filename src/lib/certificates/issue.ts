@@ -1,10 +1,14 @@
 import { assertWithinCertLimit } from "@/app/(public)/(auth)/signup/actions";
-import { CertificateStatus } from "@/generated/prisma/client";
+import {
+  CertificateStatus,
+  TemplateStatus,
+} from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";
 import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
 import { computeVerificationToken } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+import { sendCertificateEmail } from "@/lib/email/resend";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 
 export type IssueCertificateInput = {
@@ -25,6 +29,7 @@ export type IssueCertificateResult = {
   verificationToken: string;
   pdfUrl: string | null;
   skipped?: boolean;
+  emailSent?: boolean;
 };
 
 async function nextSequence(clubId: string, year: number): Promise<number> {
@@ -40,6 +45,23 @@ async function nextSequence(clubId: string, year: number): Promise<number> {
   return Number.isFinite(seq) ? seq + 1 : 1;
 }
 
+async function requireApprovedTemplate(eventId: string, clubId: string) {
+  const template = await prisma.certificateTemplate.findFirst({
+    where: {
+      eventId,
+      clubId,
+      status: TemplateStatus.approved,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!template) {
+    throw new Error(
+      "No approved template for this event. Approve a template before issuing.",
+    );
+  }
+  return template;
+}
+
 export async function issueCertificate(
   input: IssueCertificateInput,
 ): Promise<IssueCertificateResult> {
@@ -50,11 +72,10 @@ export async function issueCertificate(
   });
   const event = await prisma.event.findFirst({
     where: { id: input.eventId, clubId: input.clubId },
-    include: {
-      templates: { orderBy: { updatedAt: "desc" }, take: 1 },
-    },
   });
   if (!event) throw new Error("Event not found for club");
+
+  const template = await requireApprovedTemplate(input.eventId, input.clubId);
 
   await assertWithinCertLimit(input.clubId);
 
@@ -106,29 +127,26 @@ export async function issueCertificate(
   });
 
   let pdfUrl: string | null = null;
-  const template = event.templates[0];
-  if (template) {
-    const pdfBytes = await renderCertificatePdf({
-      backgroundUrl: template.backgroundUrl,
-      layout: template.layout,
-      recipientName: certificate.recipientName,
-      role: certificate.role,
-      issueDate: issueDateIso,
-      uniqueId: certificate.uniqueId,
-      verificationToken: certificate.verificationToken,
-      achievement: certificate.achievement,
-    });
-    const uploaded = await uploadObject({
-      key: buildObjectKey("certificates", input.clubId, "pdf"),
-      body: Buffer.from(pdfBytes),
-      contentType: "application/pdf",
-    });
-    pdfUrl = uploaded.url;
-    await prisma.certificate.update({
-      where: { id: certificate.id },
-      data: { pdfUrl },
-    });
-  }
+  const pdfBytes = await renderCertificatePdf({
+    backgroundUrl: template.backgroundUrl,
+    layout: template.layout,
+    recipientName: certificate.recipientName,
+    role: certificate.role,
+    issueDate: issueDateIso,
+    uniqueId: certificate.uniqueId,
+    verificationToken: certificate.verificationToken,
+    achievement: certificate.achievement,
+  });
+  const uploaded = await uploadObject({
+    key: buildObjectKey("certificates", input.clubId, "pdf"),
+    body: Buffer.from(pdfBytes),
+    contentType: "application/pdf",
+  });
+  pdfUrl = uploaded.url;
+  await prisma.certificate.update({
+    where: { id: certificate.id },
+    data: { pdfUrl },
+  });
 
   await writeAuditLog({
     actorUserId: input.actorUserId === "system" ? null : input.actorUserId,
@@ -143,11 +161,29 @@ export async function issueCertificate(
     },
   });
 
+  let emailSent = false;
+  if (
+    input.sendEmail !== false &&
+    certificate.recipientEmail
+  ) {
+    const emailResult = await sendCertificateEmail({
+      to: certificate.recipientEmail,
+      recipientName: certificate.recipientName,
+      uniqueId: certificate.uniqueId,
+      verificationToken: certificate.verificationToken,
+      eventName: event.name,
+      clubName: club.name,
+      pdfUrl,
+    });
+    emailSent = emailResult.sent;
+  }
+
   return {
     id: certificate.id,
     uniqueId,
     verificationToken,
     pdfUrl,
+    emailSent,
   };
 }
 
@@ -183,4 +219,73 @@ export async function revokeCertificate(input: {
   });
 
   return updated;
+}
+
+/** New verification token + PDF; status stays issued. Does not revoke. */
+export async function reissueCertificate(input: {
+  certificateId: string;
+  clubId: string;
+  actorUserId: string;
+}): Promise<IssueCertificateResult> {
+  const cert = await prisma.certificate.findFirst({
+    where: { id: input.certificateId, clubId: input.clubId },
+    include: {
+      event: { select: { name: true } },
+    },
+  });
+  if (!cert) throw new Error("Certificate not found");
+  if (cert.status !== CertificateStatus.issued) {
+    throw new Error("Only issued certificates can be reissued");
+  }
+
+  const template = await requireApprovedTemplate(cert.eventId, input.clubId);
+  const issueDateIso = cert.issueDate.toISOString().slice(0, 10);
+  const verificationToken = computeVerificationToken({
+    uniqueId: cert.uniqueId,
+    recipientName: cert.recipientName,
+    eventId: cert.eventId,
+    clubId: input.clubId,
+    issueDate: issueDateIso,
+    role: cert.role,
+  });
+
+  const pdfBytes = await renderCertificatePdf({
+    backgroundUrl: template.backgroundUrl,
+    layout: template.layout,
+    recipientName: cert.recipientName,
+    role: cert.role,
+    issueDate: issueDateIso,
+    uniqueId: cert.uniqueId,
+    verificationToken,
+    achievement: cert.achievement,
+  });
+  const uploaded = await uploadObject({
+    key: buildObjectKey("certificates", input.clubId, "pdf"),
+    body: Buffer.from(pdfBytes),
+    contentType: "application/pdf",
+  });
+
+  const updated = await prisma.certificate.update({
+    where: { id: cert.id },
+    data: {
+      verificationToken,
+      pdfUrl: uploaded.url,
+    },
+  });
+
+  await writeAuditLog({
+    actorUserId: input.actorUserId,
+    action: "certificate.reissue",
+    targetType: "Certificate",
+    targetId: cert.id,
+    clubId: input.clubId,
+    metadata: { uniqueId: cert.uniqueId },
+  });
+
+  return {
+    id: updated.id,
+    uniqueId: updated.uniqueId,
+    verificationToken: updated.verificationToken,
+    pdfUrl: updated.pdfUrl,
+  };
 }

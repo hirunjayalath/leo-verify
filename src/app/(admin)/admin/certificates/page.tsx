@@ -61,8 +61,8 @@ export default async function AdminCertificatesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Certificates</h1>
         <p className="mt-1 text-muted-foreground">
-          Issue, revoke, and bulk-import — every write is attributed in the audit
-          log.
+          Issue, reissue, revoke, and bulk-import — every write is attributed in
+          the audit log.
         </p>
       </div>
 

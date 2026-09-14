@@ -36,10 +36,12 @@ function initials(email?: string | null, name?: string | null) {
 function SidebarNav({
   pathname,
   showDistrict,
+  showClubNav = true,
   onNavigate,
 }: {
   pathname: string;
   showDistrict?: boolean;
+  showClubNav?: boolean;
   onNavigate?: () => void;
 }) {
   return (
@@ -67,37 +69,41 @@ function SidebarNav({
           </Link>
         </div>
       )}
-      <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
-        Club
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {clubNav.map((item) => {
-          const active =
-            item.href === "/admin"
-              ? pathname === "/admin"
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                active
-                  ? "bg-white/15 text-white"
-                  : "text-white/70 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-accent" />
-              )}
-              <Icon className="h-4 w-4" aria-hidden />
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
+      {showClubNav && (
+        <>
+          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            Club
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {clubNav.map((item) => {
+              const active =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                    active
+                      ? "bg-white/15 text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-accent" />
+                  )}
+                  <Icon className="h-4 w-4" aria-hidden />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -107,11 +113,13 @@ export function AdminSidebar({
   userEmail,
   userName,
   showDistrict,
+  showClubNav = true,
 }: {
   clubName?: string | null;
   userEmail?: string | null;
   userName?: string | null;
   showDistrict?: boolean;
+  showClubNav?: boolean;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -142,6 +150,7 @@ export function AdminSidebar({
         <SidebarNav
           pathname={pathname}
           showDistrict={showDistrict}
+          showClubNav={showClubNav}
           onNavigate={() => setMobileOpen(false)}
         />
       </nav>

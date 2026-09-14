@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireClubAdmin } from "@/lib/auth";
 import {
   issueCertificate,
+  reissueCertificate,
   revokeCertificate,
 } from "@/lib/certificates/issue";
 
@@ -93,6 +94,36 @@ export async function revokeCertificateAction(
     return {
       ok: false,
       error: error instanceof Error ? error.message : "Revoke failed",
+    };
+  }
+}
+
+export async function reissueCertificateAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireClubAdmin();
+  const id = String(formData.get("id") || "");
+  if (!id) return { ok: false, error: "Certificate id required" };
+
+  try {
+    const result = await reissueCertificate({
+      certificateId: id,
+      clubId: user.clubId!,
+      actorUserId: user.id,
+    });
+    revalidatePath("/admin/certificates");
+    revalidatePath("/admin");
+    revalidatePath("/admin/audit");
+    return {
+      ok: true,
+      uniqueId: result.uniqueId,
+      verificationToken: result.verificationToken,
+      pdfUrl: result.pdfUrl,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Reissue failed",
     };
   }
 }
