@@ -68,7 +68,7 @@ export function CreateTemplateForm({
           id="background"
           name="background"
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/png,image/jpeg"
           required
         />
       </div>

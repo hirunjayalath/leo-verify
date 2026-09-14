@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutTemplate } from "lucide-react";
 import { ApproveTemplateButton } from "@/components/approve-template-button";
 import { CreateTemplateForm } from "@/components/create-template-form";
+import { RevertTemplateButton } from "@/components/revert-template-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -26,7 +27,7 @@ export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
 
-  const [templates, events] = await Promise.all([
+  const [templates, events, club] = await Promise.all([
     prisma.certificateTemplate.findMany({
       where: { clubId },
       orderBy: { updatedAt: "desc" },
@@ -37,7 +38,13 @@ export default async function AdminTemplatesPage() {
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true },
     }),
+    prisma.club.findUniqueOrThrow({
+      where: { id: clubId },
+      select: { type: true },
+    }),
   ]);
+
+  const isPublicOrg = club.type === "public";
 
   return (
     <div className="space-y-8 animate-fade-up">
@@ -45,7 +52,9 @@ export default async function AdminTemplatesPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
         <p className="mt-1 text-muted-foreground">
           Background image plus field-position JSON — never hardcoded layouts.
-          New templates are approved on create; drafts cannot be used to issue.
+          {isPublicOrg
+            ? " Public-organization templates start as drafts until district approval."
+            : " Leo club templates are approved on create so you can issue immediately."}
         </p>
       </div>
 
@@ -92,7 +101,9 @@ export default async function AdminTemplatesPage() {
                               variant={
                                 template.status === "approved"
                                   ? "success"
-                                  : "muted"
+                                  : template.status === "rejected"
+                                    ? "danger"
+                                    : "muted"
                               }
                             >
                               {template.status}
@@ -100,8 +111,16 @@ export default async function AdminTemplatesPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex flex-wrap items-center justify-end gap-2">
-                              {template.status === "draft" && (
+                              {template.status === "draft" && isPublicOrg && (
+                                <span className="text-xs text-muted-foreground">
+                                  Awaiting district review
+                                </span>
+                              )}
+                              {template.status === "draft" && !isPublicOrg && (
                                 <ApproveTemplateButton templateId={template.id} />
+                              )}
+                              {template.status === "rejected" && (
+                                <RevertTemplateButton templateId={template.id} />
                               )}
                               <Link
                                 href={`/admin/templates/${template.id}/edit`}
@@ -129,7 +148,10 @@ export default async function AdminTemplatesPage() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        {template.status === "draft" && (
+                        {template.status === "rejected" && (
+                          <RevertTemplateButton templateId={template.id} />
+                        )}
+                        {template.status === "draft" && !isPublicOrg && (
                           <ApproveTemplateButton templateId={template.id} />
                         )}
                         <Link
@@ -151,8 +173,10 @@ export default async function AdminTemplatesPage() {
           <CardHeader>
             <CardTitle>New template</CardTitle>
             <CardDescription>
-              PNG or JPEG background. Created templates are approved and ready to
-              issue.
+              PNG or JPEG background only.
+              {isPublicOrg
+                ? " Created as draft for district review."
+                : " Created templates are approved and ready to issue."}
             </CardDescription>
           </CardHeader>
           <CardContent>

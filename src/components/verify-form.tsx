@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 
 function parseVerifyInput(raw: string): { id: string; token: string } {
   const trimmed = raw.trim();
@@ -36,6 +37,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [certificateId, setCertificateId] = useState("");
   const [token, setToken] = useState("");
+  const [pending, startTransition] = useTransition();
 
   function onIdChange(value: string) {
     const parsed = parseVerifyInput(value);
@@ -56,7 +58,9 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
     const params = new URLSearchParams();
     if (t) params.set("t", t);
     const qs = params.toString();
-    router.push(`/v/${encodeURIComponent(id)}${qs ? `?${qs}` : ""}`);
+    startTransition(() => {
+      router.push(`/v/${encodeURIComponent(id)}${qs ? `?${qs}` : ""}`);
+    });
   }
 
   return (
@@ -71,6 +75,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
           autoComplete="off"
           autoFocus
           required
+          disabled={pending}
         />
         <p className="text-xs text-muted-foreground">
           Paste the full link from the QR if you have it — we will fill the token.
@@ -90,11 +95,13 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
             value={token}
             onChange={(e) => setToken(e.target.value)}
             autoComplete="off"
+            disabled={pending}
           />
         </div>
       )}
-      <Button type="submit" size="lg" className="w-full sm:w-auto">
-        Verify certificate
+      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending}>
+        {pending && <Spinner />}
+        {pending ? "Checking…" : "Verify certificate"}
       </Button>
     </form>
   );

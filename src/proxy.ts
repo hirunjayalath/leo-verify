@@ -75,7 +75,16 @@ export async function proxy(request: NextRequest) {
   }
 
   if (request.nextUrl.pathname === "/login" && user) {
-    return NextResponse.redirect(new URL("/admin", request.url));
+    // Recovery hash handling stays on the client; only bounce away when not recovering.
+    const type = request.nextUrl.searchParams.get("type");
+    if (type === "recovery") {
+      return response;
+    }
+    const next = safeInternalPath(
+      request.nextUrl.searchParams.get("next"),
+      "/admin",
+    );
+    return NextResponse.redirect(new URL(next, request.url));
   }
 
   return response;

@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { CertificatesTable } from "@/components/certificates-table";
 import { CsvImportForm } from "@/components/csv-import-form";
 import { IssueCertificateForm } from "@/components/issue-certificate-form";
-import { Badge } from "@/components/ui/badge";
+import { RecentImportsTable } from "@/components/recent-imports-table";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,14 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { ImportRowStatus } from "@/generated/prisma/client";
 import { requireClubAdmin } from "@/lib/auth";
 import {
   buildPdfDownloadPath,
@@ -24,17 +20,43 @@ import {
 } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 
-export default async function AdminCertificatesPage() {
+const PAGE_SIZE = 25;
+
+type PageProps = {
+  searchParams: Promise<{ q?: string; page?: string }>;
+};
+
+export default async function AdminCertificatesPage({ searchParams }: PageProps) {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
+  const params = await searchParams;
+  const q = (params.q ?? "").trim();
+  const page = Math.max(1, Number(params.page) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
 
-  const [certificates, events, jobs] = await Promise.all([
+  const where = {
+    clubId,
+    ...(q
+      ? {
+          OR: [
+            { uniqueId: { contains: q, mode: "insensitive" as const } },
+            { recipientName: { contains: q, mode: "insensitive" as const } },
+            { role: { contains: q, mode: "insensitive" as const } },
+            { event: { name: { contains: q, mode: "insensitive" as const } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [certificates, total, events, jobs] = await Promise.all([
     prisma.certificate.findMany({
-      where: { clubId },
+      where,
       orderBy: { createdAt: "desc" },
-      take: 100,
+      skip,
+      take: PAGE_SIZE,
       include: { event: { select: { name: true } } },
     }),
+    prisma.certificate.count({ where }),
     prisma.event.findMany({
       where: { clubId },
       orderBy: { createdAt: "desc" },
@@ -44,8 +66,21 @@ export default async function AdminCertificatesPage() {
       where: { clubId },
       orderBy: { createdAt: "desc" },
       take: 10,
+      include: {
+        rows: {
+          where: {
+            status: ImportRowStatus.failed,
+            error: { not: null },
+          },
+          select: { rowNumber: true, error: true },
+          orderBy: { rowNumber: "asc" },
+          take: 50,
+        },
+      },
     }),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const rows = certificates.map((cert) => ({
     id: cert.id,
@@ -61,6 +96,27 @@ export default async function AdminCertificatesPage() {
         : null,
     issueDate: cert.issueDate.toISOString().slice(0, 10),
   }));
+
+  const importRows = jobs.map((job) => ({
+    id: job.id,
+    status: job.status,
+    totalRows: job.totalRows,
+    successRows: job.successRows,
+    skippedRows: job.skippedRows,
+    failedRows: job.failedRows,
+    createdAt: `${job.createdAt.toISOString().slice(0, 19)} UTC`,
+    rowErrors: job.rows
+      .filter((r): r is { rowNumber: number; error: string } => Boolean(r.error))
+      .map((r) => ({ rowNumber: r.rowNumber, error: r.error })),
+  }));
+
+  function pageHref(target: number) {
+    const sp = new URLSearchParams();
+    if (q) sp.set("q", q);
+    if (target > 1) sp.set("page", String(target));
+    const qs = sp.toString();
+    return qs ? `/admin/certificates?${qs}` : "/admin/certificates";
+  }
 
   return (
     <div className="space-y-8 animate-fade-up">
@@ -78,52 +134,61 @@ export default async function AdminCertificatesPage() {
             <CardHeader>
               <CardTitle>Issued certificates</CardTitle>
               <CardDescription>
-                {certificates.length === 0
+                {total === 0
                   ? "No certificates yet"
-                  : `${certificates.length} shown`}
+                  : `Showing ${rows.length} of ${total}${q ? ` matching “${q}”` : ""}`}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <CertificatesTable rows={rows} />
+            <CardContent className="space-y-4">
+              <form className="flex flex-wrap gap-2" method="get">
+                <Input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Search ID, name, event…"
+                  className="max-w-sm"
+                  aria-label="Search certificates"
+                />
+                <Button type="submit" variant="outline">
+                  Search
+                </Button>
+              </form>
+              <CertificatesTable rows={rows} disableClientSearch />
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Page {page} of {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    {page > 1 ? (
+                      <Link href={pageHref(page - 1)}>
+                        <Button variant="outline" size="sm">
+                          Previous
+                        </Button>
+                      </Link>
+                    ) : null}
+                    {page < totalPages ? (
+                      <Link href={pageHref(page + 1)}>
+                        <Button variant="outline" size="sm">
+                          Next
+                        </Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {jobs.length > 0 && (
+          {importRows.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Recent imports</CardTitle>
+                <CardDescription>
+                  Expand a row to see per-row failure messages.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Progress</TableHead>
-                      <TableHead>When</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {jobs.map((job) => (
-                      <TableRow key={job.id}>
-                        <TableCell>
-                          <Badge variant="muted">{job.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {job.successRows}/{job.totalRows} issued
-                          {job.skippedRows > 0
-                            ? ` · ${job.skippedRows} skipped`
-                            : ""}
-                          {job.failedRows > 0
-                            ? ` · ${job.failedRows} failed`
-                            : ""}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground tabular-nums">
-                          {job.createdAt.toISOString().slice(0, 19)} UTC
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <RecentImportsTable jobs={importRows} />
               </CardContent>
             </Card>
           )}
@@ -134,7 +199,7 @@ export default async function AdminCertificatesPage() {
             <CardHeader>
               <CardTitle>Issue one</CardTitle>
               <CardDescription>
-                Uses the event’s latest template when available.
+                Uses the event’s latest approved template.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -146,7 +211,8 @@ export default async function AdminCertificatesPage() {
             <CardHeader>
               <CardTitle>Bulk CSV import</CardTitle>
               <CardDescription>
-                Validates every row before committing. Re-runs skip duplicates.
+                Needs an approved template. Validates every row before committing.
+                Re-runs skip duplicates.
               </CardDescription>
             </CardHeader>
             <CardContent>

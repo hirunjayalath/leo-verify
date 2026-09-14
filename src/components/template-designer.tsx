@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   AlignCenter,
   AlignLeft,
@@ -69,6 +70,16 @@ export function TemplateDesigner({
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, []);
+
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -263,6 +274,22 @@ export function TemplateDesigner({
     <div className="space-y-4">
       <div className="sticky top-16 z-20 space-y-3 rounded-xl border border-border bg-card/95 p-3 shadow-elevated backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/templates"
+            className="mr-2 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            onClick={(e) => {
+              if (
+                dirty &&
+                !window.confirm(
+                  "You have unsaved layout changes. Leave without saving?",
+                )
+              ) {
+                e.preventDefault();
+              }
+            }}
+          >
+            ← Back to templates
+          </Link>
           <div className="hidden flex-wrap gap-1 md:flex">
             {FIELD_KEYS.map((key) => (
               <button

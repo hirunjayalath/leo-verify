@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { buildVerificationPath } from "@/lib/certificates/token";
+import { getPublicEnv } from "@/lib/env";
 import { escapeHtml } from "@/lib/html-escape";
 
 export function buildCertificateEmailHtml(input: {
@@ -13,8 +14,7 @@ export function buildCertificateEmailHtml(input: {
 }): string {
   const base = (
     input.appBaseUrl ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    ""
+    getPublicEnv().NEXT_PUBLIC_APP_URL
   ).replace(/\/$/, "");
   const verifyUrl = `${base}${buildVerificationPath(input.uniqueId, input.verificationToken)}`;
   const pdfHref = input.pdfDownloadPath

@@ -8,6 +8,7 @@ import {
   RecipientSettings,
   type RecipientDashboardCert,
 } from "@/components/recipient-settings";
+import { RecipientSignOut } from "@/components/recipient-sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ export function ClaimForm({
     initialSettings ? null : null,
   );
   const [settings, setSettings] = useState(initialSettings ?? null);
+  const publicProfile = settings?.publicProfile ?? false;
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -72,12 +74,28 @@ export function ClaimForm({
         >
           Sign in to claim
         </Link>
+        <p className="text-muted-foreground">
+          New here?{" "}
+          <Link
+            href="/login?mode=signup&next=/claim"
+            className="font-medium underline-offset-4 hover:underline"
+          >
+            Create a recipient account
+          </Link>
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <p className="text-muted-foreground">
+          Signed in as <span className="font-medium text-foreground">{authEmail}</span>
+        </p>
+        <RecipientSignOut />
+      </div>
+
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email used on certificates</Label>
@@ -112,29 +130,36 @@ export function ClaimForm({
             <li>Mark certificates unlisted if they should stay private.</li>
             <li>Copy or open your profile URL when you are ready to share.</li>
           </ol>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/u/${successSlug}`}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
-            >
-              View profile /u/{successSlug}
-            </Link>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={async () => {
-                try {
-                  const url = `${window.location.origin}/u/${successSlug}`;
-                  await navigator.clipboard.writeText(url);
-                  toast.success("Profile URL copied");
-                } catch {
-                  toast.error("Could not copy link");
-                }
-              }}
-            >
-              Copy profile URL
-            </Button>
-          </div>
+          {publicProfile ? (
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/u/${successSlug}`}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
+              >
+                View profile /u/{successSlug}
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const url = `${window.location.origin}/u/${successSlug}`;
+                    await navigator.clipboard.writeText(url);
+                    toast.success("Profile URL copied");
+                  } catch {
+                    toast.error("Could not copy link");
+                  }
+                }}
+              >
+                Copy profile URL
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Your profile is private — enable public profile below to share a
+              public URL.
+            </p>
+          )}
         </div>
       )}
 

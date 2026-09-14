@@ -15,7 +15,7 @@ const eventSchema = z.object({
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 function clubIdFor(user: Awaited<ReturnType<typeof requireClubAdmin>>): string {
-  if (user.role === "club_admin" && user.clubId) return user.clubId;
+  if (user.clubId) return user.clubId;
   throw new Error("Club context required");
 }
 

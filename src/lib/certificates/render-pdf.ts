@@ -6,6 +6,7 @@ import {
 } from "@/lib/certificates/layout";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildVerificationPath } from "@/lib/certificates/token";
+import { getPublicEnv } from "@/lib/env";
 
 export type RenderCertificateInput = {
   backgroundUrl: string;
@@ -78,10 +79,9 @@ export async function renderCertificatePdf(
     uniqueId: input.uniqueId,
   };
 
-  const base = (input.appBaseUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
-    /\/$/,
-    "",
-  );
+  const base = (
+    input.appBaseUrl ?? getPublicEnv().NEXT_PUBLIC_APP_URL
+  ).replace(/\/$/, "");
   const verifyUrl = `${base}${buildVerificationPath(input.uniqueId, input.verificationToken)}`;
 
   for (const field of layout) {

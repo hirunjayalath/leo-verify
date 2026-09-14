@@ -41,6 +41,7 @@ export async function GET(request: Request, { params }: Params) {
       clubId: cert.clubId,
       issueDate: cert.issueDate.toISOString().slice(0, 10),
       role: cert.role,
+      tokenVersion: cert.tokenVersion,
     },
     token,
   );

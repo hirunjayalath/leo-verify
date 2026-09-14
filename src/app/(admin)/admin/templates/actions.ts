@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { TemplateStatus } from "@/generated/prisma/client";
+import { TemplateStatus, ClubType } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { requireClubAdmin } from "@/lib/auth";
 import {
@@ -35,6 +35,8 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
   const event = await prisma.event.findFirst({ where: { id: eventId, clubId } });
   if (!event) return { ok: false, error: "Event not found" };
 
+  const club = await prisma.club.findUniqueOrThrow({ where: { id: clubId } });
+
   const bytes = Buffer.from(await file.arrayBuffer());
   const sniffed = sniffImageBytes(bytes);
   if (!sniffed.ok) return { ok: false, error: sniffed.error };
@@ -46,8 +48,12 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
     contentType: sniffed.contentType,
   });
 
-  // Club-created templates are auto-approved so UoM can issue immediately.
-  // District review still applies to drafts; clubs can also submit drafts later.
+  // Leo clubs (UoM operator model): auto-approve. Public orgs: draft until district review.
+  const status =
+    club.type === ClubType.public
+      ? TemplateStatus.draft
+      : TemplateStatus.approved;
+
   const template = await prisma.certificateTemplate.create({
     data: {
       eventId,
@@ -55,7 +61,7 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
       name,
       backgroundUrl: uploaded.url,
       layout: DEFAULT_LAYOUT,
-      status: TemplateStatus.approved,
+      status,
       createdById: user.id,
       lastEditedById: user.id,
     },
@@ -67,21 +73,24 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
     targetType: "CertificateTemplate",
     targetId: template.id,
     clubId,
-    metadata: { name, eventId, status: TemplateStatus.approved },
+    metadata: { name, eventId, status },
   });
 
-  await writeAuditLog({
-    actorUserId: user.id,
-    action: "template.approve",
-    targetType: "CertificateTemplate",
-    targetId: template.id,
-    clubId,
-    metadata: { auto: true },
-  });
+  if (status === TemplateStatus.approved) {
+    await writeAuditLog({
+      actorUserId: user.id,
+      action: "template.approve",
+      targetType: "CertificateTemplate",
+      targetId: template.id,
+      clubId,
+      metadata: { auto: true },
+    });
+  }
 
   revalidatePath("/admin/templates");
   revalidatePath("/admin");
   revalidatePath("/admin/audit");
+  revalidatePath("/admin/district");
   return { ok: true, id: template.id };
 }
 
@@ -177,5 +186,45 @@ export async function renameTemplateAction(formData: FormData): Promise<ActionRe
   });
 
   revalidatePath("/admin/templates");
+  return { ok: true, id };
+}
+
+/** Rejected templates can be moved back to draft for editing and resubmission. */
+export async function revertTemplateToDraftAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
+  const id = String(formData.get("id") || "");
+  if (!id) return { ok: false, error: "Template id required" };
+
+  const template = await prisma.certificateTemplate.findFirst({
+    where: { id, clubId },
+  });
+  if (!template) return { ok: false, error: "Template not found" };
+  if (template.status !== TemplateStatus.rejected) {
+    return { ok: false, error: "Only rejected templates can be reverted" };
+  }
+
+  await prisma.certificateTemplate.update({
+    where: { id },
+    data: {
+      status: TemplateStatus.draft,
+      reviewNote: null,
+      lastEditedById: user.id,
+    },
+  });
+
+  await writeAuditLog({
+    actorUserId: user.id,
+    action: "template.revert",
+    targetType: "CertificateTemplate",
+    targetId: id,
+    clubId,
+  });
+
+  revalidatePath("/admin/templates");
+  revalidatePath("/admin/district");
+  revalidatePath("/admin/audit");
   return { ok: true, id };
 }

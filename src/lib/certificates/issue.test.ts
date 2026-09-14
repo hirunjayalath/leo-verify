@@ -9,8 +9,10 @@ import { Pool } from "pg";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import {
   issueCertificate,
+  reissueCertificate,
   revokeCertificate,
 } from "@/lib/certificates/issue";
+import { verifyVerificationToken } from "@/lib/certificates/token";
 import { DEFAULT_LAYOUT } from "@/lib/certificates/layout";
 import { resetServerEnvCache } from "@/lib/env";
 
@@ -126,6 +128,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
         clubName: row.event.club.name,
         eventName: row.event.name,
         pdfUrl: row.pdfUrl,
+        tokenVersion: row.tokenVersion,
       },
       issued.verificationToken,
     );
@@ -170,6 +173,7 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
         clubName: row.event.club.name,
         eventName: row.event.name,
         pdfUrl: row.pdfUrl,
+        tokenVersion: row.tokenVersion,
       },
       issued.verificationToken,
     );
@@ -178,6 +182,91 @@ describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
       uniqueId: issued.uniqueId,
       message: "This certificate has been revoked.",
     });
+  });
+
+  it("skips duplicate issue without email (same event + name)", async () => {
+    const first = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      actorUserId: adminAId,
+      recipientName: "No Email Twin",
+      recipientEmail: null,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    const second = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      actorUserId: adminAId,
+      recipientName: "No Email Twin",
+      recipientEmail: null,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    expect(second.skipped).toBe(true);
+    expect(second.uniqueId).toBe(first.uniqueId);
+  });
+
+  it("auto-links recipientId when a claimed recipient matches email", async () => {
+    const email = `autolink-${Date.now()}@test.local`;
+    const recipient = await prisma.recipient.create({
+      data: {
+        email,
+        name: "Linked Person",
+        slug: `linked-${Date.now()}`,
+      },
+    });
+    const issued = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      actorUserId: adminAId,
+      recipientName: "Linked Person",
+      recipientEmail: email,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    const row = await prisma.certificate.findUniqueOrThrow({
+      where: { id: issued.id },
+    });
+    expect(row.recipientId).toBe(recipient.id);
+  });
+
+  it("reissue rotates verification token so old links fail", async () => {
+    const issued = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      actorUserId: adminAId,
+      recipientName: "Reissue Target",
+      recipientEmail: `reissue-${Date.now()}@test.local`,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    const oldToken = issued.verificationToken;
+    const reissued = await reissueCertificate({
+      certificateId: issued.id,
+      clubId: clubAId,
+      actorUserId: adminAId,
+    });
+    expect(reissued.verificationToken).not.toBe(oldToken);
+
+    const row = await prisma.certificate.findUniqueOrThrow({
+      where: { id: issued.id },
+      include: { event: { include: { club: true } } },
+    });
+    const fields = {
+      uniqueId: row.uniqueId,
+      recipientName: row.recipientName,
+      eventId: row.eventId,
+      clubId: row.clubId,
+      issueDate: row.issueDate.toISOString().slice(0, 10),
+      role: row.role,
+      tokenVersion: row.tokenVersion,
+    };
+    expect(verifyVerificationToken(fields, oldToken)).toBe(false);
+    expect(verifyVerificationToken(fields, reissued.verificationToken)).toBe(
+      true,
+    );
+    expect(row.tokenVersion).toBeGreaterThan(1);
   });
 
   it("rejects issuance when only a draft template exists", async () => {

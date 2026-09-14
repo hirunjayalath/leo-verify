@@ -32,11 +32,21 @@ export function CsvImportForm({
         setRowErrors(result.rowErrors ?? []);
         return;
       }
-      toast.success(
-        result.mode === "async"
-          ? `Import job ${result.jobId} queued`
-          : `Import job ${result.jobId} completed`,
-      );
+      if (result.mode === "async") {
+        toast.success(`Import job queued (${result.totalRows ?? "?"} rows)`);
+      } else {
+        const issued = result.successRows ?? 0;
+        const skipped = result.skippedRows ?? 0;
+        const failed = result.failedRows ?? 0;
+        const summary = `${issued} issued · ${skipped} skipped · ${failed} failed`;
+        if (failed > 0 && issued === 0 && skipped === 0) {
+          toast.error(`Import finished with failures — ${summary}`);
+        } else if (failed > 0) {
+          toast.message(`Import completed with some failures — ${summary}`);
+        } else {
+          toast.success(`Import completed — ${summary}`);
+        }
+      }
       router.refresh();
     });
   }
@@ -63,8 +73,9 @@ export function CsvImportForm({
         <Label htmlFor="csv">CSV file</Label>
         <Input id="csv" name="csv" type="file" accept=".csv,text/csv" required />
         <p className="text-xs text-muted-foreground">
-          Columns: name, email, role, achievement (header row required). All rows
-          are validated before any certificate is created.
+          Requires an approved template on the selected event. Columns: name,
+          email, role, achievement (header row required). All rows are validated
+          before any certificate is created.
         </p>
       </div>
       {rowErrors.length > 0 && (

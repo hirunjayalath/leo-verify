@@ -46,6 +46,7 @@ export type CertificateLookupRow = {
   eventName: string;
   pdfUrl: string | null;
   pdfKey?: string | null;
+  tokenVersion?: number;
 };
 
 /**
@@ -67,6 +68,7 @@ export function evaluateVerification(
     clubId: row.clubId,
     issueDate: row.issueDate.toISOString().slice(0, 10),
     role: row.role,
+    tokenVersion: row.tokenVersion ?? 1,
   };
 
   if (!verifyVerificationToken(fields, providedToken)) {

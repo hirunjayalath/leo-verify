@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { FileBadge2 } from "lucide-react";
 import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Profile", robots: { index: false, follow: false } };
   }
   return {
-    title: `${recipient.name ?? "Recipient"} · LeoVerify`,
+    title: recipient.name ?? "Recipient",
     description: "Public LeoVerify credential profile",
     robots: { index: false, follow: false },
     openGraph: {
@@ -60,6 +61,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
   return (
     <div className="surface-grid">
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+        <p className="mb-6">
+          <Link
+            href="/"
+            className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            ← Back to home
+          </Link>
+        </p>
         <div className="flex items-start gap-4">
           <span
             className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-accent shadow-elevated"

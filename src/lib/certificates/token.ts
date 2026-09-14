@@ -9,9 +9,12 @@ export type CertificateCanonicalFields = {
   clubId: string;
   issueDate: string; // ISO date YYYY-MM-DD
   role: string;
+  /** Defaults to 1; bumped on each reissue so tokens rotate. */
+  tokenVersion?: number;
 };
 
 export function canonicalize(fields: CertificateCanonicalFields): string {
+  const version = fields.tokenVersion ?? 1;
   return [
     fields.uniqueId,
     fields.recipientName.trim(),
@@ -19,6 +22,7 @@ export function canonicalize(fields: CertificateCanonicalFields): string {
     fields.clubId,
     fields.issueDate,
     fields.role.trim(),
+    String(version),
   ].join("|");
 }
 

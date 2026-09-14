@@ -34,10 +34,14 @@ export default async function EditTemplatePage({ params }: PageProps) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">
-            <Link href="/admin/templates" className="hover:underline">
-              Templates
-            </Link>{" "}
-            / {template.event.name}
+            <Link
+              href="/admin/templates"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              ← Back to templates
+            </Link>
+            <span className="mx-2 text-border">/</span>
+            {template.event.name}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-primary">
             {template.name}

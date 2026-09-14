@@ -8,6 +8,7 @@ export type AuditAction =
   | "template.update"
   | "template.approve"
   | "template.reject"
+  | "template.revert"
   | "certificate.issue"
   | "certificate.revoke"
   | "certificate.reissue"

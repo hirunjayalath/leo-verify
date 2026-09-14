@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ImportJobStatus, ImportRowStatus } from "@/generated/prisma/client";
+import {
+  ImportJobStatus,
+  ImportRowStatus,
+  TemplateStatus,
+} from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { requireClubAdmin } from "@/lib/auth";
 import { validateCertificateCsv } from "@/lib/certificates/csv";
@@ -9,8 +13,20 @@ import { prisma } from "@/lib/db";
 import { inngest, processImportJob } from "@/inngest/functions";
 
 export type ImportActionResult =
-  | { ok: true; jobId: string; mode: "async" | "sync" }
-  | { ok: false; error: string; rowErrors?: { rowNumber: number; message: string }[] };
+  | {
+      ok: true;
+      jobId: string;
+      mode: "async" | "sync";
+      successRows?: number;
+      skippedRows?: number;
+      failedRows?: number;
+      totalRows?: number;
+    }
+  | {
+      ok: false;
+      error: string;
+      rowErrors?: { rowNumber: number; message: string }[];
+    };
 
 export async function startCsvImportAction(
   formData: FormData,
@@ -30,6 +46,18 @@ export async function startCsvImportAction(
 
   const event = await prisma.event.findFirst({ where: { id: eventId, clubId } });
   if (!event) return { ok: false, error: "Event not found" };
+
+  const approved = await prisma.certificateTemplate.findFirst({
+    where: { eventId, clubId, status: TemplateStatus.approved },
+    select: { id: true },
+  });
+  if (!approved) {
+    return {
+      ok: false,
+      error:
+        "This event has no approved template. Create and approve a template before importing.",
+    };
+  }
 
   const text = await file.text();
   const validated = validateCertificateCsv(text);
@@ -77,13 +105,29 @@ export async function startCsvImportAction(
       data: { jobId: job.id },
     });
     revalidatePath("/admin/certificates");
-    return { ok: true, jobId: job.id, mode: "async" };
+    return {
+      ok: true,
+      jobId: job.id,
+      mode: "async",
+      totalRows: validated.rows.length,
+    };
   }
 
   // Local/dev fallback: process synchronously when Inngest is not configured
   await processImportJob(job.id);
+  const finished = await prisma.importJob.findUniqueOrThrow({
+    where: { id: job.id },
+  });
   revalidatePath("/admin/certificates");
   revalidatePath("/admin");
   revalidatePath("/admin/audit");
-  return { ok: true, jobId: job.id, mode: "sync" };
+  return {
+    ok: true,
+    jobId: job.id,
+    mode: "sync",
+    successRows: finished.successRows,
+    skippedRows: finished.skippedRows,
+    failedRows: finished.failedRows,
+    totalRows: finished.totalRows,
+  };
 }

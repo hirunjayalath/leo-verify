@@ -61,6 +61,21 @@ describe("HMAC verification token (Rule 2 / Rule 11)", () => {
     const legacyToken = computeVerificationToken(fields, previous);
     expect(verifyVerificationToken(fields, legacyToken)).toBe(true);
   });
+
+  it("rotates when tokenVersion changes (reissue)", () => {
+    const v1 = computeVerificationToken({ ...fields, tokenVersion: 1 });
+    const v2 = computeVerificationToken({ ...fields, tokenVersion: 2 });
+    expect(v1).not.toEqual(v2);
+    expect(verifyVerificationToken({ ...fields, tokenVersion: 1 }, v1)).toBe(
+      true,
+    );
+    expect(verifyVerificationToken({ ...fields, tokenVersion: 2 }, v1)).toBe(
+      false,
+    );
+    expect(verifyVerificationToken({ ...fields, tokenVersion: 2 }, v2)).toBe(
+      true,
+    );
+  });
 });
 
 describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {

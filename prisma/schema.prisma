@@ -167,6 +167,8 @@ model Certificate {
   pdfUrl            String?
   /// Object storage key for gated PDF download (preferred over durable public pdfUrl)
   pdfKey            String?
+  /// Incremented on reissue so HMAC tokens rotate (included in canonicalize)
+  tokenVersion      Int               @default(1)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -174,7 +176,7 @@ model Certificate {
   recipient Recipient? @relation(fields: [recipientId], references: [id])
   revokedBy User?      @relation("CertificateRevoker", fields: [revokedById], references: [id])
 
-  @@unique([eventId, recipientEmail, recipientName])
+  /// Partial unique indexes (issued-only) live in SQL migrations — see 20260915040000
   @@index([clubId])
   @@index([eventId])
   @@index([recipientId])

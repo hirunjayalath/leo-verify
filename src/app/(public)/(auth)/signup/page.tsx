@@ -18,6 +18,11 @@ export default async function SignupPage() {
           Sign in
         </Link>
       </p>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
+        <Link href="/" className="underline-offset-4 hover:underline">
+          Back to public site
+        </Link>
+      </p>
     </AuthShell>
   );
 }

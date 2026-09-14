@@ -6,6 +6,7 @@ import {
   verifyVerificationToken,
 } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+import { getPublicEnv } from "@/lib/env";
 import {
   clientIpFromHeaders,
   rateLimitBadge,
@@ -55,6 +56,7 @@ export async function GET(request: Request, { params }: Params) {
       clubId: cert.clubId,
       issueDate: cert.issueDate.toISOString().slice(0, 10),
       role: cert.role,
+      tokenVersion: cert.tokenVersion,
     },
     token,
   );
@@ -62,7 +64,7 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+  const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const verifyUrl = `${appUrl}/v/${encodeURIComponent(cert.uniqueId)}?t=${encodeURIComponent(token)}`;
   const gatedPdf =
     cert.pdfKey || cert.pdfUrl

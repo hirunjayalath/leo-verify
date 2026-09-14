@@ -55,10 +55,12 @@ export default async function DistrictAdminPage() {
     prisma.certificateTemplate.findMany({
       where: {
         clubId: { in: clubIds },
-        status: TemplateStatus.draft,
+        status: { in: [TemplateStatus.draft, TemplateStatus.rejected] },
+        club: { type: "public" },
       },
       include: {
         event: { select: { name: true } },
+        club: { select: { name: true, type: true } },
       },
       orderBy: { updatedAt: "desc" },
       take: 20,
@@ -108,8 +110,9 @@ export default async function DistrictAdminPage() {
           District overview
         </h1>
         <p className="mt-1 text-muted-foreground">
-          {user.district?.name ?? "Your district"} — onboard clubs, approve
-          templates, and review analytics.
+          {user.district?.name ?? "Your district"} — onboard clubs and review
+          public-organization templates. Leo club templates auto-approve on
+          create.
         </p>
       </div>
 
@@ -178,15 +181,18 @@ export default async function DistrictAdminPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Templates awaiting approval</CardTitle>
-            <CardDescription>Draft layouts from clubs in this district</CardDescription>
+            <CardTitle>Public org template review</CardTitle>
+            <CardDescription>
+              Draft and rejected templates from public organizations. Leo clubs
+              auto-approve and do not appear here.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {pendingTemplates.length === 0 ? (
               <EmptyState
                 icon={LayoutTemplate}
-                title="No drafts pending"
-                description="When clubs submit templates, they will appear here for review."
+                title="Nothing to review"
+                description="Public-organization drafts will appear here. Leo club templates skip this queue."
               />
             ) : (
               <ul className="space-y-4">
@@ -200,11 +206,18 @@ export default async function DistrictAdminPage() {
                       <Badge variant="muted">{template.status}</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {template.event.name}
+                      {template.club.name} · {template.event.name}
                     </p>
-                    <div className="mt-3">
-                      <ReviewTemplateButtons templateId={template.id} />
-                    </div>
+                    {template.status === "draft" && (
+                      <div className="mt-3">
+                        <ReviewTemplateButtons templateId={template.id} />
+                      </div>
+                    )}
+                    {template.status === "rejected" && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Rejected — club admins can revert to draft and edit.
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>

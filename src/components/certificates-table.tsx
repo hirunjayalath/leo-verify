@@ -29,9 +29,16 @@ export type CertRow = {
   issueDate: string;
 };
 
-export function CertificatesTable({ rows }: { rows: CertRow[] }) {
+export function CertificatesTable({
+  rows,
+  disableClientSearch = false,
+}: {
+  rows: CertRow[];
+  disableClientSearch?: boolean;
+}) {
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
+    if (disableClientSearch) return rows;
     const needle = q.trim().toLowerCase();
     if (!needle) return rows;
     return rows.filter(
@@ -41,7 +48,7 @@ export function CertificatesTable({ rows }: { rows: CertRow[] }) {
         r.eventName.toLowerCase().includes(needle) ||
         r.role.toLowerCase().includes(needle),
     );
-  }, [q, rows]);
+  }, [q, rows, disableClientSearch]);
 
   if (rows.length === 0) {
     return (
@@ -63,19 +70,21 @@ export function CertificatesTable({ rows }: { rows: CertRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search ID, name, event…"
-          className="pl-9"
-          aria-label="Search certificates"
-        />
-      </div>
+      {!disableClientSearch && (
+        <div className="relative max-w-sm">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search ID, name, event…"
+            className="pl-9"
+            aria-label="Search certificates"
+          />
+        </div>
+      )}
 
       {/* Desktop table */}
       <div className="hidden rounded-xl border border-border sm:block">
@@ -146,49 +155,55 @@ export function CertificatesTable({ rows }: { rows: CertRow[] }) {
 
       {/* Mobile cards */}
       <ul className="space-y-3 sm:hidden">
-        {filtered.map((cert) => (
-          <li
-            key={cert.id}
-            className="rounded-xl border border-border bg-card p-4 shadow-elevated"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <p className="font-mono text-xs font-medium">{cert.uniqueId}</p>
-              <Badge variant={cert.status === "issued" ? "success" : "danger"}>
-                {cert.status}
-              </Badge>
-            </div>
-            <p className="mt-2 font-medium">{cert.recipientName}</p>
-            <p className="text-sm text-muted-foreground">
-              {cert.role} · {cert.eventName}
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <a
-                href={cert.verifyPath}
-                className="text-sm font-medium text-primary"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Verify
-              </a>
-              {cert.pdfUrl && (
+        {filtered.length === 0 ? (
+          <li className="rounded-xl border border-border p-4 text-center text-sm text-muted-foreground">
+            No matches{q ? ` for “${q}”` : ""}.
+          </li>
+        ) : (
+          filtered.map((cert) => (
+            <li
+              key={cert.id}
+              className="rounded-xl border border-border bg-card p-4 shadow-elevated"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-mono text-xs font-medium">{cert.uniqueId}</p>
+                <Badge variant={cert.status === "issued" ? "success" : "danger"}>
+                  {cert.status}
+                </Badge>
+              </div>
+              <p className="mt-2 font-medium">{cert.recipientName}</p>
+              <p className="text-sm text-muted-foreground">
+                {cert.role} · {cert.eventName}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
                 <a
-                  href={cert.pdfUrl}
+                  href={cert.verifyPath}
                   className="text-sm font-medium text-primary"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  PDF
+                  Verify
                 </a>
-              )}
-              {cert.status === "issued" && (
-                <>
-                  <ReissueButton certificateId={cert.id} />
-                  <RevokeButton certificateId={cert.id} />
-                </>
-              )}
-            </div>
-          </li>
-        ))}
+                {cert.pdfUrl && (
+                  <a
+                    href={cert.pdfUrl}
+                    className="text-sm font-medium text-primary"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    PDF
+                  </a>
+                )}
+                {cert.status === "issued" && (
+                  <>
+                    <ReissueButton certificateId={cert.id} />
+                    <RevokeButton certificateId={cert.id} />
+                  </>
+                )}
+              </div>
+            </li>
+          ))
+        )}
       </ul>
     </div>
   );

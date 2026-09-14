@@ -10,7 +10,13 @@ import {
 } from "@/lib/certificates/issue";
 
 export type ActionResult =
-  | { ok: true; uniqueId?: string; verificationToken?: string; pdfUrl?: string | null }
+  | {
+      ok: true;
+      uniqueId?: string;
+      verificationToken?: string;
+      pdfUrl?: string | null;
+      skipped?: boolean;
+    }
   | { ok: false; error: string };
 
 const issueSchema = z.object({
@@ -60,6 +66,7 @@ export async function issueOneCertificateAction(
       uniqueId: result.uniqueId,
       verificationToken: result.verificationToken,
       pdfUrl: result.pdfUrl,
+      skipped: result.skipped,
     };
   } catch (error) {
     return {

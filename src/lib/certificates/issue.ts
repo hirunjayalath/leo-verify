@@ -35,6 +35,15 @@ export type IssueCertificateResult = {
   emailSent?: boolean;
 };
 
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "P2002"
+  );
+}
+
 async function nextSequence(clubId: string, year: number): Promise<number> {
   const club = await prisma.club.findUniqueOrThrow({ where: { id: clubId } });
   const prefix = `LEO-${club.code.toUpperCase()}-${year}-`;
@@ -65,6 +74,34 @@ async function requireApprovedTemplate(eventId: string, clubId: string) {
   return template;
 }
 
+async function findIssuedDuplicate(input: {
+  eventId: string;
+  recipientName: string;
+  recipientEmail: string | null;
+}) {
+  if (input.recipientEmail) {
+    return prisma.certificate.findFirst({
+      where: {
+        eventId: input.eventId,
+        recipientEmail: {
+          equals: input.recipientEmail,
+          mode: "insensitive",
+        },
+        recipientName: input.recipientName,
+        status: CertificateStatus.issued,
+      },
+    });
+  }
+  return prisma.certificate.findFirst({
+    where: {
+      eventId: input.eventId,
+      recipientName: input.recipientName,
+      recipientEmail: null,
+      status: CertificateStatus.issued,
+    },
+  });
+}
+
 export async function issueCertificate(
   input: IssueCertificateInput,
 ): Promise<IssueCertificateResult> {
@@ -80,54 +117,110 @@ export async function issueCertificate(
 
   const template = await requireApprovedTemplate(input.eventId, input.clubId);
 
+  const recipientName = input.recipientName.trim();
+  const recipientEmail = input.recipientEmail?.trim().toLowerCase() || null;
+  const role = input.role.trim();
+
+  const existing = await findIssuedDuplicate({
+    eventId: input.eventId,
+    recipientName,
+    recipientEmail,
+  });
+  if (existing) {
+    return {
+      id: existing.id,
+      uniqueId: existing.uniqueId,
+      verificationToken: existing.verificationToken,
+      pdfUrl: existing.pdfUrl,
+      skipped: true,
+    };
+  }
+
   await assertWithinCertLimit(input.clubId);
 
-  if (input.recipientEmail) {
-    const existing = await prisma.certificate.findFirst({
-      where: {
-        eventId: input.eventId,
-        recipientEmail: input.recipientEmail,
-        recipientName: input.recipientName.trim(),
-        status: CertificateStatus.issued,
-      },
+  let recipientId: string | null = null;
+  if (recipientEmail) {
+    const recipient = await prisma.recipient.findFirst({
+      where: { email: { equals: recipientEmail, mode: "insensitive" } },
+      select: { id: true },
     });
-    if (existing) {
-      return {
-        id: existing.id,
-        uniqueId: existing.uniqueId,
-        verificationToken: existing.verificationToken,
-        pdfUrl: existing.pdfUrl,
-        skipped: true,
-      };
+    recipientId = recipient?.id ?? null;
+  }
+
+  const issueDateIso = issueDate.toISOString().slice(0, 10);
+  const tokenVersion = 1;
+
+  let certificate:
+    | {
+        id: string;
+        uniqueId: string;
+        verificationToken: string;
+        recipientName: string;
+        recipientEmail: string | null;
+        role: string;
+        achievement: string | null;
+      }
+    | undefined;
+  let uniqueId = "";
+  let verificationToken = "";
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const sequence = await nextSequence(input.clubId, year);
+    uniqueId = formatCertificateId(club.code, year, sequence);
+    verificationToken = computeVerificationToken({
+      uniqueId,
+      recipientName,
+      eventId: input.eventId,
+      clubId: input.clubId,
+      issueDate: issueDateIso,
+      role,
+      tokenVersion,
+    });
+
+    try {
+      certificate = await prisma.certificate.create({
+        data: {
+          uniqueId,
+          verificationToken,
+          tokenVersion,
+          clubId: input.clubId,
+          eventId: input.eventId,
+          recipientName,
+          recipientEmail,
+          role,
+          achievement: input.achievement?.trim() || null,
+          issueDate,
+          status: CertificateStatus.issued,
+          recipientId,
+        },
+      });
+      break;
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        // Another concurrent issue may have claimed this uniqueId or person — re-check duplicate
+        const raced = await findIssuedDuplicate({
+          eventId: input.eventId,
+          recipientName,
+          recipientEmail,
+        });
+        if (raced) {
+          return {
+            id: raced.id,
+            uniqueId: raced.uniqueId,
+            verificationToken: raced.verificationToken,
+            pdfUrl: raced.pdfUrl,
+            skipped: true,
+          };
+        }
+        continue;
+      }
+      throw error;
     }
   }
 
-  const sequence = await nextSequence(input.clubId, year);
-  const uniqueId = formatCertificateId(club.code, year, sequence);
-  const issueDateIso = issueDate.toISOString().slice(0, 10);
-  const verificationToken = computeVerificationToken({
-    uniqueId,
-    recipientName: input.recipientName.trim(),
-    eventId: input.eventId,
-    clubId: input.clubId,
-    issueDate: issueDateIso,
-    role: input.role.trim(),
-  });
-
-  const certificate = await prisma.certificate.create({
-    data: {
-      uniqueId,
-      verificationToken,
-      clubId: input.clubId,
-      eventId: input.eventId,
-      recipientName: input.recipientName.trim(),
-      recipientEmail: input.recipientEmail?.trim() || null,
-      role: input.role.trim(),
-      achievement: input.achievement?.trim() || null,
-      issueDate,
-      status: CertificateStatus.issued,
-    },
-  });
+  if (!certificate) {
+    throw new Error("Could not allocate a unique certificate ID. Try again.");
+  }
 
   let pdfUrl: string | null = null;
   let pdfKey: string | null = null;
@@ -167,10 +260,7 @@ export async function issueCertificate(
   });
 
   let emailSent = false;
-  if (
-    input.sendEmail !== false &&
-    certificate.recipientEmail
-  ) {
+  if (input.sendEmail !== false && certificate.recipientEmail) {
     const emailResult = await sendCertificateEmail({
       to: certificate.recipientEmail,
       recipientName: certificate.recipientName,
@@ -215,6 +305,7 @@ export async function revokeCertificate(input: {
       revokedAt: new Date(),
       revokedById: input.actorUserId,
       pdfUrl: null,
+      pdfKey: null,
     },
   });
 
@@ -257,6 +348,7 @@ export async function reissueCertificate(input: {
 
   const template = await requireApprovedTemplate(cert.eventId, input.clubId);
   const issueDateIso = cert.issueDate.toISOString().slice(0, 10);
+  const tokenVersion = (cert.tokenVersion ?? 1) + 1;
   const verificationToken = computeVerificationToken({
     uniqueId: cert.uniqueId,
     recipientName: cert.recipientName,
@@ -264,6 +356,7 @@ export async function reissueCertificate(input: {
     clubId: input.clubId,
     issueDate: issueDateIso,
     role: cert.role,
+    tokenVersion,
   });
 
   const pdfBytes = await renderCertificatePdf({
@@ -294,6 +387,7 @@ export async function reissueCertificate(input: {
     where: { id: cert.id },
     data: {
       verificationToken,
+      tokenVersion,
       pdfUrl: uploaded.url,
       pdfKey: uploaded.key,
     },
@@ -305,7 +399,7 @@ export async function reissueCertificate(input: {
     targetType: "Certificate",
     targetId: cert.id,
     clubId: input.clubId,
-    metadata: { uniqueId: cert.uniqueId },
+    metadata: { uniqueId: cert.uniqueId, tokenVersion },
   });
 
   return {

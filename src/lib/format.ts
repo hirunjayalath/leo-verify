@@ -15,6 +15,20 @@ export function formatRelativeTime(date: Date | string, now = new Date()): strin
 }
 
 const ACTION_LABELS: Record<string, string> = {
+  "event.create": "Created event",
+  "event.update": "Updated event",
+  "template.create": "Created template",
+  "template.update": "Updated template layout",
+  "template.approve": "Approved template",
+  "template.reject": "Rejected template",
+  "template.revert": "Reverted template to draft",
+  "certificate.issue": "Issued certificate",
+  "certificate.revoke": "Revoked certificate",
+  "certificate.reissue": "Reissued certificate",
+  "import.start": "Started CSV import",
+  "club.create": "Onboarded club",
+  "user.invite": "Linked club admin",
+  // Legacy underscore keys (if any old rows exist)
   create_event: "Created event",
   update_event: "Updated event",
   create_template: "Created template",
@@ -31,6 +45,6 @@ const ACTION_LABELS: Record<string, string> = {
 export function formatAuditAction(action: string): string {
   if (ACTION_LABELS[action]) return ACTION_LABELS[action];
   return action
-    .replace(/_/g, " ")
+    .replace(/[._]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }

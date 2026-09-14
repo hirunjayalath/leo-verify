@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -12,15 +12,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { safeInternalPath } from "@/lib/safe-redirect";
 
+type AuthMode = "signin" | "signup" | "recovery";
+
+function subscribeHash(onStoreChange: () => void) {
+  window.addEventListener("hashchange", onStoreChange);
+  return () => window.removeEventListener("hashchange", onStoreChange);
+}
+
+function getHashType(): string | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  return new URLSearchParams(hash).get("type");
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeInternalPath(searchParams.get("next"), "/admin");
+  const hashType = useSyncExternalStore(subscribeHash, getHashType, () => null);
+  const recovery =
+    searchParams.get("type") === "recovery" || hashType === "recovery";
+  const [accountMode, setAccountMode] = useState<"signin" | "signup">(
+    searchParams.get("mode") === "signup" ? "signup" : "signin",
+  );
+  const mode: AuthMode = recovery ? "recovery" : accountMode;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
-
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -39,6 +58,58 @@ function LoginForm() {
         "@/lib/supabase/client"
       );
       const supabase = createBrowserSupabaseClient();
+
+      if (mode === "recovery") {
+        if (password.length < 8) {
+          toast.error("Password must be at least 8 characters");
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
+        toast.success("Password updated — you are signed in");
+        router.push(safeInternalPath(searchParams.get("next"), "/claim"));
+        router.refresh();
+        return;
+      }
+
+      if (mode === "signup") {
+        if (password.length < 8) {
+          toast.error("Password must be at least 8 characters");
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/claim`;
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirectTo },
+        });
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
+        toast.success("Account created — check your email if confirmation is required");
+        router.push(safeInternalPath(searchParams.get("next"), "/claim"));
+        router.refresh();
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -75,7 +146,7 @@ function LoginForm() {
         "@/lib/supabase/client"
       );
       const supabase = createBrowserSupabaseClient();
-      const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/login`;
+      const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/login?type=recovery`;
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo,
       });
@@ -91,55 +162,128 @@ function LoginForm() {
     }
   }
 
+  const title =
+    mode === "recovery"
+      ? "Choose a new password"
+      : mode === "signup"
+        ? "Create recipient account"
+        : "Sign in";
+
   return (
     <>
       <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+        {mode !== "recovery" && (
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+        )}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="password">Password</Label>
-            <button
-              type="button"
-              className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
-              onClick={onForgotPassword}
-              disabled={resetting}
-            >
-              {resetting ? "Sending…" : "Forgot password?"}
-            </button>
+            <Label htmlFor="password">
+              {mode === "recovery" ? "New password" : "Password"}
+            </Label>
+            {mode === "signin" && (
+              <button
+                type="button"
+                className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
+                onClick={onForgotPassword}
+                disabled={resetting}
+              >
+                {resetting ? "Sending…" : "Forgot password?"}
+              </button>
+            )}
           </div>
           <Input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete={
+              mode === "signup" ? "new-password" : "current-password"
+            }
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoFocus={mode === "recovery"}
           />
         </div>
+        {(mode === "signup" || mode === "recovery") && (
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+        )}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Spinner />}
-          {loading ? "Signing in…" : "Sign in"}
+          {loading
+            ? mode === "recovery"
+              ? "Updating…"
+              : mode === "signup"
+                ? "Creating…"
+                : "Signing in…"
+            : mode === "recovery"
+              ? "Update password"
+              : mode === "signup"
+                ? "Create account"
+                : "Sign in"}
         </Button>
       </form>
-      <p className="mt-5 text-center text-sm text-muted-foreground">
-        Need an account? Contact your club admin for access.
-      </p>
+
+      {mode === "signin" && (
+        <>
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            Certificate holder?{" "}
+            <button
+              type="button"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              onClick={() => setAccountMode("signup")}
+            >
+              Create a recipient account
+            </button>
+          </p>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Club admins: use the account your district linked for you.
+          </p>
+        </>
+      )}
+      {mode === "signup" && (
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            onClick={() => setAccountMode("signin")}
+          >
+            Sign in
+          </button>
+        </p>
+      )}
+      {mode === "recovery" && (
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          After updating, you can claim certificates with this email.
+        </p>
+      )}
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
           Back to public site
         </Link>
       </p>
+      {/* Keep title in sync for screen readers via visually tied copy */}
+      <span className="sr-only">{title}</span>
     </>
   );
 }
@@ -157,8 +301,8 @@ function LoginFallback() {
 export default function LoginPage() {
   return (
     <AuthShell
-      title="Club admin login"
-      description="Sign in with your LeoVerify club account. Enable MFA in Supabase Auth for production admins."
+      title="Sign in"
+      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates."
     >
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />

@@ -87,14 +87,19 @@ export async function getSupabaseAuthUser(): Promise<{
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    // Supabase-only sessions (recipients) must not bounce login ↔ admin forever.
+    const auth = await getSupabaseAuthUser();
+    if (auth) redirect("/claim");
+    redirect("/login");
+  }
   return user;
 }
 
 export async function requireClubAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (user.role !== "club_admin" && user.role !== "district_admin") {
-    redirect("/login");
+    redirect("/claim");
   }
   // District-only operators manage clubs from /admin/district
   if (user.role === "district_admin" && !user.clubId) {

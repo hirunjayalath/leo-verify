@@ -1,5 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { CreateEventForm } from "@/components/create-event-form";
+import { EditEventForm } from "@/components/edit-event-form";
 import {
   Card,
   CardContent,
@@ -67,6 +68,7 @@ export default async function AdminEventsPage() {
                         <TableHead>Date</TableHead>
                         <TableHead>Templates</TableHead>
                         <TableHead>Certificates</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -82,6 +84,18 @@ export default async function AdminEventsPage() {
                           </TableCell>
                           <TableCell>{event._count.templates}</TableCell>
                           <TableCell>{event._count.certificates}</TableCell>
+                          <TableCell className="text-right">
+                            <EditEventForm
+                              event={{
+                                id: event.id,
+                                name: event.name,
+                                description: event.description,
+                                eventDate: event.eventDate
+                                  ? event.eventDate.toISOString().slice(0, 10)
+                                  : null,
+                              }}
+                            />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -101,6 +115,16 @@ export default async function AdminEventsPage() {
                         · {event._count.templates} templates ·{" "}
                         {event._count.certificates} certificates
                       </p>
+                      <EditEventForm
+                        event={{
+                          id: event.id,
+                          name: event.name,
+                          description: event.description,
+                          eventDate: event.eventDate
+                            ? event.eventDate.toISOString().slice(0, 10)
+                            : null,
+                        }}
+                      />
                     </li>
                   ))}
                 </ul>

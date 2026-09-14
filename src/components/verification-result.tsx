@@ -37,8 +37,18 @@ export function VerificationResult({
     }
   }
 
-  const issuerName =
-    result.status === "valid" ? result.clubName : null;
+  // Policy: revoked pages show only the revocation message — no ID, seal chrome, or actions.
+  if (result.status === "revoked") {
+    return (
+      <div className="animate-fade-up rounded-2xl border border-border bg-card px-6 py-10 shadow-float sm:px-8">
+        <p className="text-center text-base font-medium text-danger">
+          {result.message}
+        </p>
+      </div>
+    );
+  }
+
+  const issuerName = result.status === "valid" ? result.clubName : null;
   const eventName = result.status === "valid" ? result.eventName : null;
   const pdfUrl = result.status === "valid" ? result.pdfUrl : null;
 
@@ -121,12 +131,6 @@ export function VerificationResult({
                 <Field label="Issue date" value={result.issueDate} />
                 <Field label="Status" value="Issued" accent="success" />
               </dl>
-            )}
-
-            {result.status === "revoked" && (
-              <p className="rounded-xl bg-danger-muted px-5 py-4 text-sm font-medium text-danger">
-                {result.message}
-              </p>
             )}
 
             {result.status === "invalid" && (

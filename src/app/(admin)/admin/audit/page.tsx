@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ScrollText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,16 +21,31 @@ import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatAuditAction, formatRelativeTime } from "@/lib/format";
 
-export default async function AdminAuditPage() {
+const PAGE_SIZE = 50;
+
+type PageProps = {
+  searchParams: Promise<{ page?: string }>;
+};
+
+export default async function AdminAuditPage({ searchParams }: PageProps) {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
 
-  const logs = await prisma.auditLog.findMany({
-    where: { clubId },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: { actor: { select: { name: true, email: true } } },
-  });
+  const [logs, total] = await Promise.all([
+    prisma.auditLog.findMany({
+      where: { clubId },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+      include: { actor: { select: { name: true, email: true } } },
+    }),
+    prisma.auditLog.count({ where: { clubId } }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -42,9 +59,9 @@ export default async function AdminAuditPage() {
         <CardHeader>
           <CardTitle>Recent activity</CardTitle>
           <CardDescription>
-            {logs.length === 0
+            {total === 0
               ? "No activity yet"
-              : `Showing ${logs.length} most recent entries`}
+              : `Showing ${logs.length} of ${total} entries`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,6 +125,29 @@ export default async function AdminAuditPage() {
                   </li>
                 ))}
               </ul>
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Page {page} of {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    {page > 1 ? (
+                      <Link href={`/admin/audit?page=${page - 1}`}>
+                        <Button variant="outline" size="sm">
+                          Previous
+                        </Button>
+                      </Link>
+                    ) : null}
+                    {page < totalPages ? (
+                      <Link href={`/admin/audit?page=${page + 1}`}>
+                        <Button variant="outline" size="sm">
+                          Next
+                        </Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>

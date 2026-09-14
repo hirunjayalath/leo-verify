@@ -43,6 +43,7 @@ async function lookupCertificate(uniqueId: string) {
         eventId: true,
         pdfUrl: true,
         pdfKey: true,
+        tokenVersion: true,
         event: {
           select: {
             name: true,
@@ -68,6 +69,7 @@ async function lookupCertificate(uniqueId: string) {
       eventName: row.event.name,
       pdfUrl: row.pdfUrl,
       pdfKey: row.pdfKey,
+      tokenVersion: row.tokenVersion,
     };
   } catch {
     return null;
@@ -105,21 +107,26 @@ export default async function VerificationPage({
   const row = await lookupCertificate(uniqueId);
   const result = evaluateVerification(row, t);
   const checkedAt = new Date().toISOString();
+  const isRevoked = result.status === "revoked";
 
   return (
     <div className="surface-grid">
       <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
-        <p className="mb-2 text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-          Independent authenticity check
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          Certificate check
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Result is read live from the database — not from any PDF copy.
-        </p>
+        {!isRevoked && (
+          <>
+            <p className="mb-2 text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Independent authenticity check
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Certificate check
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Result is read live from the database — not from any PDF copy.
+            </p>
+          </>
+        )}
 
-        <div className="mt-8">
+        <div className={isRevoked ? "" : "mt-8"}>
           <VerificationResult
             uniqueId={uniqueId}
             result={result}
@@ -127,14 +134,16 @@ export default async function VerificationPage({
           />
         </div>
 
-        <p className="mt-8 text-sm text-muted-foreground">
-          <Link
-            href="/#verify"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Verify another certificate
-          </Link>
-        </p>
+        {!isRevoked && (
+          <p className="mt-8 text-sm text-muted-foreground">
+            <Link
+              href="/#verify"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Verify another certificate
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

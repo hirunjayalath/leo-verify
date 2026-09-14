@@ -29,6 +29,13 @@ export function IssueCertificateForm({
         toast.error(result.error);
         return;
       }
+      if (result.skipped) {
+        toast.message("Already issued — returning existing certificate", {
+          description: result.uniqueId,
+        });
+        router.refresh();
+        return;
+      }
       const path = buildVerificationPath(
         result.uniqueId!,
         result.verificationToken!,

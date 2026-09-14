@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { reissueCertificateAction } from "@/app/(admin)/admin/certificates/actions";
 import { Button } from "@/components/ui/button";
@@ -9,16 +9,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 export function ReissueButton({ certificateId }: { certificateId: string }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  function onClick() {
-    if (
-      !window.confirm(
-        "Reissue this certificate? A new verification token and PDF will be generated. The old QR link will stop working.",
-      )
-    ) {
-      return;
-    }
+  function onConfirm(e: FormEvent) {
+    e.preventDefault();
     const formData = new FormData();
     formData.set("id", certificateId);
     startTransition(async () => {
@@ -27,22 +22,46 @@ export function ReissueButton({ certificateId }: { certificateId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Certificate reissued");
+      toast.success("Certificate reissued — old QR links no longer verify");
+      setOpen(false);
       router.refresh();
     });
   }
 
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-auto px-0 text-xs font-medium text-primary"
+        onClick={() => setOpen(true)}
+      >
+        Reissue
+      </Button>
+    );
+  }
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="h-auto px-0 text-xs font-medium text-primary"
-      disabled={pending}
-      onClick={onClick}
+    <form
+      onSubmit={onConfirm}
+      className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-2 sm:flex-row sm:items-center"
     >
-      {pending ? <Spinner className="h-3 w-3" /> : null}
-      {pending ? "Reissuing…" : "Reissue"}
-    </Button>
+      <p className="text-xs text-muted-foreground">
+        New token + PDF. Old QR links will stop working.
+      </p>
+      <Button type="submit" size="sm" disabled={pending}>
+        {pending && <Spinner />}
+        Confirm
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        onClick={() => setOpen(false)}
+      >
+        Cancel
+      </Button>
+    </form>
   );
 }

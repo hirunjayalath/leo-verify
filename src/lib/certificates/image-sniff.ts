@@ -1,7 +1,7 @@
 const MAX_TEMPLATE_BYTES = 5 * 1024 * 1024;
 
 export type ImageSniffResult =
-  | { ok: true; ext: "png" | "jpg" | "webp"; contentType: string }
+  | { ok: true; ext: "png" | "jpg"; contentType: string }
   | { ok: false; error: string };
 
 export function sniffImageBytes(bytes: Buffer): ImageSniffResult {
@@ -24,7 +24,7 @@ export function sniffImageBytes(bytes: Buffer): ImageSniffResult {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return { ok: true, ext: "jpg", contentType: "image/jpeg" };
   }
-  // WEBP (RIFF....WEBP)
+  // WebP is rejected — pdf-lib cannot embed it for certificate rendering
   if (
     bytes[0] === 0x52 &&
     bytes[1] === 0x49 &&
@@ -35,9 +35,12 @@ export function sniffImageBytes(bytes: Buffer): ImageSniffResult {
     bytes[10] === 0x42 &&
     bytes[11] === 0x50
   ) {
-    return { ok: true, ext: "webp", contentType: "image/webp" };
+    return {
+      ok: false,
+      error: "WebP is not supported. Upload a PNG or JPEG background.",
+    };
   }
-  return { ok: false, error: "Only PNG, JPEG, or WebP images are allowed" };
+  return { ok: false, error: "Only PNG or JPEG images are allowed" };
 }
 
 export const MAX_TEMPLATE_UPLOAD_BYTES = MAX_TEMPLATE_BYTES;
