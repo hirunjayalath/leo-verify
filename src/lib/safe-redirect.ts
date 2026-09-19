@@ -1,6 +1,4 @@
-/**
- * Safe internal redirect paths after login (reject open redirects).
- */
+/** Reject open redirects after login. */
 export function safeInternalPath(
   candidate: string | null | undefined,
   fallback = "/admin",

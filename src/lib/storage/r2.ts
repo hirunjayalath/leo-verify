@@ -9,7 +9,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-/** Immutable public assets (logos, templates, gallery uploads). */
+/** Logos, templates, signatures — long CDN cache. */
 export const CACHE_CONTROL_PUBLIC_ASSET =
   "public, max-age=31536000, immutable";
 
@@ -41,7 +41,6 @@ export async function uploadObject(input: {
   key: string;
   body: Buffer | Uint8Array;
   contentType: string;
-  /** Defaults: long-cache for templates/logos/signatures; private short for PDFs. */
   cacheControl?: string;
 }): Promise<{ key: string; url: string }> {
   const cacheControl =
@@ -73,7 +72,6 @@ export async function uploadObject(input: {
     return { key: input.key, url };
   }
 
-  // Local fallback for development without R2 credentials
   const uploadsDir = path.join(process.cwd(), "public", "uploads");
   await mkdir(uploadsDir, { recursive: true });
   const filename = input.key.replace(/\//g, "_");
@@ -165,7 +163,6 @@ export async function createPresignedUploadUrl(input: {
   return { uploadUrl, publicUrl, key: input.key };
 }
 
-/** Optional R2 reachability check for /api/health */
 export async function pingR2(): Promise<boolean | "skipped"> {
   if (!r2Configured()) return "skipped";
   try {
@@ -174,7 +171,7 @@ export async function pingR2(): Promise<boolean | "skipped"> {
     await client.send(new HeadObjectCommand({ Bucket: bucket, Key: "__health__" }));
     return true;
   } catch (error) {
-    // Missing health probe object is fine — auth + bucket access worked if NotFound.
+    // Missing probe key is fine — 404 means the bucket is reachable.
     const name =
       typeof error === "object" && error && "name" in error
         ? String((error as { name: string }).name)
@@ -185,7 +182,6 @@ export async function pingR2(): Promise<boolean | "skipped"> {
             ?.httpStatusCode
         : undefined;
     if (name === "NotFound" || code === 404) return true;
-    // HeadObject on missing key often returns 404 from R2 — treat as reachable.
     if (code === 403 || code === 401) return false;
     return code === 404 || name.includes("NoSuchKey") ? true : false;
   }

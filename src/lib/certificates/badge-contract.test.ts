@@ -5,10 +5,6 @@ import {
   type CertificateCanonicalFields,
 } from "@/lib/certificates/token";
 
-/**
- * Light badge-export contract smoke (no HTTP server): token + status gates
- * mirror GET /api/credentials/[uniqueId]/badge.
- */
 describe("badge API contract smoke", () => {
   const fields: CertificateCanonicalFields = {
     uniqueId: "LEO-UOM-2026-000001",

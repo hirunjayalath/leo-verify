@@ -14,10 +14,7 @@ import {
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
-/**
- * Open Badges 3.0 / VC-aligned export (Phase 2).
- * HMAC verification remains the primary UX; this is an interoperability layer.
- */
+/** Open Badges 3.0 export — HMAC remains the primary verify UX. */
 export async function GET(request: Request, { params }: Params) {
   const limit = await rateLimitBadge(
     clientIpFromHeaders(new Headers(request.headers)),

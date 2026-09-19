@@ -25,10 +25,7 @@ export function galleryTag(): string {
   return "template-gallery";
 }
 
-/**
- * Safe cache: branding / portal chrome only.
- * Never cache certificate verify decisions without cert:{uniqueId} invalidation on revoke.
- */
+/** Branding only — never cache verify decisions without cert:{uniqueId} invalidation on revoke. */
 export function getCachedClubBrandingBySlug(slug: string) {
   return unstable_cache(
     async (): Promise<ClubBrandingCached | null> => {
@@ -79,7 +76,6 @@ export function getCachedClubBrandingById(clubId: string) {
   )();
 }
 
-/** Static starter gallery — cached so admin list work stays cheap under load. */
 export function getCachedGalleryPresets() {
   return unstable_cache(
     async (): Promise<GalleryPreset[]> => TEMPLATE_GALLERY,

@@ -137,10 +137,7 @@ async function verifiedCard(input: {
   );
 }
 
-/**
- * Token-gated Open Graph image. Invalid/revoked/missing t → generic site card
- * with no personal data (Rule 8).
- */
+/** Invalid/revoked/missing t → generic card with no personal data (Rule 8). */
 export async function GET(request: Request, { params }: Params) {
   const limit = await rateLimitExpensiveRender(
     clientIpFromHeaders(new Headers(request.headers)),

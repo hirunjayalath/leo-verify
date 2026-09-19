@@ -24,7 +24,6 @@ export type IssueCertificateInput = {
   achievement?: string | null;
   issueDate?: Date;
   sendEmail?: boolean;
-  /** Bulk import: reuse prefetched template background bytes. */
   backgroundBytes?: Uint8Array;
 };
 
@@ -199,7 +198,7 @@ export async function issueCertificate(
       break;
     } catch (error) {
       if (isUniqueViolation(error)) {
-        // Another concurrent issue may have claimed this uniqueId or person — re-check duplicate
+        // Concurrent issue may have claimed this uniqueId — re-check duplicate.
         const raced = await findIssuedDuplicate({
           eventId: input.eventId,
           recipientName,
@@ -340,7 +339,7 @@ export async function revokeCertificate(input: {
   return updated;
 }
 
-/** New verification token + PDF; status stays issued. Does not revoke. */
+/** New token + PDF; status stays issued. Does not revoke. */
 export async function reissueCertificate(input: {
   certificateId: string;
   clubId: string;

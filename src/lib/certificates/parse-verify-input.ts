@@ -1,7 +1,3 @@
-/**
- * Parse a certificate ID, relative path, or absolute verify URL into id + token.
- * Used by the landing form and in-browser QR scanner.
- */
 export function parseVerifyInput(raw: string): { id: string; token: string } {
   const trimmed = raw.trim();
   if (!trimmed) return { id: "", token: "" };
@@ -28,7 +24,6 @@ export function parseVerifyInput(raw: string): { id: string; token: string } {
   return { id: trimmed, token: "" };
 }
 
-/** True when the payload is a LeoVerify verify URL (path contains /v/{id}). */
 export function isLeoVerifyQrPayload(raw: string): boolean {
   const trimmed = raw.trim();
   if (!trimmed.includes("/v/")) return false;

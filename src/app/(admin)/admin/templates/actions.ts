@@ -48,7 +48,7 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
     contentType: sniffed.contentType,
   });
 
-  // Leo clubs (UoM operator model): auto-approve. Public orgs: draft until district review.
+  // Leo clubs: auto-approve. Public orgs: draft until district review.
   const status =
     club.type === ClubType.public
       ? TemplateStatus.draft
@@ -233,7 +233,6 @@ export async function renameTemplateAction(formData: FormData): Promise<ActionRe
   return { ok: true, id };
 }
 
-/** Rejected templates can be moved back to draft for editing and resubmission. */
 export async function revertTemplateToDraftAction(
   formData: FormData,
 ): Promise<ActionResult> {

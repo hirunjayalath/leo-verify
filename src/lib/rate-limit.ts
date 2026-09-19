@@ -1,9 +1,3 @@
-/**
- * Public endpoint rate limiting.
- * Production (Vercel): Upstash required — fail closed if unset.
- * Local/dev: in-memory fallback when Upstash is absent.
- */
-
 type LimitResult = { success: boolean; remaining: number };
 
 const memoryHits = new Map<string, { count: number; resetAt: number }>();
@@ -67,15 +61,14 @@ async function limitOrFailClosed(
   const upstash = await upstashLimit(ip, prefix, max, window);
   if (upstash) return upstash;
 
+  // Fail closed on Vercel when Upstash is missing or broken.
   if (isProductionRuntime()) {
-    // Fail closed: missing/broken Upstash must not open the floodgates on Vercel.
     return { success: false, remaining: 0 };
   }
 
   return memoryLimit(memoryKey, max, windowMs);
 }
 
-/** Public verify page — relatively permissive. */
 export async function rateLimitVerification(ip: string): Promise<LimitResult> {
   return limitOrFailClosed(ip, "leoverify:v", 60, "1 m", `v:${ip}`, 60_000);
 }
@@ -102,7 +95,6 @@ export async function rateLimitBadge(ip: string): Promise<LimitResult> {
   );
 }
 
-/** Template preview + OG image — expensive PDF/image work; stricter. */
 export async function rateLimitExpensiveRender(
   ip: string,
 ): Promise<LimitResult> {

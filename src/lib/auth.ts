@@ -8,23 +8,18 @@ export type SessionUser = AppUser & {
   district: { id: string; code: string; name: string } | null;
 };
 
-/** Dev bypass is local-only. Never honor outside NODE_ENV=development or on Vercel. */
+/** Local-only. Never honor on Vercel even if NODE_ENV is wrongly development. */
 export function isAuthDevBypassEnabled(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
   if (env.AUTH_DEV_BYPASS !== "true") return false;
   if (env.NODE_ENV !== "development") return false;
-  // Fail closed on any Vercel deploy, even if NODE_ENV is wrongly set to development.
   if (env.VERCEL || env.VERCEL_ENV) return false;
   return true;
 }
 
 export type AuthenticatorAssuranceLevel = "aal1" | "aal2" | null;
 
-/**
- * Current MFA assurance level from Supabase. Null when Auth is unavailable
- * or the caller is on the local AUTH_DEV_BYPASS path (treated as satisfied).
- */
 export async function getAuthenticatorAssuranceLevel(): Promise<AuthenticatorAssuranceLevel> {
   if (isAuthDevBypassEnabled()) return "aal2";
 
@@ -43,7 +38,7 @@ export async function getAuthenticatorAssuranceLevel(): Promise<AuthenticatorAss
   }
 }
 
-/** Club/district admin sessions must complete TOTP (AAL2). */
+/** Club/district admins must complete TOTP (AAL2). */
 export async function requireAdminAal2(): Promise<void> {
   if (isAuthDevBypassEnabled()) return;
   const level = await getAuthenticatorAssuranceLevel();
@@ -96,7 +91,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 }
 
-/** Supabase Auth user for recipient journeys (claim/profile). Never uses admin bypass. */
+/** Recipient claim/profile — never uses admin bypass. */
 export async function getSupabaseAuthUser(): Promise<{
   id: string;
   email: string;
@@ -120,7 +115,7 @@ export async function getSupabaseAuthUser(): Promise<{
 export async function requireUser(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) {
-    // Supabase-only sessions (recipients) must not bounce login ↔ admin forever.
+    // Recipients must not bounce login ↔ admin forever.
     const auth = await getSupabaseAuthUser();
     if (auth) redirect("/claim");
     redirect("/login");
@@ -134,7 +129,6 @@ export async function requireClubAdmin(): Promise<SessionUser> {
     redirect("/claim");
   }
   await requireAdminAal2();
-  // District-only operators manage clubs from /admin/district
   if (user.role === "district_admin" && !user.clubId) {
     redirect("/admin/district");
   }

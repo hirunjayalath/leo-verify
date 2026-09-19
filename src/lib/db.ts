@@ -7,17 +7,14 @@ const globalForPrisma = globalThis as unknown as {
   pgPool: Pool | undefined;
 };
 
-/**
- * Prefer DATABASE_URL (transaction pooler on Vercel: port 6543 + pgbouncer=true).
- * Use DIRECT_DATABASE_URL only for migrations (session / direct 5432).
- */
+/** App uses DATABASE_URL (pooler :6543 on Vercel); migrate uses DIRECT_DATABASE_URL. */
 function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
 
-  // Serverless: one (or two) connections per isolate. Never open a large pool on Vercel.
+  // One connection per serverless isolate — never widen on Vercel.
   const max = Math.min(
     2,
     Math.max(1, Number(process.env.PG_POOL_MAX || 1) || 1),
@@ -32,17 +29,12 @@ function createPrismaClient(): PrismaClient {
       connectionTimeoutMillis: 10_000,
     });
 
-  // Cache pool in all environments so hot serverless isolates reuse connections.
   globalForPrisma.pgPool = pool;
 
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 
-/**
- * Lazy Prisma singleton. Requires DATABASE_URL and a generated client.
- * Public verification and admin routes should use this server-side only.
- */
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
     const client = globalForPrisma.prisma ?? createPrismaClient();
@@ -52,7 +44,6 @@ export const prisma = new Proxy({} as PrismaClient, {
   },
 });
 
-/** Lightweight connectivity check for /api/health */
 export async function pingDatabase(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;

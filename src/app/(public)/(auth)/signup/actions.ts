@@ -17,10 +17,7 @@ export type SignupResult =
   | { ok: true; clubId: string }
   | { ok: false; error: string };
 
-/**
- * Self-serve signup for public organizations (Phase 2).
- * Requires an authenticated Supabase session; binds identity from the session only.
- */
+/** Requires authenticated Supabase session; binds identity from the session only. */
 export async function signupPublicOrgAction(
   formData: FormData,
 ): Promise<SignupResult> {

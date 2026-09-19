@@ -1,7 +1,4 @@
-/**
- * Lightweight ops logging + optional Sentry.
- * Never log verification tokens, HMAC secrets, or PII beyond clubId/jobId/uniqueId.
- */
+/** Never log verification tokens, HMAC secrets, or PII beyond clubId/jobId/uniqueId. */
 
 type OpsContext = Record<string, string | number | boolean | null | undefined>;
 
@@ -26,7 +23,6 @@ export async function captureException(
   if (!dsn) return;
 
   try {
-    // Dynamic import keeps Sentry optional until the package is installed.
     const Sentry = await import("@sentry/nextjs").catch(() => null);
     if (!Sentry) {
       console.error("[sentry-unavailable]", message, context);

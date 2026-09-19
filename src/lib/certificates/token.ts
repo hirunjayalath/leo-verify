@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getServerEnv } from "@/lib/env";
 
-/** Canonical fields used for HMAC — keep stable for Open Badges export later. */
+/** Canonical HMAC fields — keep stable for Open Badges export. */
 export type CertificateCanonicalFields = {
   uniqueId: string;
   recipientName: string;
@@ -9,7 +9,7 @@ export type CertificateCanonicalFields = {
   clubId: string;
   issueDate: string; // ISO date YYYY-MM-DD
   role: string;
-  /** Defaults to 1; bumped on each reissue so tokens rotate. */
+  /** Bumped on reissue so tokens rotate. */
   tokenVersion?: number;
 };
 
@@ -45,10 +45,7 @@ function safeEqualHex(a: string, b: string): boolean {
   }
 }
 
-/**
- * Verifies a token against the current secret, then the previous secret
- * (supports zero-downtime rotation of CERT_HMAC_SECRET).
- */
+/** Checks current secret, then CERT_HMAC_SECRET_PREVIOUS for rotation. */
 export function verifyVerificationToken(
   fields: CertificateCanonicalFields,
   token: string,

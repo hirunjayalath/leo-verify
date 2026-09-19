@@ -40,7 +40,6 @@ async function main() {
     update: {
       name: "Leo Club of University of Moratuwa",
       districtId: district.id,
-      // Client-delivered: high operator-set quota (no self-serve billing).
       monthlyCertLimit: 10_000,
       plan: PlanTier.club,
     },

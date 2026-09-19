@@ -7,7 +7,7 @@ import {
 
 const INVALID_MESSAGE = "Could not verify this certificate.";
 
-/** Fields safe to expose on the public verification page (Rule 8). */
+/** Public verification fields only (Rule 8). */
 export type PublicVerificationResult =
   | {
       status: "valid";
@@ -18,13 +18,13 @@ export type PublicVerificationResult =
       issueDate: string;
       role: string;
       achievement: string | null;
-      /** Token-gated same-origin PDF path — never a raw storage URL. */
+      /** Same-origin PDF path — never a raw storage URL. */
       pdfUrl: string | null;
     }
   | {
       status: "revoked";
       uniqueId: string;
-      /** Per client decision: revoked pages show no further detail. */
+      /** Revoked pages show no further detail. */
       message: "This certificate has been revoked.";
     }
   | {
@@ -49,10 +49,7 @@ export type CertificateLookupRow = {
   tokenVersion?: number;
 };
 
-/**
- * Pure verification decision used by the public /v/[id] page.
- * Always driven by live DB fields + HMAC check — never by PDF contents (Rule 1).
- */
+/** Live DB fields + HMAC — never PDF contents (Rule 1). */
 export function evaluateVerification(
   row: CertificateLookupRow | null,
   providedToken: string | null | undefined,

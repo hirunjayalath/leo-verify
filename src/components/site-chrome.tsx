@@ -21,7 +21,6 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Minimal brand lockup used when SiteChrome is unavailable. */
 export function BrandHomeLink() {
   return (
     <Link href="/" className="inline-flex">

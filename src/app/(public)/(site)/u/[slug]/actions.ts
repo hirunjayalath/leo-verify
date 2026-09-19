@@ -5,10 +5,7 @@ import { CertificateStatus } from "@/generated/prisma/client";
 import { buildVerificationPath } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 
-/**
- * Redirect to a tokenized verify URL only for certificates listed on a public profile.
- * Keeps HMAC tokens out of crawlable HTML.
- */
+/** Tokenized verify redirect for public-profile listings — keeps HMAC out of crawlable HTML. */
 export async function openPublicVerifyAction(formData: FormData) {
   const uniqueId = String(formData.get("uniqueId") || "").trim();
   if (!uniqueId) {

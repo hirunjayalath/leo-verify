@@ -1,4 +1,3 @@
-/** Escape text for safe interpolation into HTML email bodies. */
 export function escapeHtml(input: string): string {
   return input
     .replace(/&/g, "&amp;")

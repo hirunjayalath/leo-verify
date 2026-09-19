@@ -25,9 +25,7 @@ export const layoutFieldSchema = z.object({
   fontFamily: z.string().optional(),
   color: z.string().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
-  /** Literal text for staticText fields */
   text: z.string().optional(),
-  /** PNG/JPEG URL for signature / imageStamp overlays */
   imageUrl: z.preprocess(
     (v) => (v === "" || v == null ? undefined : v),
     z.string().url().optional(),

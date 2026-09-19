@@ -4,7 +4,6 @@ export type GalleryPreset = {
   id: string;
   name: string;
   category: string;
-  /** Path under /public */
   backgroundPath: string;
   layout: TemplateLayout;
 };

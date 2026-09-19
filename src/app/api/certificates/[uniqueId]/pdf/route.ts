@@ -10,9 +10,7 @@ import { getShortLivedObjectUrl } from "@/lib/storage/r2";
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
-/**
- * Token-gated PDF download. Live DB status is authoritative — revoked certs 404.
- */
+/** Token-gated PDF. Live DB status is authoritative — revoked certs 404. */
 export async function GET(request: Request, { params }: Params) {
   const limit = await rateLimitVerification(
     clientIpFromHeaders(new Headers(request.headers)),
@@ -57,7 +55,7 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.redirect(url, 302);
   }
 
-  // Legacy rows without pdfKey: only serve if we still have a stored URL and status is issued.
+  // Legacy rows without pdfKey.
   if (cert.pdfUrl) {
     return NextResponse.redirect(cert.pdfUrl, 302);
   }

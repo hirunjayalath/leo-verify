@@ -1,4 +1,3 @@
-/** Lightweight relative time — avoids date-fns. */
 export function formatRelativeTime(date: Date | string, now = new Date()): string {
   const d = typeof date === "string" ? new Date(date) : date;
   const seconds = Math.round((now.getTime() - d.getTime()) / 1000);

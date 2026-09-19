@@ -65,7 +65,6 @@ export const HEADER_MAP: Record<string, RosterField> = {
   achievement: "achievement",
 };
 
-/** Auto-map spreadsheet headers using known aliases. */
 export function autoMapHeaders(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   for (const header of headers) {
@@ -81,7 +80,6 @@ export function mappingIsComplete(mapping: ColumnMapping): boolean {
 
 export type ParsedSpreadsheet = {
   headers: string[];
-  /** Raw objects keyed by original header; excludes empty trailing rows. */
   records: Record<string, string>[];
 };
 
@@ -133,9 +131,6 @@ export function parseXlsxBuffer(buffer: ArrayBuffer | Buffer): ParsedSpreadsheet
   }
 }
 
-/**
- * Validate roster records with an explicit column mapping (or auto HEADER_MAP).
- */
 export function validateRosterRows(
   records: Record<string, string>[],
   mapping?: ColumnMapping,

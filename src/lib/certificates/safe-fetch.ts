@@ -20,7 +20,6 @@ function allowedRemoteHosts(): Set<string> {
       /* ignore bad env */
     }
   }
-  // Local fallbacks used by uploadObject
   hosts.add("localhost");
   hosts.add("127.0.0.1");
   return hosts;
@@ -42,23 +41,18 @@ function isPrivateOrLocalHost(hostname: string): boolean {
     if (parts[0] === 192 && parts[1] === 168) return true;
     return false;
   }
-  // IPv6 loopback / link-local / ULA
   if (host === "::1") return true;
   if (host.startsWith("fe80:")) return true;
   if (host.startsWith("fc") || host.startsWith("fd")) return true;
   return false;
 }
 
-/**
- * Load template/background bytes with path containment and host allowlisting.
- * Exported for unit tests.
- */
+/** Path containment + host allowlist (SSRF-safe). */
 export async function fetchBackgroundBytes(url: string): Promise<Uint8Array> {
   if (!url || typeof url !== "string") {
     throw new Error("Invalid background URL");
   }
 
-  // Local /uploads/ paths (app-relative or absolute path containing uploads)
   if (url.startsWith("/") || url.includes("/uploads/")) {
     const rawName = url.includes("/uploads/")
       ? url.split("/uploads/").pop()!
@@ -96,7 +90,7 @@ export async function fetchBackgroundBytes(url: string): Promise<Uint8Array> {
 
   const host = parsed.hostname.toLowerCase();
   const allow = allowedRemoteHosts();
-  // Allow localhost only when APP URL is also local (dev). Still block cloud metadata.
+  // Localhost only when APP URL is also local; always block cloud metadata.
   if (isPrivateOrLocalHost(host) && !allow.has(host)) {
     throw new Error("Background host not allowlisted");
   }

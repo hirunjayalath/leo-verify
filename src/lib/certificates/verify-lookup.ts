@@ -2,7 +2,6 @@ import { CertificateStatus } from "@/generated/prisma/client";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { prisma } from "@/lib/db";
 
-/** Shared lookup for /v pages and token-aware Open Graph cards. */
 export async function lookupCertificateForVerify(uniqueId: string) {
   if (!process.env.DATABASE_URL) return null;
 
@@ -66,7 +65,6 @@ export async function lookupCertificateForVerify(uniqueId: string) {
   }
 }
 
-/** Public card data only when token verifies and status is issued. */
 export async function getVerifiedShareCard(
   uniqueId: string,
   token: string | null | undefined,

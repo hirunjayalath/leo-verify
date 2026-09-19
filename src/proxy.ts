@@ -2,10 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeInternalPath } from "@/lib/safe-redirect";
 
-/**
- * Next.js 16 proxy (formerly middleware) — refreshes Supabase session cookies
- * and gates /admin/* to authenticated users.
- */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -15,7 +11,7 @@ export async function proxy(request: NextRequest) {
 
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
-  // Dev bypass — skip Supabase gate only in local development (never on Vercel).
+  // Never honor AUTH_DEV_BYPASS on Vercel.
   if (
     process.env.AUTH_DEV_BYPASS === "true" &&
     process.env.NODE_ENV === "development" &&
@@ -74,7 +70,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  // Club/district admin MFA: require AAL2 except on the enrollment page itself.
+  // AAL2 required for /admin except enrollment.
   const isMfaPath = request.nextUrl.pathname === "/admin/mfa";
   if (isAdminPath && user && !isMfaPath) {
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -84,7 +80,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (request.nextUrl.pathname === "/login" && user) {
-    // Recovery hash handling stays on the client; only bounce away when not recovering.
+    // Recovery hash stays on the client — do not bounce away.
     const type = request.nextUrl.searchParams.get("type");
     if (type === "recovery") {
       return response;

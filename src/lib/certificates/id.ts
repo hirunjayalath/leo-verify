@@ -1,7 +1,4 @@
-/**
- * Human-readable certificate IDs, e.g. LEO-UOM-2026-000123.
- * These are labels only — verification always requires the HMAC token (Rule 2).
- */
+/** Labels only — verification always requires the HMAC token (Rule 2). */
 
 export function formatCertificateId(
   clubCode: string,

@@ -1,4 +1,3 @@
-/** URL-safe slug for org portals and similar public paths. */
 export function slugifyPublic(input: string, max = 48): string {
   return input
     .toLowerCase()

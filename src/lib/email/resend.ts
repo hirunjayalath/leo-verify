@@ -98,5 +98,4 @@ export async function sendCertificateEmail(input: {
   }
 }
 
-/** Alias used by hub resend action */
 export const resendCertificateEmail = sendCertificateEmail;

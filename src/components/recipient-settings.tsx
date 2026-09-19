@@ -17,7 +17,7 @@ export type RecipientDashboardCert = {
   eventName: string;
   unlisted: boolean;
   issueDate: string;
-  /** Session-only paths — never rendered on public /u/[slug] HTML. */
+  /** Session-only — never render on public /u/[slug] HTML. */
   verifyPath: string;
   pdfPath: string | null;
 };

@@ -6,10 +6,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 15;
 
-/**
- * Uptime probes (Better Stack / UptimeRobot).
- * Returns 200 when DB is reachable; 503 otherwise. Never invents verify results.
- */
 export async function GET() {
   const started = Date.now();
   const [db, r2] = await Promise.all([pingDatabase(), pingR2()]);

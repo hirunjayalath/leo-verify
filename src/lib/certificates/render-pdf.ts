@@ -14,7 +14,6 @@ import { getPublicEnv } from "@/lib/env";
 
 export type RenderCertificateInput = {
   backgroundUrl: string;
-  /** When set (e.g. bulk import), skip re-fetching the same template background. */
   backgroundBytes?: Uint8Array;
   layout: unknown;
   recipientName: string;

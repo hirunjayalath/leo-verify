@@ -207,7 +207,6 @@ export async function processImportJob(jobId: string) {
         })),
       );
     } else {
-      // Local/sync path: send immediately when Inngest is not configured.
       for (const payload of emailQueue) {
         try {
           await sendCertificateEmail({

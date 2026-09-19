@@ -6,12 +6,11 @@ export const LEO_EMBLEM_SRC = "/brand/leo-emblem.png";
 type BrandMarkProps = {
   size?: number;
   className?: string;
-  /** Set when the mark is the sole accessible name for the brand. */
+  /** Sole accessible name when true; otherwise decorative (empty alt). */
   labeled?: boolean;
   priority?: boolean;
 };
 
-/** Leo Club emblem mark used as the site logo. */
 export function BrandMark({
   size = 32,
   className,
@@ -38,7 +37,6 @@ type BrandLockupProps = {
   priority?: boolean;
 };
 
-/** Emblem + LeoVerify wordmark for headers, footers, and auth chrome. */
 export function BrandLockup({
   size = 32,
   className,

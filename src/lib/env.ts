@@ -25,10 +25,7 @@ export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
 let cachedServerEnv: ServerEnv | null = null;
 
-/**
- * Validates and returns server-only environment variables.
- * Throws loudly if CERT_HMAC_SECRET is missing/short — silent misconfig is worse.
- */
+/** Throws if CERT_HMAC_SECRET is missing or too short. */
 export function getServerEnv(): ServerEnv {
   if (cachedServerEnv) return cachedServerEnv;
 
