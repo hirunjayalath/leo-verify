@@ -168,7 +168,49 @@ export async function saveTemplateLayoutAction(input: {
   return { ok: true, id: template.id };
 }
 
-export async function renameTemplateAction(formData: FormData): Promise<ActionResult> {
+export async function uploadTemplateSignatureAction(
+  formData: FormData,
+): Promise<ActionResult & { url?: string }> {
+  const user = await requireClubAdmin();
+  const clubId = user.clubId!;
+  const templateId = String(formData.get("templateId") || "");
+  const file = formData.get("signature");
+
+  if (!templateId) return { ok: false, error: "Template id required" };
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Signature image is required" };
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return { ok: false, error: "Signature must be 2 MB or smaller" };
+  }
+
+  const template = await prisma.certificateTemplate.findFirst({
+    where: { id: templateId, clubId },
+  });
+  if (!template) return { ok: false, error: "Template not found" };
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const sniffed = sniffImageBytes(bytes);
+  if (!sniffed.ok) return { ok: false, error: sniffed.error };
+
+  const key = buildObjectKey("signatures", clubId, sniffed.ext);
+  const uploaded = await uploadObject({
+    key,
+    body: bytes,
+    contentType: sniffed.contentType,
+  });
+
+  await writeAuditLog({
+    actorUserId: user.id,
+    action: "template.signature.upload",
+    targetType: "CertificateTemplate",
+    targetId: template.id,
+    clubId,
+    metadata: { key },
+  });
+
+  return { ok: true, id: template.id, url: uploaded.url };
+}
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
   const id = String(formData.get("id") || "");

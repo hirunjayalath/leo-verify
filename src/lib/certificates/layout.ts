@@ -1,7 +1,17 @@
 import { z } from "zod";
 
+const textOrQrField = z.enum([
+  "recipientName",
+  "role",
+  "issueDate",
+  "uniqueId",
+  "qr",
+]);
+
+const signatureField = z.enum(["signature1", "signature2"]);
+
 export const layoutFieldSchema = z.object({
-  field: z.enum(["recipientName", "role", "issueDate", "uniqueId", "qr"]),
+  field: z.union([textOrQrField, signatureField]),
   x: z.number(),
   y: z.number(),
   width: z.number().optional(),
@@ -10,12 +20,20 @@ export const layoutFieldSchema = z.object({
   fontFamily: z.string().optional(),
   color: z.string().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
+  /** PNG/JPEG stamp URL for signature overlay fields. */
+  imageUrl: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
 });
 
 export const templateLayoutSchema = z.array(layoutFieldSchema);
 
 export type LayoutField = z.infer<typeof layoutFieldSchema>;
 export type TemplateLayout = z.infer<typeof templateLayoutSchema>;
+
+export function isSignatureField(
+  field: LayoutField["field"],
+): field is "signature1" | "signature2" {
+  return field === "signature1" || field === "signature2";
+}
 
 export const DEFAULT_LAYOUT: TemplateLayout = [
   {

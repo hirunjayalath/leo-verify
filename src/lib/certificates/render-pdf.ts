@@ -104,6 +104,31 @@ export async function renderCertificatePdf(
       continue;
     }
 
+    if (field.field === "signature1" || field.field === "signature2") {
+      if (!field.imageUrl) continue;
+      try {
+        const sigBytes = await fetchBackgroundBytes(field.imageUrl);
+        let sigImage;
+        try {
+          sigImage = await pdf.embedPng(sigBytes);
+        } catch {
+          sigImage = await pdf.embedJpg(sigBytes);
+        }
+        const w = field.width ?? 140;
+        const h = field.height ?? 60;
+        const y = height - (field.y + h);
+        page.drawImage(sigImage, {
+          x: field.x,
+          y,
+          width: w,
+          height: h,
+        });
+      } catch {
+        /* skip broken signature stamp — layout still valid */
+      }
+      continue;
+    }
+
     const text = values[field.field] ?? "";
     const fontSize = field.fontSize ?? 16;
     const font =

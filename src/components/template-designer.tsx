@@ -12,8 +12,15 @@ import {
 } from "lucide-react";
 import { Canvas, FabricImage, FabricText, Rect, type FabricObject } from "fabric";
 import { toast } from "sonner";
-import { saveTemplateLayoutAction } from "@/app/(admin)/admin/templates/actions";
-import type { LayoutField, TemplateLayout } from "@/lib/certificates/layout";
+import {
+  saveTemplateLayoutAction,
+  uploadTemplateSignatureAction,
+} from "@/app/(admin)/admin/templates/actions";
+import {
+  isSignatureField,
+  type LayoutField,
+  type TemplateLayout,
+} from "@/lib/certificates/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -26,6 +33,8 @@ const FIELD_LABELS: Record<LayoutField["field"], string> = {
   issueDate: "Issue date",
   uniqueId: "Certificate ID",
   qr: "QR code",
+  signature1: "Signature 1",
+  signature2: "Signature 2",
 };
 
 const FIELD_KEYS = Object.keys(FIELD_LABELS) as LayoutField["field"][];
@@ -39,6 +48,15 @@ type Props = {
   backgroundUrl: string;
   initialLayout: TemplateLayout;
 };
+
+type ObjMeta = {
+  fieldKey?: LayoutField["field"];
+  imageUrl?: string;
+};
+
+function getMeta(obj: FabricObject): ObjMeta {
+  return obj as unknown as ObjMeta;
+}
 
 export function TemplateDesigner({
   templateId,
@@ -56,6 +74,7 @@ export function TemplateDesigner({
   const [fontSize, setFontSize] = useState(18);
   const [color, setColor] = useState(BRAND_HEX);
   const [pending, startTransition] = useTransition();
+  const [sigUploading, setSigUploading] = useState(false);
 
   useEffect(() => {
     function fit() {
@@ -101,6 +120,46 @@ export function TemplateDesigner({
 
     let cancelled = false;
 
+    async function addSignatureBox(
+      field: LayoutField,
+      target: Canvas,
+    ) {
+      const w = field.width ?? 140;
+      const h = field.height ?? 60;
+      if (field.imageUrl) {
+        try {
+          const img = await FabricImage.fromURL(field.imageUrl, {
+            crossOrigin: "anonymous",
+          });
+          if (cancelled) return;
+          img.set({
+            left: field.x,
+            top: field.y,
+            scaleX: w / (img.width || w),
+            scaleY: h / (img.height || h),
+          });
+          getMeta(img).fieldKey = field.field;
+          getMeta(img).imageUrl = field.imageUrl;
+          target.add(img);
+          return;
+        } catch {
+          /* fall through to placeholder */
+        }
+      }
+      const box = new Rect({
+        left: field.x,
+        top: field.y,
+        width: w,
+        height: h,
+        fill: "rgba(56,163,227,0.18)",
+        stroke: "#1cbdd8",
+        strokeWidth: 2,
+      });
+      getMeta(box).fieldKey = field.field;
+      getMeta(box).imageUrl = field.imageUrl;
+      target.add(box);
+    }
+
     async function load() {
       try {
         const img = await FabricImage.fromURL(backgroundUrl, {
@@ -134,8 +193,10 @@ export function TemplateDesigner({
               stroke: "#38a3e3",
               strokeWidth: 2,
             });
-            (box as unknown as { fieldKey: string }).fieldKey = field.field;
+            getMeta(box).fieldKey = field.field;
             canvas.add(box);
+          } else if (isSignatureField(field.field)) {
+            await addSignatureBox(field, canvas);
           } else {
             const text = new FabricText(FIELD_LABELS[field.field], {
               left: field.x,
@@ -145,7 +206,7 @@ export function TemplateDesigner({
               fontFamily: field.fontFamily ?? "Helvetica",
               originX: field.align === "center" ? "center" : "left",
             });
-            (text as unknown as { fieldKey: string }).fieldKey = field.field;
+            getMeta(text).fieldKey = field.field;
             canvas.add(text);
           }
         }
@@ -164,6 +225,7 @@ export function TemplateDesigner({
       canvas.dispose();
       fabricRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncSelection is stable for this mount
   }, [backgroundUrl, initialLayout]);
 
   function syncSelection(obj?: FabricObject) {
@@ -171,7 +233,7 @@ export function TemplateDesigner({
       setSelectedKey(null);
       return;
     }
-    const key = (obj as unknown as { fieldKey?: LayoutField["field"] }).fieldKey;
+    const key = getMeta(obj).fieldKey;
     setSelectedKey(key ?? null);
     if (obj instanceof FabricText) {
       setFontSize(Math.round(obj.fontSize ?? 18));
@@ -183,19 +245,30 @@ export function TemplateDesigner({
     const canvas = fabricRef.current;
     if (!canvas) return null;
     return (
-      canvas
-        .getObjects()
-        .find(
-          (obj) =>
-            (obj as unknown as { fieldKey?: string }).fieldKey === key,
-        ) ?? null
+      canvas.getObjects().find((obj) => getMeta(obj).fieldKey === key) ?? null
     );
   }
 
   function selectField(key: LayoutField["field"]) {
     const canvas = fabricRef.current;
-    const obj = findByKey(key);
-    if (!canvas || !obj) return;
+    if (!canvas) return;
+    let obj = findByKey(key);
+    if (!obj && isSignatureField(key)) {
+      const box = new Rect({
+        left: key === "signature1" ? 120 : 520,
+        top: 420,
+        width: 140,
+        height: 60,
+        fill: "rgba(56,163,227,0.18)",
+        stroke: "#1cbdd8",
+        strokeWidth: 2,
+      });
+      getMeta(box).fieldKey = key;
+      canvas.add(box);
+      setDirty(true);
+      obj = box;
+    }
+    if (!obj) return;
     canvas.setActiveObject(obj);
     canvas.requestRenderAll();
     syncSelection(obj);
@@ -221,8 +294,7 @@ export function TemplateDesigner({
     if (!canvas) return initialLayout;
     const layout: TemplateLayout = [];
     for (const obj of canvas.getObjects()) {
-      const fieldKey = (obj as unknown as { fieldKey?: LayoutField["field"] })
-        .fieldKey;
+      const fieldKey = getMeta(obj).fieldKey;
       if (!fieldKey) continue;
       if (fieldKey === "qr") {
         layout.push({
@@ -231,6 +303,15 @@ export function TemplateDesigner({
           y: Math.round(obj.top ?? 0),
           width: Math.round((obj.width ?? 80) * (obj.scaleX ?? 1)),
           height: Math.round((obj.height ?? 80) * (obj.scaleY ?? 1)),
+        });
+      } else if (isSignatureField(fieldKey)) {
+        layout.push({
+          field: fieldKey,
+          x: Math.round(obj.left ?? 0),
+          y: Math.round(obj.top ?? 0),
+          width: Math.round((obj.width ?? 140) * (obj.scaleX ?? 1)),
+          height: Math.round((obj.height ?? 60) * (obj.scaleY ?? 1)),
+          imageUrl: getMeta(obj).imageUrl,
         });
       } else {
         const text = obj as FabricText;
@@ -261,14 +342,82 @@ export function TemplateDesigner({
     });
   }
 
+  async function onSignatureUpload(file: File) {
+    if (!selectedKey || !isSignatureField(selectedKey)) return;
+    const canvas = fabricRef.current;
+    const obj = findByKey(selectedKey);
+    if (!canvas || !obj) return;
+
+    setSigUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("templateId", templateId);
+      formData.set("signature", file);
+      const result = await uploadTemplateSignatureAction(formData);
+      if (!result.ok || !result.url) {
+        toast.error(result.ok ? "Upload failed" : result.error);
+        return;
+      }
+
+      const w = Math.round((obj.width ?? 140) * (obj.scaleX ?? 1));
+      const h = Math.round((obj.height ?? 60) * (obj.scaleY ?? 1));
+      const left = obj.left ?? 0;
+      const top = obj.top ?? 0;
+      canvas.remove(obj);
+
+      try {
+        const img = await FabricImage.fromURL(result.url, {
+          crossOrigin: "anonymous",
+        });
+        img.set({
+          left,
+          top,
+          scaleX: w / (img.width || w),
+          scaleY: h / (img.height || h),
+        });
+        getMeta(img).fieldKey = selectedKey;
+        getMeta(img).imageUrl = result.url;
+        canvas.add(img);
+        canvas.setActiveObject(img);
+      } catch {
+        const box = new Rect({
+          left,
+          top,
+          width: w,
+          height: h,
+          fill: "rgba(56,163,227,0.18)",
+          stroke: "#1cbdd8",
+          strokeWidth: 2,
+        });
+        getMeta(box).fieldKey = selectedKey;
+        getMeta(box).imageUrl = result.url;
+        canvas.add(box);
+        canvas.setActiveObject(box);
+        toast.message("Signature uploaded (preview may be blocked by CORS)");
+      }
+      canvas.requestRenderAll();
+      setDirty(true);
+      toast.success("Signature stamp uploaded — save layout to keep it");
+    } finally {
+      setSigUploading(false);
+    }
+  }
+
   function fitZoom() {
     const el = stageRef.current;
     if (!el) return;
     const available = Math.max(280, el.clientWidth - 48);
-    setZoom(Number(Math.min(1.25, Math.max(0.35, available / CANVAS_W)).toFixed(2)));
+    setZoom(
+      Number(Math.min(1.25, Math.max(0.35, available / CANVAS_W)).toFixed(2)),
+    );
   }
 
-  const textSelected = selectedKey != null && selectedKey !== "qr";
+  const textSelected =
+    selectedKey != null &&
+    selectedKey !== "qr" &&
+    !isSignatureField(selectedKey);
+  const signatureSelected =
+    selectedKey != null && isSignatureField(selectedKey);
 
   return (
     <div className="space-y-4">
@@ -424,6 +573,35 @@ export function TemplateDesigner({
 
           <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
 
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              Signature
+            </span>
+            <label
+              className={cn(
+                "inline-flex cursor-pointer items-center rounded-md border border-border px-2.5 py-1.5 text-xs font-medium",
+                !signatureSelected || sigUploading
+                  ? "pointer-events-none opacity-40"
+                  : "hover:bg-muted",
+              )}
+            >
+              {sigUploading ? "Uploading…" : "Upload PNG/JPEG"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                className="sr-only"
+                disabled={!signatureSelected || sigUploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void onSignatureUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+
           <div className="flex items-center gap-1">
             <span className="mr-1 text-xs font-medium text-muted-foreground">
               Zoom
@@ -492,8 +670,8 @@ export function TemplateDesigner({
       </div>
 
       <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        Drag placeholders on the artboard. On narrow screens, use the field
-        selector and scroll horizontally if needed. Coordinates are stored as
+        Drag placeholders on the artboard. Click Signature 1/2 to place boxes,
+        then upload a PNG/JPEG stamp. Coordinates and stamp URLs are stored as
         layout JSON (templates are data — Rule 5).
       </p>
     </div>
