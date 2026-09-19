@@ -4,7 +4,29 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { getSupabaseAuthUser } from "@/lib/auth";
+import {
+  buildPdfDownloadPath,
+  buildVerificationPath,
+} from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+
+function dashboardCertPaths(cert: {
+  uniqueId: string;
+  verificationToken: string;
+  pdfKey: string | null;
+  pdfUrl: string | null;
+  status: CertificateStatus;
+}) {
+  const verifyPath = buildVerificationPath(
+    cert.uniqueId,
+    cert.verificationToken,
+  );
+  const pdfPath =
+    cert.status === CertificateStatus.issued && (cert.pdfKey || cert.pdfUrl)
+      ? buildPdfDownloadPath(cert.uniqueId, cert.verificationToken)
+      : null;
+  return { verifyPath, pdfPath };
+}
 
 function slugify(input: string): string {
   return input
@@ -137,6 +159,7 @@ export async function claimCertificatesAction(formData: FormData) {
       eventName: c.event.name,
       unlisted: c.unlisted,
       issueDate: c.issueDate.toISOString().slice(0, 10),
+      ...dashboardCertPaths(c),
     })),
   };
 }
@@ -239,6 +262,7 @@ export async function getRecipientDashboard() {
         eventName: c.event.name,
         unlisted: c.unlisted,
         issueDate: c.issueDate.toISOString().slice(0, 10),
+        ...dashboardCertPaths(c),
       })),
     },
   };

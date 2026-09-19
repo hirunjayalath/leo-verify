@@ -16,6 +16,9 @@ export type RecipientDashboardCert = {
   eventName: string;
   unlisted: boolean;
   issueDate: string;
+  /** Session-only paths — never rendered on public /u/[slug] HTML. */
+  verifyPath: string;
+  pdfPath: string | null;
 };
 
 export function RecipientSettings({
@@ -103,28 +106,47 @@ export function RecipientSettings({
             No claimed certificates yet.
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {certs.map((cert) => (
               <li
                 key={cert.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2.5 text-sm"
+                className="space-y-2 rounded-lg border border-border px-3 py-2.5 text-sm"
               >
-                <div>
-                  <p className="font-medium">{cert.eventName}</p>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {cert.uniqueId}
-                  </p>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{cert.eventName}</p>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {cert.uniqueId}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Issued {cert.issueDate}
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={cert.unlisted}
+                      disabled={pending}
+                      onChange={(e) => onUnlisted(cert.id, e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-border"
+                    />
+                    Hide from profile
+                  </label>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={cert.unlisted}
-                    disabled={pending}
-                    onChange={(e) => onUnlisted(cert.id, e.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-border"
-                  />
-                  Hide from profile
-                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={cert.verifyPath}>Verify</Link>
+                  </Button>
+                  {cert.pdfPath ? (
+                    <Button asChild size="sm" variant="secondary">
+                      <a href={cert.pdfPath}>Download PDF</a>
+                    </Button>
+                  ) : (
+                    <span className="self-center text-xs text-muted-foreground">
+                      PDF not available yet
+                    </span>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
