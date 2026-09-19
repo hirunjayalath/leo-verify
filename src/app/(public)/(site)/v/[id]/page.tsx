@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
-import { prisma } from "@/lib/db";
+import { lookupCertificateForVerify } from "@/lib/certificates/verify-lookup";
 import {
   clientIpFromHeaders,
   rateLimitVerification,
@@ -17,63 +17,53 @@ type PageProps = {
   searchParams: Promise<{ t?: string }>;
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps): Promise<Metadata> {
   const { id } = await params;
-  return {
-    title: `Verify ${decodeURIComponent(id)}`,
-    robots: { index: false, follow: false },
-  };
-}
+  const { t } = await searchParams;
+  const uniqueId = decodeURIComponent(id);
+  const row = await lookupCertificateForVerify(uniqueId);
+  const result = evaluateVerification(row, t);
 
-async function lookupCertificate(uniqueId: string) {
-  if (!process.env.DATABASE_URL) return null;
+  const robots = { index: false, follow: false } as const;
+  const ogImagePath = t
+    ? `/api/og/verify/${encodeURIComponent(uniqueId)}?t=${encodeURIComponent(t)}`
+    : `/api/og/verify/${encodeURIComponent(uniqueId)}`;
 
-  try {
-    const row = await prisma.certificate.findUnique({
-      where: { uniqueId },
-      select: {
-        uniqueId: true,
-        verificationToken: true,
-        recipientName: true,
-        role: true,
-        achievement: true,
-        issueDate: true,
-        status: true,
-        clubId: true,
-        eventId: true,
-        pdfUrl: true,
-        pdfKey: true,
-        tokenVersion: true,
-        event: {
-          select: {
-            name: true,
-            club: { select: { name: true } },
-          },
-        },
-      },
-    });
-
-    if (!row) return null;
-
+  if (result.status === "valid") {
+    const title = `${result.recipientName} · ${result.eventName}`;
+    const description = `${result.role} — ${result.clubName}. Verified live on LeoVerify.`;
     return {
-      uniqueId: row.uniqueId,
-      verificationToken: row.verificationToken,
-      recipientName: row.recipientName,
-      role: row.role,
-      achievement: row.achievement,
-      issueDate: row.issueDate,
-      status: row.status,
-      clubId: row.clubId,
-      eventId: row.eventId,
-      clubName: row.event.club.name,
-      eventName: row.event.name,
-      pdfUrl: row.pdfUrl,
-      pdfKey: row.pdfKey,
-      tokenVersion: row.tokenVersion,
+      title,
+      description,
+      robots,
+      openGraph: {
+        title,
+        description,
+        type: "website",
+        images: [{ url: ogImagePath, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [ogImagePath],
+      },
     };
-  } catch {
-    return null;
   }
+
+  return {
+    title: `Verify ${uniqueId}`,
+    description: "Live certificate verification on LeoVerify.",
+    robots,
+    openGraph: {
+      title: "LeoVerify certificate check",
+      description: "Live certificate verification.",
+      images: [{ url: ogImagePath, width: 1200, height: 630 }],
+    },
+  };
 }
 
 export default async function VerificationPage({
@@ -104,7 +94,7 @@ export default async function VerificationPage({
   const { id } = await params;
   const { t } = await searchParams;
   const uniqueId = decodeURIComponent(id);
-  const row = await lookupCertificate(uniqueId);
+  const row = await lookupCertificateForVerify(uniqueId);
   const result = evaluateVerification(row, t);
   const checkedAt = new Date().toISOString();
   const isRevoked = result.status === "revoked";
