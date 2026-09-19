@@ -2,42 +2,31 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
+import { QrScanner } from "@/components/qr-scanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-
-function parseVerifyInput(raw: string): { id: string; token: string } {
-  const trimmed = raw.trim();
-  if (!trimmed) return { id: "", token: "" };
-
-  try {
-    const asUrl = trimmed.includes("://")
-      ? new URL(trimmed)
-      : trimmed.startsWith("/")
-        ? new URL(trimmed, "http://local.invalid")
-        : null;
-    if (asUrl) {
-      const match = asUrl.pathname.match(/\/v\/([^/?#]+)/i);
-      if (match) {
-        return {
-          id: decodeURIComponent(match[1]),
-          token: asUrl.searchParams.get("t") || "",
-        };
-      }
-    }
-  } catch {
-    /* treat as plain ID */
-  }
-
-  return { id: trimmed, token: "" };
-}
+import { parseVerifyInput } from "@/lib/certificates/parse-verify-input";
 
 export function VerifyForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [certificateId, setCertificateId] = useState("");
   const [token, setToken] = useState("");
   const [pending, startTransition] = useTransition();
+
+  function navigateToVerify(id: string, t: string) {
+    const trimmedId = id.trim();
+    if (!trimmedId) return;
+    const params = new URLSearchParams();
+    if (t.trim()) params.set("t", t.trim());
+    const qs = params.toString();
+    startTransition(() => {
+      router.push(
+        `/v/${encodeURIComponent(trimmedId)}${qs ? `?${qs}` : ""}`,
+      );
+    });
+  }
 
   function onIdChange(value: string) {
     const parsed = parseVerifyInput(value);
@@ -52,15 +41,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const parsed = parseVerifyInput(certificateId);
-    const id = parsed.id.trim();
-    const t = (parsed.token || token).trim();
-    if (!id) return;
-    const params = new URLSearchParams();
-    if (t) params.set("t", t);
-    const qs = params.toString();
-    startTransition(() => {
-      router.push(`/v/${encodeURIComponent(id)}${qs ? `?${qs}` : ""}`);
-    });
+    navigateToVerify(parsed.id, parsed.token || token);
   }
 
   return (
@@ -99,10 +80,19 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
           />
         </div>
       )}
-      <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending}>
-        {pending && <Spinner />}
-        {pending ? "Checking…" : "Verify certificate"}
-      </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending}>
+          {pending && <Spinner />}
+          {pending ? "Checking…" : "Verify certificate"}
+        </Button>
+        <QrScanner
+          onDetected={({ id, token: t }) => {
+            setCertificateId(id);
+            setToken(t);
+            navigateToVerify(id, t);
+          }}
+        />
+      </div>
     </form>
   );
 }
