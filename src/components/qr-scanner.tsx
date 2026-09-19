@@ -211,7 +211,8 @@ export function QrScanner({
         <Button
           type="button"
           variant="ghost"
-          size="icon-sm"
+          size="icon"
+          className="h-8 w-8"
           aria-label="Close scanner"
           onClick={() => {
             stop();
