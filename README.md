@@ -76,6 +76,7 @@ Club and district admin routes require authenticator assurance level **aal2**:
 
 Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admins can operate without Supabase MFA.
 
+### HMAC secret rotation
 
 1. Set `CERT_HMAC_SECRET_PREVIOUS` to the current secret.
 2. Set `CERT_HMAC_SECRET` to a new `openssl rand -hex 32` value.

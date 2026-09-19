@@ -44,37 +44,96 @@ export default async function DistrictAdminPage() {
   });
   const clubIds = clubs.map((c) => c.id);
 
-  const [issued, revoked, events, pendingTemplates] = await Promise.all([
-    prisma.certificate.count({
-      where: { clubId: { in: clubIds }, status: CertificateStatus.issued },
-    }),
-    prisma.certificate.count({
-      where: { clubId: { in: clubIds }, status: CertificateStatus.revoked },
-    }),
-    prisma.event.count({ where: { clubId: { in: clubIds } } }),
-    prisma.certificateTemplate.findMany({
-      where: {
-        clubId: { in: clubIds },
-        status: { in: [TemplateStatus.draft, TemplateStatus.rejected] },
-        club: { type: "public" },
-      },
-      include: {
-        event: { select: { name: true } },
-        club: { select: { name: true, type: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 20,
-    }),
-  ]);
-
-  const perClub = await Promise.all(
-    clubs.map(async (club) => ({
-      club,
-      issued: await prisma.certificate.count({
-        where: { clubId: club.id, status: CertificateStatus.issued },
+  const [issued, revoked, events, pendingTemplates, byClubStatus, recentCerts] =
+    await Promise.all([
+      prisma.certificate.count({
+        where: { clubId: { in: clubIds }, status: CertificateStatus.issued },
       }),
-    })),
+      prisma.certificate.count({
+        where: { clubId: { in: clubIds }, status: CertificateStatus.revoked },
+      }),
+      prisma.event.count({ where: { clubId: { in: clubIds } } }),
+      prisma.certificateTemplate.findMany({
+        where: {
+          clubId: { in: clubIds },
+          status: { in: [TemplateStatus.draft, TemplateStatus.rejected] },
+          club: { type: "public" },
+        },
+        include: {
+          event: { select: { name: true } },
+          club: { select: { name: true, type: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 20,
+      }),
+      clubIds.length === 0
+        ? Promise.resolve([])
+        : prisma.certificate.groupBy({
+            by: ["clubId", "status"],
+            where: { clubId: { in: clubIds } },
+            _count: { _all: true },
+          }),
+      clubIds.length === 0
+        ? Promise.resolve([])
+        : prisma.certificate.findMany({
+            where: {
+              clubId: { in: clubIds },
+              issueDate: {
+                gte: new Date(
+                  Date.UTC(
+                    new Date().getUTCFullYear(),
+                    new Date().getUTCMonth() - 11,
+                    1,
+                  ),
+                ),
+              },
+            },
+            select: { issueDate: true, status: true },
+          }),
+    ]);
+
+  const perClub = clubs.map((club) => {
+    const issuedCount =
+      byClubStatus.find(
+        (r) =>
+          r.clubId === club.id && r.status === CertificateStatus.issued,
+      )?._count._all ?? 0;
+    const revokedCount =
+      byClubStatus.find(
+        (r) =>
+          r.clubId === club.id && r.status === CertificateStatus.revoked,
+      )?._count._all ?? 0;
+    return { club, issued: issuedCount, revoked: revokedCount };
+  });
+
+  const monthKeys: string[] = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    monthKeys.push(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+    );
+  }
+  const byMonth = new Map(
+    monthKeys.map((key) => [key, { issued: 0, revoked: 0 }]),
   );
+  for (const cert of recentCerts) {
+    const key = `${cert.issueDate.getUTCFullYear()}-${String(cert.issueDate.getUTCMonth() + 1).padStart(2, "0")}`;
+    const bucket = byMonth.get(key);
+    if (!bucket) continue;
+    if (cert.status === CertificateStatus.issued) bucket.issued += 1;
+    else if (cert.status === CertificateStatus.revoked) bucket.revoked += 1;
+  }
+  const monthlyRows = monthKeys.map((key) => ({
+    key,
+    label: new Date(`${key}-01T00:00:00Z`).toLocaleString("en", {
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    }),
+    ...(byMonth.get(key) ?? { issued: 0, revoked: 0 }),
+  }));
+
 
   const stats = [
     {
@@ -143,7 +202,9 @@ export default async function DistrictAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Clubs</CardTitle>
-            <CardDescription>Issued certificates by club</CardDescription>
+            <CardDescription>
+              Issued and revoked certificates by club
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {perClub.length === 0 ? (
@@ -159,10 +220,11 @@ export default async function DistrictAdminPage() {
                     <TableHead>Club</TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead className="text-right">Issued</TableHead>
+                    <TableHead className="text-right">Revoked</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {perClub.map(({ club, issued: count }) => (
+                  {perClub.map(({ club, issued: count, revoked: rev }) => (
                     <TableRow key={club.id}>
                       <TableCell className="font-medium">{club.name}</TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
@@ -170,6 +232,50 @@ export default async function DistrictAdminPage() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {count}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {rev}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly activity</CardTitle>
+            <CardDescription>
+              Issued vs revoked by issue month (last 12 months, UTC)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {monthlyRows.every((r) => r.issued === 0 && r.revoked === 0) ? (
+              <EmptyState
+                icon={CalendarDays}
+                title="No certificates in the last year"
+                description="Issuance activity across district clubs will show here."
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Issued</TableHead>
+                    <TableHead className="text-right">Revoked</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthlyRows.map((row) => (
+                    <TableRow key={row.key}>
+                      <TableCell className="font-medium">{row.label}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.issued}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                        {row.revoked}
                       </TableCell>
                     </TableRow>
                   ))}
