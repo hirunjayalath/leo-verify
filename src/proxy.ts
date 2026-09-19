@@ -74,6 +74,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
+  // Club/district admin MFA: require AAL2 except on the enrollment page itself.
+  const isMfaPath = request.nextUrl.pathname === "/admin/mfa";
+  if (isAdminPath && user && !isMfaPath) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.currentLevel !== "aal2") {
+      return NextResponse.redirect(new URL("/admin/mfa", request.url));
+    }
+  }
+
   if (request.nextUrl.pathname === "/login" && user) {
     // Recovery hash handling stays on the client; only bounce away when not recovering.
     const type = request.nextUrl.searchParams.get("type");

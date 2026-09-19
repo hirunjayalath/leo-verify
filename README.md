@@ -54,7 +54,7 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase, R2, Resend, `NEXT_PUBLIC_APP_URL`).
 2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`).
 3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (ignored outside development anyway).
-4. MFA enabled for club admins in Supabase Auth.
+4. MFA (TOTP) required for club/district admins — enable Multi-Factor Authentication in the Supabase project, then complete enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
 5. Run the operator smoke checklist above.
 6. Optional: Inngest + Upstash for bulk import and rate limits at scale.
 
@@ -65,7 +65,17 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads.
 4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.
 
-### HMAC secret rotation
+### Admin MFA (Supabase AAL2)
+
+Club and district admin routes require authenticator assurance level **aal2**:
+
+1. In the Supabase dashboard: **Authentication → Providers / Multi-Factor** — enable TOTP.
+2. Sign in at `/login` with the admin account.
+3. You are redirected to `/admin/mfa` until a TOTP factor is enrolled and the session is verified.
+4. Subsequent visits need a fresh code when the session drops back to aal1 (e.g. after password-only re-login).
+
+Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admins can operate without Supabase MFA.
+
 
 1. Set `CERT_HMAC_SECRET_PREVIOUS` to the current secret.
 2. Set `CERT_HMAC_SECRET` to a new `openssl rand -hex 32` value.
