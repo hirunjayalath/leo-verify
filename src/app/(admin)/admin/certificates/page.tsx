@@ -12,7 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ImportRowStatus } from "@/generated/prisma/client";
+import {
+  CertificateStatus,
+  ImportRowStatus,
+  type Prisma,
+} from "@/generated/prisma/client";
 import { requireClubAdmin } from "@/lib/auth";
 import {
   buildPdfDownloadPath,
@@ -23,19 +27,50 @@ import { prisma } from "@/lib/db";
 const PAGE_SIZE = 25;
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    eventId?: string;
+    year?: string;
+    status?: string;
+  }>;
 };
+
+function parseStatus(raw: string | undefined): CertificateStatus | null {
+  if (raw === "issued" || raw === "revoked") return raw;
+  return null;
+}
+
+function parseYear(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const y = Number(raw);
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) return null;
+  return y;
+}
 
 export default async function AdminCertificatesPage({ searchParams }: PageProps) {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
   const params = await searchParams;
   const q = (params.q ?? "").trim();
+  const eventId = (params.eventId ?? "").trim();
+  const year = parseYear(params.year);
+  const status = parseStatus(params.status);
   const page = Math.max(1, Number(params.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
-  const where = {
+  const where: Prisma.CertificateWhereInput = {
     clubId,
+    ...(eventId ? { eventId } : {}),
+    ...(status ? { status } : {}),
+    ...(year
+      ? {
+          issueDate: {
+            gte: new Date(Date.UTC(year, 0, 1)),
+            lt: new Date(Date.UTC(year + 1, 0, 1)),
+          },
+        }
+      : {}),
     ...(q
       ? {
           OR: [
@@ -48,7 +83,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
       : {}),
   };
 
-  const [certificates, total, events, jobs] = await Promise.all([
+  const [certificates, total, events, jobs, earliest] = await Promise.all([
     prisma.certificate.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -78,7 +113,17 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
         },
       },
     }),
+    prisma.certificate.findFirst({
+      where: { clubId },
+      orderBy: { issueDate: "asc" },
+      select: { issueDate: true },
+    }),
   ]);
+
+  const currentYear = new Date().getUTCFullYear();
+  const startYear = earliest?.issueDate.getUTCFullYear() ?? currentYear;
+  const years: number[] = [];
+  for (let y = currentYear; y >= startYear; y--) years.push(y);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -113,10 +158,25 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
   function pageHref(target: number) {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
+    if (eventId) sp.set("eventId", eventId);
+    if (year) sp.set("year", String(year));
+    if (status) sp.set("status", status);
     if (target > 1) sp.set("page", String(target));
     const qs = sp.toString();
     return qs ? `/admin/certificates?${qs}` : "/admin/certificates";
   }
+
+  const filterSummary = [
+    q ? `matching “${q}”` : null,
+    eventId ? "event filter" : null,
+    year ? `year ${year}` : null,
+    status ? status : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const selectClass =
+    "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
   return (
     <div className="space-y-8 animate-fade-up">
@@ -124,7 +184,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
         <h1 className="text-2xl font-semibold tracking-tight">Certificates</h1>
         <p className="mt-1 text-muted-foreground">
           Issue, reissue, revoke, and bulk-import — every write is attributed in
-          the audit log.
+          the audit log. Filter by event, year, and status for the club archive.
         </p>
       </div>
 
@@ -135,12 +195,12 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
               <CardTitle>Issued certificates</CardTitle>
               <CardDescription>
                 {total === 0
-                  ? "No certificates yet"
-                  : `Showing ${rows.length} of ${total}${q ? ` matching “${q}”` : ""}`}
+                  ? "No certificates match these filters"
+                  : `Showing ${rows.length} of ${total}${filterSummary ? ` (${filterSummary})` : ""}`}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <form className="flex flex-wrap gap-2" method="get">
+              <form className="flex flex-wrap items-end gap-2" method="get">
                 <Input
                   name="q"
                   defaultValue={q}
@@ -148,9 +208,61 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
                   className="max-w-sm"
                   aria-label="Search certificates"
                 />
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  <span className="block">Event</span>
+                  <select
+                    name="eventId"
+                    defaultValue={eventId}
+                    className={selectClass}
+                    aria-label="Filter by event"
+                  >
+                    <option value="">All events</option>
+                    {events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  <span className="block">Year</span>
+                  <select
+                    name="year"
+                    defaultValue={year ? String(year) : ""}
+                    className={selectClass}
+                    aria-label="Filter by issue year"
+                  >
+                    <option value="">All years</option>
+                    {years.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  <span className="block">Status</span>
+                  <select
+                    name="status"
+                    defaultValue={status ?? ""}
+                    className={selectClass}
+                    aria-label="Filter by status"
+                  >
+                    <option value="">All statuses</option>
+                    <option value="issued">Issued</option>
+                    <option value="revoked">Revoked</option>
+                  </select>
+                </label>
                 <Button type="submit" variant="outline">
-                  Search
+                  Apply
                 </Button>
+                {(q || eventId || year || status) && (
+                  <Link href="/admin/certificates">
+                    <Button type="button" variant="ghost" size="sm">
+                      Clear
+                    </Button>
+                  </Link>
+                )}
               </form>
               <CertificatesTable rows={rows} disableClientSearch />
               {totalPages > 1 && (
