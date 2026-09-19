@@ -166,4 +166,4 @@ UI components     →      orgs/                      auth / supabase
 
 - **Phase 0:** UOM issuance + verification + revoke + CSV + email (implemented)
 - **Phase 1:** Multi-club · district admin · opt-in public profiles (implemented)
-- **Phase 2:** Public org SaaS · Open Badges 3.0 export (implemented)
+- **Phase 2:** Public org self-serve signup · Open Badges 3.0 export (implemented)

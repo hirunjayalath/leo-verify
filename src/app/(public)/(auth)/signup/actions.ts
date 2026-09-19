@@ -3,11 +3,8 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ClubType, PlanTier, UserRole } from "@/generated/prisma/client";
-import { writeAuditLog } from "@/lib/audit";
 import { getSupabaseAuthUser } from "@/lib/auth";
-import { slugifyPublic } from "@/lib/branding";
-import { prisma } from "@/lib/db";
+import { signupPublicOrg } from "@/lib/orgs/service";
 import {
   clientIpFromHeaders,
   rateLimitSignup,
@@ -56,80 +53,16 @@ export async function signupPublicOrgAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const adminEmail = auth.email.toLowerCase();
-  const supabaseId = auth.id;
-
-  const existingByEmail = await prisma.user.findUnique({
-    where: { email: adminEmail },
+  const result = await signupPublicOrg({
+    supabaseId: auth.id,
+    adminEmail: auth.email,
+    orgName: parsed.data.orgName,
+    orgCode: parsed.data.orgCode,
+    adminName: parsed.data.adminName,
   });
-  if (existingByEmail) {
-    return {
-      ok: false,
-      error: "An account with this email already exists. Contact support if this is unexpected.",
-    };
+
+  if (result.ok) {
+    revalidatePath("/signup");
   }
-
-  const existingBySupabase = await prisma.user.findUnique({
-    where: { supabaseId },
-  });
-  if (existingBySupabase) {
-    return {
-      ok: false,
-      error: "This Auth user is already linked to an organization.",
-    };
-  }
-
-  const district = await prisma.district.upsert({
-    where: { code: "PUBLIC" },
-    update: {},
-    create: { code: "PUBLIC", name: "Public organizations" },
-  });
-
-  const existing = await prisma.club.findUnique({
-    where: { code: parsed.data.orgCode.toUpperCase() },
-  });
-  if (existing) return { ok: false, error: "Organization code already taken" };
-
-  const baseSlug = slugifyPublic(parsed.data.orgName) || slugifyPublic(parsed.data.orgCode);
-  let publicSlug = baseSlug;
-  let n = 1;
-  while (await prisma.club.findUnique({ where: { publicSlug } })) {
-    publicSlug = `${baseSlug}-${n++}`.slice(0, 48);
-  }
-
-  const club = await prisma.club.create({
-    data: {
-      name: parsed.data.orgName,
-      code: parsed.data.orgCode.toUpperCase(),
-      districtId: district.id,
-      type: ClubType.public,
-      plan: PlanTier.free,
-      monthlyCertLimit: 100,
-      publicSlug,
-      primaryColor: "#323232",
-      accentColor: "#38a3e3",
-    },
-  });
-
-  await prisma.user.create({
-    data: {
-      email: adminEmail,
-      supabaseId,
-      name: parsed.data.adminName,
-      role: UserRole.club_admin,
-      clubId: club.id,
-      districtId: district.id,
-    },
-  });
-
-  await writeAuditLog({
-    action: "club.create",
-    targetType: "Club",
-    targetId: club.id,
-    clubId: club.id,
-    metadata: { type: "public", plan: "free" },
-  });
-
-  revalidatePath("/signup");
-  return { ok: true, clubId: club.id };
+  return result;
 }

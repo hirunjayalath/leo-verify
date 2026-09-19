@@ -14,6 +14,8 @@ ALTER TABLE "AuditLog" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "Recipient" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "District" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ImportJob" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ImportJobRow" ENABLE ROW LEVEL SECURITY;
 
 -- Helper: current app user row
 CREATE OR REPLACE FUNCTION public.current_app_user()
@@ -204,6 +206,62 @@ CREATE POLICY recipient_club_select ON "Recipient"
           OR (
             public.current_user_role() = 'district_admin'
             AND c."clubId" IN (
+              SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
+            )
+          )
+        )
+    )
+  );
+
+-- ImportJob: same club / district scoping as Event and Certificate
+CREATE POLICY import_job_club_access ON "ImportJob"
+  FOR ALL
+  USING (
+    "clubId" = public.current_user_club_id()
+    OR (
+      public.current_user_role() = 'district_admin'
+      AND "clubId" IN (
+        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
+      )
+    )
+  )
+  WITH CHECK (
+    "clubId" = public.current_user_club_id()
+    OR (
+      public.current_user_role() = 'district_admin'
+      AND "clubId" IN (
+        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
+      )
+    )
+  );
+
+-- ImportJobRow: access via parent ImportJob.clubId
+CREATE POLICY import_job_row_club_access ON "ImportJobRow"
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM "ImportJob" j
+      WHERE j.id = "ImportJobRow"."jobId"
+        AND (
+          j."clubId" = public.current_user_club_id()
+          OR (
+            public.current_user_role() = 'district_admin'
+            AND j."clubId" IN (
+              SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
+            )
+          )
+        )
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM "ImportJob" j
+      WHERE j.id = "ImportJobRow"."jobId"
+        AND (
+          j."clubId" = public.current_user_club_id()
+          OR (
+            public.current_user_role() = 'district_admin'
+            AND j."clubId" IN (
               SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
             )
           )

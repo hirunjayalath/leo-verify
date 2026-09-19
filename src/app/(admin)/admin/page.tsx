@@ -80,7 +80,6 @@ export default async function AdminDashboardPage() {
     prisma.club.findUniqueOrThrow({
       where: { id: clubId },
       select: {
-        plan: true,
         monthlyCertLimit: true,
         publicSlug: true,
         name: true,

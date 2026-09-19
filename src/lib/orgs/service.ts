@@ -1,4 +1,9 @@
-import { TemplateStatus, UserRole } from "@/generated/prisma/client";
+import {
+  ClubType,
+  PlanTier,
+  TemplateStatus,
+  UserRole,
+} from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { sniffImageBytes } from "@/lib/certificates/image-sniff";
 import {
@@ -250,4 +255,95 @@ export async function updateClubBranding(input: {
   });
 
   return { ok: true, slug, previousSlug: previous?.publicSlug };
+}
+
+export type SignupOrgResult =
+  | { ok: true; clubId: string }
+  | { ok: false; error: string };
+
+/** Creates a public org bound to an authenticated Supabase identity. */
+export async function signupPublicOrg(input: {
+  supabaseId: string;
+  adminEmail: string;
+  orgName: string;
+  orgCode: string;
+  adminName: string;
+}): Promise<SignupOrgResult> {
+  const adminEmail = input.adminEmail.toLowerCase();
+
+  const existingByEmail = await prisma.user.findUnique({
+    where: { email: adminEmail },
+  });
+  if (existingByEmail) {
+    return {
+      ok: false,
+      error:
+        "An account with this email already exists. Contact support if this is unexpected.",
+    };
+  }
+
+  const existingBySupabase = await prisma.user.findUnique({
+    where: { supabaseId: input.supabaseId },
+  });
+  if (existingBySupabase) {
+    return {
+      ok: false,
+      error: "This Auth user is already linked to an organization.",
+    };
+  }
+
+  const district = await prisma.district.upsert({
+    where: { code: "PUBLIC" },
+    update: {},
+    create: { code: "PUBLIC", name: "Public organizations" },
+  });
+
+  const existing = await prisma.club.findUnique({
+    where: { code: input.orgCode.toUpperCase() },
+  });
+  if (existing) return { ok: false, error: "Organization code already taken" };
+
+  const baseSlug =
+    slugifyPublic(input.orgName) || slugifyPublic(input.orgCode);
+  let publicSlug = baseSlug;
+  let n = 1;
+  while (await prisma.club.findUnique({ where: { publicSlug } })) {
+    publicSlug = `${baseSlug}-${n++}`.slice(0, 48);
+  }
+
+  const club = await prisma.club.create({
+    data: {
+      name: input.orgName,
+      code: input.orgCode.toUpperCase(),
+      districtId: district.id,
+      type: ClubType.public,
+      // PlanTier retained for schema compat; monthlyCertLimit is the real quota.
+      plan: PlanTier.free,
+      monthlyCertLimit: 100,
+      publicSlug,
+      primaryColor: "#323232",
+      accentColor: "#38a3e3",
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: adminEmail,
+      supabaseId: input.supabaseId,
+      name: input.adminName,
+      role: UserRole.club_admin,
+      clubId: club.id,
+      districtId: district.id,
+    },
+  });
+
+  await writeAuditLog({
+    action: "club.create",
+    targetType: "Club",
+    targetId: club.id,
+    clubId: club.id,
+    metadata: { type: "public", monthlyCertLimit: 100 },
+  });
+
+  return { ok: true, clubId: club.id };
 }
