@@ -29,6 +29,10 @@ export async function GET(_request: Request, { params }: Params) {
   };
   const token = computeVerificationToken(fields);
 
+  const clubRow = await prisma.club.findUniqueOrThrow({
+    where: { id: template.clubId },
+    select: { name: true },
+  });
   const pdf = await renderCertificatePdf({
     backgroundUrl: template.backgroundUrl,
     layout: template.layout,
@@ -38,6 +42,10 @@ export async function GET(_request: Request, { params }: Params) {
     uniqueId,
     verificationToken: token,
     achievement: "Sample achievement",
+    eventName: template.event.name,
+    clubName: clubRow.name,
+    pageSize:
+      template.pageSize === "a4_portrait" ? "a4_portrait" : "a4_landscape",
   });
 
   return new NextResponse(Buffer.from(pdf), {

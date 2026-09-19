@@ -67,11 +67,21 @@ async function verifiedCard(input: {
   eventName: string;
   clubName: string;
   role: string;
+  clubLogoUrl?: string | null;
+  primaryColor?: string;
+  accentColor?: string;
 }) {
-  const logoBytes = await readFile(
-    join(process.cwd(), "public/brand/leo-emblem.png"),
-  );
-  const logoSrc = `data:image/png;base64,${logoBytes.toString("base64")}`;
+  const primary = input.primaryColor || "#323232";
+  const accent = input.accentColor || "#38a3e3";
+  let logoSrc: string;
+  if (input.clubLogoUrl?.startsWith("http")) {
+    logoSrc = input.clubLogoUrl;
+  } else {
+    const logoBytes = await readFile(
+      join(process.cwd(), "public/brand/leo-emblem.png"),
+    );
+    logoSrc = `data:image/png;base64,${logoBytes.toString("base64")}`;
+  }
 
   return new ImageResponse(
     (
@@ -82,8 +92,7 @@ async function verifiedCard(input: {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background:
-            "linear-gradient(145deg, #323232 0%, #2a2a2a 45%, #1f1f1f 100%)",
+          background: `linear-gradient(145deg, ${primary} 0%, ${primary}dd 55%, ${accent}55 100%)`,
           color: "#ffffff",
           padding: 72,
         }}
@@ -94,10 +103,10 @@ async function verifiedCard(input: {
             width={64}
             height={64}
             alt=""
-            style={{ borderRadius: 12 }}
+            style={{ borderRadius: 12, background: "#fff" }}
           />
           <div style={{ fontSize: 28, fontWeight: 600 }}>
-            Verified credential · LeoVerify
+            Verified · {input.clubName}
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -112,12 +121,10 @@ async function verifiedCard(input: {
             {input.recipientName}
           </div>
           <div style={{ fontSize: 28, color: "#e8e8e8" }}>{input.eventName}</div>
-          <div style={{ fontSize: 24, color: "#c8c8c8" }}>
-            {input.role} · {input.clubName}
-          </div>
+          <div style={{ fontSize: 24, color: "#c8c8c8" }}>{input.role}</div>
         </div>
-        <div style={{ fontSize: 20, color: "#38a3e3" }}>
-          Live database record · not a static PDF claim
+        <div style={{ fontSize: 20, color: accent }}>
+          Live database record · LeoVerify
         </div>
       </div>
     ),

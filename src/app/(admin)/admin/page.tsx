@@ -27,23 +27,78 @@ export default async function AdminDashboardPage() {
   }
   const clubId = user.clubId!;
 
-  const [events, certificatesIssued, templates, revocations, recentAudit] =
-    await Promise.all([
-      prisma.event.count({ where: { clubId } }),
-      prisma.certificate.count({
-        where: { clubId, status: CertificateStatus.issued },
-      }),
-      prisma.certificateTemplate.count({ where: { clubId } }),
-      prisma.certificate.count({
-        where: { clubId, status: CertificateStatus.revoked },
-      }),
-      prisma.auditLog.findMany({
-        where: { clubId },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-        include: { actor: { select: { email: true, name: true } } },
-      }),
-    ]);
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [
+    events,
+    certificatesIssued,
+    templates,
+    revocations,
+    recentAudit,
+    issuedThisMonth,
+    emailsSent,
+    topEvents,
+    club,
+  ] = await Promise.all([
+    prisma.event.count({ where: { clubId } }),
+    prisma.certificate.count({
+      where: { clubId, status: CertificateStatus.issued },
+    }),
+    prisma.certificateTemplate.count({ where: { clubId } }),
+    prisma.certificate.count({
+      where: { clubId, status: CertificateStatus.revoked },
+    }),
+    prisma.auditLog.findMany({
+      where: { clubId },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: { actor: { select: { email: true, name: true } } },
+    }),
+    prisma.certificate.count({
+      where: {
+        clubId,
+        status: CertificateStatus.issued,
+        createdAt: { gte: monthStart },
+      },
+    }),
+    prisma.auditLog.count({
+      where: {
+        clubId,
+        action: "certificate.issue",
+        createdAt: { gte: monthStart },
+      },
+    }),
+    prisma.certificate.groupBy({
+      by: ["eventId"],
+      where: { clubId, status: CertificateStatus.issued },
+      _count: { _all: true },
+      orderBy: { _count: { eventId: "desc" } },
+      take: 5,
+    }),
+    prisma.club.findUniqueOrThrow({
+      where: { id: clubId },
+      select: {
+        plan: true,
+        monthlyCertLimit: true,
+        publicSlug: true,
+        name: true,
+      },
+    }),
+  ]);
+
+  const topEventIds = topEvents.map((t) => t.eventId);
+  const eventNames = topEventIds.length
+    ? await prisma.event.findMany({
+        where: { id: { in: topEventIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const topEventRows = topEvents.map((t) => ({
+    name: eventNames.find((e) => e.id === t.eventId)?.name ?? t.eventId,
+    count: t._count._all,
+  }));
 
   const needsOnboarding =
     events === 0 && templates === 0 && certificatesIssued === 0;
@@ -89,7 +144,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/events",
     },
     {
-      label: "Certificates issued",
+      label: "Issued (all time)",
       value: certificatesIssued,
       hint:
         certificatesIssued === 0
@@ -100,15 +155,12 @@ export default async function AdminDashboardPage() {
       href: "/admin/certificates",
     },
     {
-      label: "Templates",
-      value: templates,
-      hint:
-        templates === 0
-          ? "Upload a background"
-          : "Saved certificate layouts",
-      icon: LayoutTemplate,
+      label: "Issued this month",
+      value: issuedThisMonth,
+      hint: `${club.plan} plan · limit ${club.monthlyCertLimit}`,
+      icon: FileUp,
       tint: "bg-accent/20 text-accent",
-      href: "/admin/templates",
+      href: "/admin/issue",
     },
     {
       label: "Revocations",
@@ -259,6 +311,77 @@ export default async function AdminDashboardPage() {
             </Link>
           );
         })}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>This month</CardTitle>
+            <CardDescription>
+              Plan usage and issuance volume
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>
+              Issued:{" "}
+              <span className="font-semibold tabular-nums">
+                {issuedThisMonth}
+              </span>{" "}
+              / {club.monthlyCertLimit}
+            </p>
+            <p>
+              Issue audit events:{" "}
+              <span className="font-semibold tabular-nums">{emailsSent}</span>
+            </p>
+            <p>
+              Templates:{" "}
+              <span className="font-semibold tabular-nums">{templates}</span>
+              {club.publicSlug ? (
+                <>
+                  {" "}
+                  · Portal{" "}
+                  <Link
+                    href={`/o/${club.publicSlug}`}
+                    className="underline-offset-4 hover:underline"
+                  >
+                    /o/{club.publicSlug}
+                  </Link>
+                </>
+              ) : null}
+            </p>
+            <Link
+              href="/admin/settings"
+              className="inline-block pt-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Manage plan & branding
+            </Link>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Top events</CardTitle>
+            <CardDescription>By issued certificates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {topEventRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No certificates yet.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {topEventRows.map((row) => (
+                  <li
+                    key={row.name}
+                    className="flex justify-between gap-3 border-b border-border pb-2 last:border-0"
+                  >
+                    <span className="truncate">{row.name}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {row.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

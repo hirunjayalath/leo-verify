@@ -8,10 +8,10 @@ import { BrandLockup } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 
 const links = [
+  { href: "/#features", label: "Features", match: null },
+  { href: "/pricing", label: "Pricing", match: "/pricing" },
   { href: "/#verify", label: "Verify", match: null },
-  { href: "/claim", label: "Claim", match: "/claim" },
-  { href: "/about", label: "About", match: "/about" },
-  { href: "/login", label: "Club login", match: "/login" },
+  { href: "/login", label: "Login", match: "/login" },
 ];
 
 function SiteHeaderInner({ pathname }: { pathname: string }) {
@@ -49,6 +49,12 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
               </Link>
             );
           })}
+          <Link
+            href="/signup"
+            className="ml-2 inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Sign up
+          </Link>
         </nav>
 
         <button
@@ -78,7 +84,7 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "rounded-lg px-3 py-2.5 text-sm hover:bg-muted",
-                  active ? "bg-muted font-medium text-foreground" : "text-foreground",
+                  active ? "bg-muted font-medium" : "text-muted-foreground",
                 )}
                 onClick={() => setOpen(false)}
               >
@@ -86,6 +92,13 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
               </Link>
             );
           })}
+          <Link
+            href="/signup"
+            className="mt-1 rounded-full bg-primary px-3 py-2.5 text-center text-sm font-medium text-primary-foreground"
+            onClick={() => setOpen(false)}
+          >
+            Sign up free
+          </Link>
         </nav>
       </div>
     </header>
@@ -93,7 +106,6 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
 }
 
 export function SiteHeader() {
-  const pathname = usePathname();
-  // Remount on route change so the mobile menu closes without an effect.
-  return <SiteHeaderInner key={pathname} pathname={pathname} />;
+  const pathname = usePathname() ?? "/";
+  return <SiteHeaderInner pathname={pathname} />;
 }

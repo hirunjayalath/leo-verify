@@ -1,17 +1,22 @@
 import { z } from "zod";
 
-const textOrQrField = z.enum([
+const mergeField = z.enum([
   "recipientName",
   "role",
   "issueDate",
   "uniqueId",
   "qr",
+  "eventName",
+  "clubName",
+  "achievement",
+  "staticText",
+  "imageStamp",
 ]);
 
 const signatureField = z.enum(["signature1", "signature2"]);
 
 export const layoutFieldSchema = z.object({
-  field: z.union([textOrQrField, signatureField]),
+  field: z.union([mergeField, signatureField]),
   x: z.number(),
   y: z.number(),
   width: z.number().optional(),
@@ -20,8 +25,13 @@ export const layoutFieldSchema = z.object({
   fontFamily: z.string().optional(),
   color: z.string().optional(),
   align: z.enum(["left", "center", "right"]).optional(),
-  /** PNG/JPEG stamp URL for signature overlay fields. */
-  imageUrl: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
+  /** Literal text for staticText fields */
+  text: z.string().optional(),
+  /** PNG/JPEG URL for signature / imageStamp overlays */
+  imageUrl: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.string().url().optional(),
+  ),
 });
 
 export const templateLayoutSchema = z.array(layoutFieldSchema);
@@ -29,10 +39,32 @@ export const templateLayoutSchema = z.array(layoutFieldSchema);
 export type LayoutField = z.infer<typeof layoutFieldSchema>;
 export type TemplateLayout = z.infer<typeof templateLayoutSchema>;
 
+export type PageSize = "a4_landscape" | "a4_portrait";
+
+export function pageDimensions(pageSize: PageSize = "a4_landscape"): {
+  width: number;
+  height: number;
+} {
+  return pageSize === "a4_portrait"
+    ? { width: 595, height: 842 }
+    : { width: 842, height: 595 };
+}
+
 export function isSignatureField(
   field: LayoutField["field"],
 ): field is "signature1" | "signature2" {
   return field === "signature1" || field === "signature2";
+}
+
+export function isImageOverlayField(
+  field: LayoutField["field"],
+): field is "signature1" | "signature2" | "qr" | "imageStamp" {
+  return (
+    field === "signature1" ||
+    field === "signature2" ||
+    field === "qr" ||
+    field === "imageStamp"
+  );
 }
 
 export const DEFAULT_LAYOUT: TemplateLayout = [

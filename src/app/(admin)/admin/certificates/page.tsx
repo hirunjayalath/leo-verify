@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CertificatesTable } from "@/components/certificates-table";
+import { CertificateHubExports } from "@/components/certificate-hub-exports";
 import { CsvImportForm } from "@/components/csv-import-form";
 import { IssueCertificateForm } from "@/components/issue-certificate-form";
 import { RecentImportsTable } from "@/components/recent-imports-table";
@@ -200,6 +201,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <CertificateHubExports eventId={eventId || undefined} />
               <form className="flex flex-wrap items-end gap-2" method="get">
                 <Input
                   name="q"

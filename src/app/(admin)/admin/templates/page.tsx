@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutTemplate } from "lucide-react";
 import { ApproveTemplateButton } from "@/components/approve-template-button";
 import { CreateTemplateForm } from "@/components/create-template-form";
+import { GalleryCloneForm } from "@/components/gallery-clone-form";
 import { RevertTemplateButton } from "@/components/revert-template-button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,7 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
+import { TEMPLATE_GALLERY } from "@/lib/certificates/gallery";
 import { prisma } from "@/lib/db";
+import { DuplicateTemplateButton } from "@/components/duplicate-template-button";
 
 export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
@@ -128,6 +131,7 @@ export default async function AdminTemplatesPage() {
                               >
                                 Edit layout
                               </Link>
+                              <DuplicateTemplateButton templateId={template.id} />
                             </div>
                           </TableCell>
                         </TableRow>
@@ -169,20 +173,35 @@ export default async function AdminTemplatesPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>New template</CardTitle>
-            <CardDescription>
-              PNG or JPEG background only.
-              {isPublicOrg
-                ? " Created as draft for district review."
-                : " Created templates are approved and ready to issue."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateTemplateForm events={events} />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Starter gallery</CardTitle>
+              <CardDescription>
+                Pick a professional background and layout, then refine in the
+                designer.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GalleryCloneForm events={events} gallery={TEMPLATE_GALLERY} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>New template</CardTitle>
+              <CardDescription>
+                PNG or JPEG background only.
+                {isPublicOrg
+                  ? " Created as draft for district review."
+                  : " Created templates are approved and ready to issue."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CreateTemplateForm events={events} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

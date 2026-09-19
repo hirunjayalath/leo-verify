@@ -117,7 +117,7 @@ export async function deleteObject(key: string): Promise<void> {
 }
 
 export function buildObjectKey(
-  folder: "templates" | "certificates",
+  folder: "templates" | "certificates" | "logos" | "signatures",
   clubId: string,
   ext: string,
 ): string {

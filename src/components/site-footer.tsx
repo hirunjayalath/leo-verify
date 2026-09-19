@@ -24,23 +24,28 @@ export function SiteFooter() {
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
+              <Link href="/#features" className="hover:text-foreground">
+                Features
+              </Link>
+            </li>
+            <li>
+              <Link href="/pricing" className="hover:text-foreground">
+                Pricing
+              </Link>
+            </li>
+            <li>
               <Link href="/#verify" className="hover:text-foreground">
                 Verify
               </Link>
             </li>
             <li>
+              <Link href="/signup" className="hover:text-foreground">
+                Sign up
+              </Link>
+            </li>
+            <li>
               <Link href="/claim" className="hover:text-foreground">
                 Claim certificates
-              </Link>
-            </li>
-            <li>
-              <Link href="/how-it-works" className="hover:text-foreground">
-                How it works
-              </Link>
-            </li>
-            <li>
-              <Link href="/faq" className="hover:text-foreground">
-                FAQ
               </Link>
             </li>
           </ul>

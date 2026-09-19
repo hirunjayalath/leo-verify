@@ -233,6 +233,10 @@ export async function issueCertificate(
     uniqueId: certificate.uniqueId,
     verificationToken: certificate.verificationToken,
     achievement: certificate.achievement,
+    eventName: event.name,
+    clubName: club.name,
+    pageSize:
+      template.pageSize === "a4_portrait" ? "a4_portrait" : "a4_landscape",
   });
   const uploaded = await uploadObject({
     key: buildObjectKey("certificates", input.clubId, "pdf"),
@@ -272,6 +276,9 @@ export async function issueCertificate(
         certificate.uniqueId,
         certificate.verificationToken,
       ),
+      clubLogoUrl: club.logoUrl,
+      primaryColor: club.primaryColor,
+      accentColor: club.accentColor,
     });
     emailSent = emailResult.sent;
   }
@@ -359,6 +366,9 @@ export async function reissueCertificate(input: {
     tokenVersion,
   });
 
+  const club = await prisma.club.findUniqueOrThrow({
+    where: { id: input.clubId },
+  });
   const pdfBytes = await renderCertificatePdf({
     backgroundUrl: template.backgroundUrl,
     layout: template.layout,
@@ -368,6 +378,10 @@ export async function reissueCertificate(input: {
     uniqueId: cert.uniqueId,
     verificationToken,
     achievement: cert.achievement,
+    eventName: cert.event.name,
+    clubName: club.name,
+    pageSize:
+      template.pageSize === "a4_portrait" ? "a4_portrait" : "a4_landscape",
   });
   const uploaded = await uploadObject({
     key: buildObjectKey("certificates", input.clubId, "pdf"),

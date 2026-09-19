@@ -57,6 +57,13 @@ model Club {
   type       ClubType @default(leo)
   plan       PlanTier @default(free)
   monthlyCertLimit Int @default(100)
+  /// Public org portal path /o/[publicSlug]
+  publicSlug String?  @unique
+  logoUrl    String?
+  primaryColor String @default("#323232")
+  accentColor  String @default("#38a3e3")
+  tagline    String?
+  stripeCustomerId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -115,6 +122,8 @@ model CertificateTemplate {
   status           TemplateStatus @default(draft)
   /// Structured field positions: [{ field, x, y, fontSize, fontFamily, color, align, ... }]
   layout           Json
+  /// a4_landscape (842x595) or a4_portrait (595x842)
+  pageSize         String   @default("a4_landscape")
   reviewNote       String?
   createdById      String?
   lastEditedById   String?

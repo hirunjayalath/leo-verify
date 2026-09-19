@@ -11,6 +11,9 @@ export function buildCertificateEmailHtml(input: {
   clubName: string;
   pdfDownloadPath?: string | null;
   appBaseUrl?: string;
+  clubLogoUrl?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
 }): string {
   const base = (
     input.appBaseUrl ??
@@ -29,14 +32,22 @@ export function buildCertificateEmailHtml(input: {
   const uniqueId = escapeHtml(input.uniqueId);
   const safeVerify = escapeHtml(verifyUrl);
   const safePdf = pdfHref ? escapeHtml(pdfHref) : null;
+  const primary = escapeHtml(input.primaryColor || "#323232");
+  const accent = escapeHtml(input.accentColor || "#38a3e3");
+  const logo = input.clubLogoUrl
+    ? `<img src="${escapeHtml(input.clubLogoUrl)}" alt="" width="48" height="48" style="border-radius:8px;margin-bottom:12px" />`
+    : "";
 
   return `
+        <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:${primary}">
+        ${logo}
         <p>Hi ${name},</p>
         <p>Your certificate for <strong>${eventName}</strong> is ready.</p>
         <p>Certificate ID: <code>${uniqueId}</code></p>
-        <p><a href="${safeVerify}">Verify your certificate</a></p>
-        ${safePdf ? `<p><a href="${safePdf}">Download PDF</a></p>` : ""}
-        <p>— ${clubName} via LeoVerify</p>
+        <p><a href="${safeVerify}" style="color:${accent}">Verify your certificate</a></p>
+        ${safePdf ? `<p><a href="${safePdf}" style="color:${accent}">Download PDF</a></p>` : ""}
+        <p style="margin-top:24px;font-size:13px;color:#646464">— ${clubName} via LeoVerify</p>
+        </div>
       `;
 }
 
@@ -47,8 +58,10 @@ export async function sendCertificateEmail(input: {
   verificationToken: string;
   eventName: string;
   clubName: string;
-  /** Prefer gated path `/api/certificates/.../pdf?t=...` over raw storage URLs. */
   pdfUrl?: string | null;
+  clubLogoUrl?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
 }): Promise<{ sent: boolean; skipped?: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -71,6 +84,9 @@ export async function sendCertificateEmail(input: {
         eventName: input.eventName,
         clubName: input.clubName,
         pdfDownloadPath: input.pdfUrl,
+        clubLogoUrl: input.clubLogoUrl,
+        primaryColor: input.primaryColor,
+        accentColor: input.accentColor,
       }),
     });
     return { sent: true };
@@ -81,3 +97,6 @@ export async function sendCertificateEmail(input: {
     };
   }
 }
+
+/** Alias used by hub resend action */
+export const resendCertificateEmail = sendCertificateEmail;

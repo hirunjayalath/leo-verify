@@ -33,6 +33,11 @@ const FIELD_LABELS: Record<LayoutField["field"], string> = {
   issueDate: "Issue date",
   uniqueId: "Certificate ID",
   qr: "QR code",
+  eventName: "Event name",
+  clubName: "Club / org name",
+  achievement: "Achievement",
+  staticText: "Static text",
+  imageStamp: "Image stamp",
   signature1: "Signature 1",
   signature2: "Signature 2",
 };
@@ -52,6 +57,7 @@ type Props = {
 type ObjMeta = {
   fieldKey?: LayoutField["field"];
   imageUrl?: string;
+  staticText?: string;
 };
 
 function getMeta(obj: FabricObject): ObjMeta {
@@ -195,8 +201,20 @@ export function TemplateDesigner({
             });
             getMeta(box).fieldKey = field.field;
             canvas.add(box);
-          } else if (isSignatureField(field.field)) {
+          } else if (isSignatureField(field.field) || field.field === "imageStamp") {
             await addSignatureBox(field, canvas);
+          } else if (field.field === "staticText") {
+            const text = new FabricText(field.text || "Static text", {
+              left: field.x,
+              top: field.y,
+              fontSize: field.fontSize ?? 18,
+              fill: field.color ?? BRAND_HEX,
+              fontFamily: field.fontFamily ?? "Helvetica",
+              originX: field.align === "center" ? "center" : "left",
+            });
+            getMeta(text).fieldKey = field.field;
+            getMeta(text).staticText = field.text;
+            canvas.add(text);
           } else {
             const text = new FabricText(FIELD_LABELS[field.field], {
               left: field.x,
@@ -253,9 +271,9 @@ export function TemplateDesigner({
     const canvas = fabricRef.current;
     if (!canvas) return;
     let obj = findByKey(key);
-    if (!obj && isSignatureField(key)) {
+    if (!obj && (isSignatureField(key) || key === "imageStamp")) {
       const box = new Rect({
-        left: key === "signature1" ? 120 : 520,
+        left: key === "signature2" ? 520 : 120,
         top: 420,
         width: 140,
         height: 60,
@@ -267,6 +285,32 @@ export function TemplateDesigner({
       canvas.add(box);
       setDirty(true);
       obj = box;
+    } else if (!obj && key === "staticText") {
+      const text = new FabricText("Certificate of Achievement", {
+        left: 421,
+        top: 180,
+        fontSize: 22,
+        fill: BRAND_HEX,
+        fontFamily: "Helvetica",
+        originX: "center",
+      });
+      getMeta(text).fieldKey = "staticText";
+      canvas.add(text);
+      setDirty(true);
+      obj = text;
+    } else if (!obj && (key === "eventName" || key === "clubName" || key === "achievement")) {
+      const text = new FabricText(FIELD_LABELS[key], {
+        left: 421,
+        top: key === "eventName" ? 380 : key === "clubName" ? 520 : 400,
+        fontSize: 14,
+        fill: "#646464",
+        fontFamily: "Helvetica",
+        originX: "center",
+      });
+      getMeta(text).fieldKey = key;
+      canvas.add(text);
+      setDirty(true);
+      obj = text;
     }
     if (!obj) return;
     canvas.setActiveObject(obj);
@@ -304,7 +348,7 @@ export function TemplateDesigner({
           width: Math.round((obj.width ?? 80) * (obj.scaleX ?? 1)),
           height: Math.round((obj.height ?? 80) * (obj.scaleY ?? 1)),
         });
-      } else if (isSignatureField(fieldKey)) {
+      } else if (isSignatureField(fieldKey) || fieldKey === "imageStamp") {
         layout.push({
           field: fieldKey,
           x: Math.round(obj.left ?? 0),
@@ -312,6 +356,18 @@ export function TemplateDesigner({
           width: Math.round((obj.width ?? 140) * (obj.scaleX ?? 1)),
           height: Math.round((obj.height ?? 60) * (obj.scaleY ?? 1)),
           imageUrl: getMeta(obj).imageUrl,
+        });
+      } else if (fieldKey === "staticText") {
+        const text = obj as FabricText;
+        layout.push({
+          field: "staticText",
+          x: Math.round(text.left ?? 0),
+          y: Math.round(text.top ?? 0),
+          fontSize: Math.round(text.fontSize ?? 18),
+          fontFamily: text.fontFamily ?? "Helvetica",
+          color: String(text.fill ?? BRAND_HEX),
+          align: text.originX === "center" ? "center" : "left",
+          text: String(text.text ?? getMeta(obj).staticText ?? "Static text"),
         });
       } else {
         const text = obj as FabricText;
@@ -670,10 +726,15 @@ export function TemplateDesigner({
       </div>
 
       <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-        Drag placeholders on the artboard. Click Signature 1/2 to place boxes,
-        then upload a PNG/JPEG stamp. Coordinates and stamp URLs are stored as
-        layout JSON (templates are data — Rule 5).
+        Drag placeholders on the artboard. Add Event / Club / Achievement /
+        Static text / Signatures from the toolbar. Preview PDF uses sample data.
+        Layout JSON stays data (Rule 5).
       </p>
+      <iframe
+        title="PDF preview"
+        src={`/api/templates/${templateId}/preview`}
+        className="h-[420px] w-full rounded-xl border border-border bg-muted/20"
+      />
     </div>
   );
 }

@@ -92,11 +92,10 @@ Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admi
 ## Architecture
 
 - Multi-tenant schema (`clubId` / `districtId`) from day one.
+- Public org SaaS: `/signup`, white-label `/o/[slug]`, branding in Settings, Stripe plan upgrades.
 - Verification: `/v/[id]?t=<token>` — live DB + HMAC; no login wall.
-- Revoked public page: only “This certificate has been revoked.”
-- Templates are layout JSON + background URL (Rule 5).
-- Bulk CSV validates all rows before any write; re-runs skip duplicates.
-- Public org signup: `/signup` (Club.type=`public`, plan entitlements).
+- Template gallery + Fabric drag-drop designer; layout JSON is data (Rule 5).
+- Bulk CSV/Excel validates all rows before any write; issue wizard at `/admin/issue`.
 - Open Badges 3.0 export: `GET /api/credentials/[uniqueId]/badge?t=<token>` (HMAC still primary).
 
 ## Roadmap

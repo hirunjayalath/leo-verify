@@ -25,7 +25,15 @@ export async function lookupCertificateForVerify(uniqueId: string) {
         event: {
           select: {
             name: true,
-            club: { select: { name: true } },
+            club: {
+              select: {
+                name: true,
+                logoUrl: true,
+                primaryColor: true,
+                accentColor: true,
+                publicSlug: true,
+              },
+            },
           },
         },
       },
@@ -48,6 +56,10 @@ export async function lookupCertificateForVerify(uniqueId: string) {
       pdfUrl: row.pdfUrl,
       pdfKey: row.pdfKey,
       tokenVersion: row.tokenVersion,
+      clubLogoUrl: row.event.club.logoUrl,
+      primaryColor: row.event.club.primaryColor,
+      accentColor: row.event.club.accentColor,
+      publicSlug: row.event.club.publicSlug,
     };
   } catch {
     return null;
@@ -70,5 +82,8 @@ export async function getVerifiedShareCard(
     role: result.role,
     issueDate: result.issueDate,
     uniqueId: result.uniqueId,
+    clubLogoUrl: row?.clubLogoUrl ?? null,
+    primaryColor: row?.primaryColor ?? "#323232",
+    accentColor: row?.accentColor ?? "#38a3e3",
   };
 }

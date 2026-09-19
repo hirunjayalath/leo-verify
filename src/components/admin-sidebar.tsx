@@ -11,6 +11,8 @@ import {
   Map,
   Menu,
   ScrollText,
+  Send,
+  Settings,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -21,9 +23,11 @@ import { cn } from "@/lib/utils";
 
 const clubNav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/issue", label: "Issue", icon: Send },
   { href: "/admin/events", label: "Events", icon: ClipboardList },
   { href: "/admin/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/admin/certificates", label: "Certificates", icon: FileBadge2 },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
 ];
 

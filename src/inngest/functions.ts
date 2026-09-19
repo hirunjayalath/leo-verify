@@ -73,6 +73,9 @@ export async function processImportJob(jobId: string) {
               issued.uniqueId,
               issued.verificationToken,
             ),
+            clubLogoUrl: job.event.club.logoUrl,
+            primaryColor: job.event.club.primaryColor,
+            accentColor: job.event.club.accentColor,
           });
         }
       }

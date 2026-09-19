@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ClubType, PlanTier, UserRole } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { getSupabaseAuthUser } from "@/lib/auth";
+import { slugifyPublic } from "@/lib/branding";
 import { prisma } from "@/lib/db";
 import {
   clientIpFromHeaders,
@@ -92,6 +93,13 @@ export async function signupPublicOrgAction(
   });
   if (existing) return { ok: false, error: "Organization code already taken" };
 
+  const baseSlug = slugifyPublic(parsed.data.orgName) || slugifyPublic(parsed.data.orgCode);
+  let publicSlug = baseSlug;
+  let n = 1;
+  while (await prisma.club.findUnique({ where: { publicSlug } })) {
+    publicSlug = `${baseSlug}-${n++}`.slice(0, 48);
+  }
+
   const club = await prisma.club.create({
     data: {
       name: parsed.data.orgName,
@@ -100,6 +108,9 @@ export async function signupPublicOrgAction(
       type: ClubType.public,
       plan: PlanTier.free,
       monthlyCertLimit: 50,
+      publicSlug,
+      primaryColor: "#323232",
+      accentColor: "#38a3e3",
     },
   });
 

@@ -9,7 +9,7 @@ export default async function SignupPage() {
   return (
     <AuthShell
       title="Create an organization"
-      description="Self-serve signup for public clubs and organizations. Free plan includes a monthly certificate entitlement."
+      description="Create a free organization (50 certificates/month). Design templates, bulk-issue credentials, and publish a white-label portal at /o/your-slug."
     >
       <SignupForm signedInEmail={auth?.email ?? null} />
       <p className="mt-5 text-center text-sm text-muted-foreground">

@@ -1,7 +1,11 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import QRCode from "qrcode";
 import {
+  pageDimensions,
   templateLayoutSchema,
+  type PageSize,
   type TemplateLayout,
 } from "@/lib/certificates/layout";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
@@ -13,10 +17,13 @@ export type RenderCertificateInput = {
   layout: unknown;
   recipientName: string;
   role: string;
-  issueDate: string; // YYYY-MM-DD
+  issueDate: string;
   uniqueId: string;
   verificationToken: string;
   achievement?: string | null;
+  eventName?: string | null;
+  clubName?: string | null;
+  pageSize?: PageSize;
   appBaseUrl?: string;
 };
 
@@ -38,14 +45,25 @@ function hexToRgb(hex: string) {
   );
 }
 
+async function tryEmbedCustomFont(pdf: PDFDocument) {
+  try {
+    const path = join(process.cwd(), "public/fonts/Poppins-Regular.ttf");
+    const bytes = await readFile(path);
+    return await pdf.embedFont(bytes);
+  } catch {
+    return null;
+  }
+}
+
 export async function renderCertificatePdf(
   input: RenderCertificateInput,
 ): Promise<Uint8Array> {
   const parsed = templateLayoutSchema.safeParse(input.layout);
   const layout: TemplateLayout = parsed.success ? parsed.data : [];
+  const dims = pageDimensions(input.pageSize ?? "a4_landscape");
 
   const pdf = await PDFDocument.create();
-  const page = pdf.addPage([842, 595]); // A4 landscape points
+  const page = pdf.addPage([dims.width, dims.height]);
   const { width, height } = page.getSize();
 
   try {
@@ -69,14 +87,16 @@ export async function renderCertificatePdf(
 
   const helvetica = await pdf.embedFont(StandardFonts.Helvetica);
   const courier = await pdf.embedFont(StandardFonts.Courier);
+  const poppins = await tryEmbedCustomFont(pdf);
 
   const values: Record<string, string> = {
     recipientName: input.recipientName,
-    role: input.achievement
-      ? `${input.role} · ${input.achievement}`
-      : input.role,
+    role: input.role,
+    achievement: input.achievement ?? "",
     issueDate: input.issueDate,
     uniqueId: input.uniqueId,
+    eventName: input.eventName ?? "",
+    clubName: input.clubName ?? "",
   };
 
   const base = (
@@ -93,7 +113,6 @@ export async function renderCertificatePdf(
       });
       const qrImage = await pdf.embedPng(qrPng);
       const size = field.width ?? 80;
-      // Fabric y is top-down; PDF y is bottom-up
       const y = height - (field.y + size);
       page.drawImage(qrImage, {
         x: field.x,
@@ -104,7 +123,11 @@ export async function renderCertificatePdf(
       continue;
     }
 
-    if (field.field === "signature1" || field.field === "signature2") {
+    if (
+      field.field === "signature1" ||
+      field.field === "signature2" ||
+      field.field === "imageStamp"
+    ) {
       if (!field.imageUrl) continue;
       try {
         const sigBytes = await fetchBackgroundBytes(field.imageUrl);
@@ -117,22 +140,26 @@ export async function renderCertificatePdf(
         const w = field.width ?? 140;
         const h = field.height ?? 60;
         const y = height - (field.y + h);
-        page.drawImage(sigImage, {
-          x: field.x,
-          y,
-          width: w,
-          height: h,
-        });
+        page.drawImage(sigImage, { x: field.x, y, width: w, height: h });
       } catch {
-        /* skip broken signature stamp — layout still valid */
+        /* skip */
       }
       continue;
     }
 
-    const text = values[field.field] ?? "";
+    const text =
+      field.field === "staticText"
+        ? (field.text ?? "")
+        : (values[field.field] ?? "");
+    if (!text) continue;
+
     const fontSize = field.fontSize ?? 16;
-    const font =
-      field.fontFamily?.toLowerCase().includes("courier") ? courier : helvetica;
+    const family = (field.fontFamily ?? "Helvetica").toLowerCase();
+    const font = family.includes("courier")
+      ? courier
+      : family.includes("poppins") && poppins
+        ? poppins
+        : helvetica;
     const color = hexToRgb(field.color ?? "#323232");
     const textWidth = font.widthOfTextAtSize(text, fontSize);
     let x = field.x;

@@ -91,6 +91,20 @@ export function VerificationResult({
                 )}
                 Copy link
               </Button>
+              {result.status === "valid" && (
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                  onClick={(e) => {
+                    const url = encodeURIComponent(window.location.href);
+                    e.currentTarget.href = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+                  }}
+                >
+                  Share on LinkedIn
+                </a>
+              )}
               <Button
                 type="button"
                 variant="outline"

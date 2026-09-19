@@ -65,7 +65,16 @@ describe("getVerifiedShareCard", () => {
       pdfUrl: null,
       pdfKey: null,
       tokenVersion: 1,
-      event: { name: "Hackathon", club: { name: "Leo UoM" } },
+      event: {
+        name: "Hackathon",
+        club: {
+          name: "Leo UoM",
+          logoUrl: null,
+          primaryColor: "#323232",
+          accentColor: "#38a3e3",
+          publicSlug: "leo-uom",
+        },
+      },
     } as never);
 
     const card = await getVerifiedShareCard(fields.uniqueId, token);
@@ -76,6 +85,9 @@ describe("getVerifiedShareCard", () => {
       role: "Volunteer",
       issueDate: "2026-01-01",
       uniqueId: "LEO-UOM-2026-1",
+      clubLogoUrl: null,
+      primaryColor: "#323232",
+      accentColor: "#38a3e3",
     });
   });
 });
