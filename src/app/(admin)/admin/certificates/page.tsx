@@ -321,10 +321,11 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
 
           <Card>
             <CardHeader>
-              <CardTitle>Bulk CSV import</CardTitle>
+              <CardTitle>Bulk roster import</CardTitle>
               <CardDescription>
-                Needs an approved template. Validates every row before committing.
-                Re-runs skip duplicates.
+                CSV or Excel (.xlsx). Needs an approved template. Map columns if
+                headers differ. All rows validate before any write; re-runs skip
+                duplicates.
               </CardDescription>
             </CardHeader>
             <CardContent>

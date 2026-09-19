@@ -8,7 +8,12 @@ import {
 } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { requireClubAdmin } from "@/lib/auth";
-import { validateCertificateCsv } from "@/lib/certificates/csv";
+import {
+  type ColumnMapping,
+  type RosterField,
+  validateCertificateCsv,
+  validateCertificateXlsx,
+} from "@/lib/certificates/csv";
 import { prisma } from "@/lib/db";
 import { inngest, processImportJob } from "@/inngest/functions";
 
@@ -28,6 +33,46 @@ export type ImportActionResult =
       rowErrors?: { rowNumber: number; message: string }[];
     };
 
+const ROSTER_FIELD_KEYS = new Set<RosterField>([
+  "recipientName",
+  "recipientEmail",
+  "role",
+  "achievement",
+]);
+
+function parseColumnMapping(raw: FormDataEntryValue | null): ColumnMapping | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const mapping: ColumnMapping = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (
+        ROSTER_FIELD_KEYS.has(key as RosterField) &&
+        typeof value === "string" &&
+        value.trim()
+      ) {
+        mapping[key as RosterField] = value;
+      }
+    }
+    return Object.keys(mapping).length > 0 ? mapping : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isSpreadsheetFile(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return (
+    name.endsWith(".csv") ||
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls") ||
+    file.type === "text/csv" ||
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    file.type === "application/vnd.ms-excel"
+  );
+}
+
 export async function startCsvImportAction(
   formData: FormData,
 ): Promise<ImportActionResult> {
@@ -35,13 +80,17 @@ export async function startCsvImportAction(
   const clubId = user.clubId!;
   const eventId = String(formData.get("eventId") || "");
   const file = formData.get("csv");
+  const mapping = parseColumnMapping(formData.get("columnMapping"));
 
   if (!eventId) return { ok: false, error: "Event is required" };
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "CSV file is required" };
+    return { ok: false, error: "Spreadsheet file is required" };
   }
   if (file.size > 2 * 1024 * 1024) {
-    return { ok: false, error: "CSV must be 2 MB or smaller" };
+    return { ok: false, error: "File must be 2 MB or smaller" };
+  }
+  if (!isSpreadsheetFile(file)) {
+    return { ok: false, error: "Upload a .csv or .xlsx file" };
   }
 
   const event = await prisma.event.findFirst({ where: { id: eventId, clubId } });
@@ -59,12 +108,16 @@ export async function startCsvImportAction(
     };
   }
 
-  const text = await file.text();
-  const validated = validateCertificateCsv(text);
+  const name = file.name.toLowerCase();
+  const validated =
+    name.endsWith(".xlsx") || name.endsWith(".xls")
+      ? validateCertificateXlsx(Buffer.from(await file.arrayBuffer()), mapping)
+      : validateCertificateCsv(await file.text(), mapping);
+
   if (!validated.ok) {
     return {
       ok: false,
-      error: "CSV validation failed — fix rows before importing",
+      error: "Validation failed — fix rows before importing",
       rowErrors: validated.errors,
     };
   }
@@ -113,7 +166,6 @@ export async function startCsvImportAction(
     };
   }
 
-  // Local/dev fallback: process synchronously when Inngest is not configured
   await processImportJob(job.id);
   const finished = await prisma.importJob.findUniqueOrThrow({
     where: { id: job.id },
