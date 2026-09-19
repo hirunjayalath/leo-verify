@@ -7,8 +7,9 @@ import {
   setCertificateUnlistedAction,
   updateProfileVisibilityAction,
 } from "@/app/(public)/(auth)/claim/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 export type RecipientDashboardCert = {
   id: string;
@@ -134,13 +135,23 @@ export function RecipientSettings({
                   </label>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="outline">
-                    <Link href={cert.verifyPath}>Verify</Link>
-                  </Button>
+                  <Link
+                    href={cert.verifyPath}
+                    className={cn(
+                      buttonVariants({ size: "sm", variant: "outline" }),
+                    )}
+                  >
+                    Verify
+                  </Link>
                   {cert.pdfPath ? (
-                    <Button asChild size="sm" variant="secondary">
-                      <a href={cert.pdfPath}>Download PDF</a>
-                    </Button>
+                    <a
+                      href={cert.pdfPath}
+                      className={cn(
+                        buttonVariants({ size: "sm", variant: "accent" }),
+                      )}
+                    >
+                      Download PDF
+                    </a>
                   ) : (
                     <span className="self-center text-xs text-muted-foreground">
                       PDF not available yet
