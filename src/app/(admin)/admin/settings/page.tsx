@@ -7,17 +7,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ClubBrandingForm } from "@/components/club-branding-form";
-import { PlanUpgradeCards } from "@/components/plan-upgrade-cards";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export default async function AdminSettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ upgraded?: string }>;
-}) {
+export default async function AdminSettingsPage() {
   const user = await requireClubAdmin();
-  const params = await searchParams;
   const club = await prisma.club.findUniqueOrThrow({
     where: { id: user.clubId! },
   });
@@ -29,29 +23,7 @@ export default async function AdminSettingsPage({
         <p className="mt-1 text-muted-foreground">
           White-label your organization portal, emails, and verify chrome.
         </p>
-        {params.upgraded === "1" && (
-          <p className="mt-2 text-sm text-success">
-            Checkout completed. Plan limits update when Stripe confirms payment.
-          </p>
-        )}
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Plan</CardTitle>
-          <CardDescription>
-            Current: <strong>{club.plan}</strong> · {club.monthlyCertLimit}{" "}
-            certificates / month. See{" "}
-            <Link href="/pricing" className="underline-offset-4 hover:underline">
-              public pricing
-            </Link>
-            .
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PlanUpgradeCards currentPlan={club.plan} />
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>

@@ -10,7 +10,7 @@ export async function assertWithinCertLimit(clubId: string): Promise<void> {
   });
   if (count >= club.monthlyCertLimit) {
     throw new Error(
-      `Monthly certificate limit reached (${club.monthlyCertLimit}). Upgrade plan to continue.`,
+      `Monthly certificate limit reached (${club.monthlyCertLimit}). Contact your administrator to raise the quota.`,
     );
   }
 }

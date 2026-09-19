@@ -9,11 +9,9 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/#features", label: "Features", match: null },
-  { href: "/pricing", label: "Pricing", match: "/pricing" },
   { href: "/#verify", label: "Verify", match: null },
   { href: "/login", label: "Login", match: "/login" },
 ];
-
 function SiteHeaderInner({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
 
@@ -97,7 +95,7 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
             className="mt-1 rounded-full bg-primary px-3 py-2.5 text-center text-sm font-medium text-primary-foreground"
             onClick={() => setOpen(false)}
           >
-            Sign up free
+            Sign up
           </Link>
         </nav>
       </div>

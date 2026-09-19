@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaClient, UserRole } from "../src/generated/prisma/client";
+import { PrismaClient, PlanTier, UserRole } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -40,11 +40,16 @@ async function main() {
     update: {
       name: "Leo Club of University of Moratuwa",
       districtId: district.id,
+      // Client-delivered: high operator-set quota (no self-serve billing).
+      monthlyCertLimit: 10_000,
+      plan: PlanTier.club,
     },
     create: {
       code: "UOM",
       name: "Leo Club of University of Moratuwa",
       districtId: district.id,
+      monthlyCertLimit: 10_000,
+      plan: PlanTier.club,
     },
   });
 

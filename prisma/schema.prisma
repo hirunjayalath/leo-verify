@@ -63,7 +63,6 @@ model Club {
   primaryColor String @default("#323232")
   accentColor  String @default("#38a3e3")
   tagline    String?
-  stripeCustomerId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

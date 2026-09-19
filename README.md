@@ -128,7 +128,7 @@ Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admi
 ## Architecture
 
 - Multi-tenant schema (`clubId` / `districtId`) from day one.
-- Public org SaaS: `/signup`, white-label `/o/[slug]`, branding in Settings, Stripe plan upgrades.
+- Public org portals: `/signup`, white-label `/o/[slug]`, branding in Settings. Client-delivered product — no self-serve payments; certificate quotas are operator-set (`Club.monthlyCertLimit`).
 - Verification: `/v/[id]?t=<token>` — live DB + HMAC; no login wall.
 - Template gallery + Fabric drag-drop designer; layout JSON is data (Rule 5).
 - Bulk CSV/Excel validates all rows before any write; issue wizard at `/admin/issue`.

@@ -153,7 +153,7 @@ export default function HomePage() {
                 href="/signup"
                 className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
               >
-                Sign up free
+                Sign up
               </Link>
               <a
                 href="#verify"
@@ -162,9 +162,6 @@ export default function HomePage() {
                 Verify a certificate
               </a>
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Free plan: 50 certificates / month · No credit card required
-            </p>
           </div>
           <MockCertificate />
         </div>
@@ -264,10 +261,10 @@ export default function HomePage() {
               Read the story
             </Link>
             <Link
-              href="/pricing"
+              href="/signup"
               className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              See pricing
+              Create organization
             </Link>
           </div>
         </div>
@@ -283,7 +280,7 @@ export default function HomePage() {
               Issue your first credential today
             </p>
             <p className="mt-1 text-sm text-white/70">
-              Free forever for small cohorts. Upgrade when you scale.
+              Design templates, bulk-issue credentials, and publish a verify portal.
             </p>
           </div>
           <Link

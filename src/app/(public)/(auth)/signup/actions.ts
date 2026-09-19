@@ -107,7 +107,7 @@ export async function signupPublicOrgAction(
       districtId: district.id,
       type: ClubType.public,
       plan: PlanTier.free,
-      monthlyCertLimit: 50,
+      monthlyCertLimit: 100,
       publicSlug,
       primaryColor: "#323232",
       accentColor: "#38a3e3",

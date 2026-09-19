@@ -29,11 +29,6 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/pricing" className="hover:text-foreground">
-                Pricing
-              </Link>
-            </li>
-            <li>
               <Link href="/#verify" className="hover:text-foreground">
                 Verify
               </Link>

@@ -157,7 +157,7 @@ export default async function AdminDashboardPage() {
     {
       label: "Issued this month",
       value: issuedThisMonth,
-      hint: `${club.plan} plan · limit ${club.monthlyCertLimit}`,
+      hint: `Monthly quota ${club.monthlyCertLimit}`,
       icon: FileUp,
       tint: "bg-accent/20 text-accent",
       href: "/admin/issue",
@@ -318,7 +318,7 @@ export default async function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>This month</CardTitle>
             <CardDescription>
-              Plan usage and issuance volume
+              Issuance volume this calendar month
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -353,7 +353,7 @@ export default async function AdminDashboardPage() {
               href="/admin/settings"
               className="inline-block pt-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              Manage plan & branding
+              Manage branding
             </Link>
           </CardContent>
         </Card>
