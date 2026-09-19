@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-logo";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
@@ -23,11 +24,8 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
 /** Minimal brand lockup used when SiteChrome is unavailable. */
 export function BrandHomeLink() {
   return (
-    <Link href="/" className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-accent">
-        LV
-      </span>
-      <span className="text-lg font-semibold tracking-tight">LeoVerify</span>
+    <Link href="/" className="inline-flex">
+      <BrandLockup size={32} />
     </Link>
   );
 }

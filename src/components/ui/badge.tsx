@@ -11,7 +11,7 @@ const badgeVariants = cva(
         muted: "bg-muted text-muted-foreground",
         success: "bg-success-muted text-success",
         danger: "bg-danger-muted text-danger",
-        accent: "bg-accent/20 text-accent-foreground",
+        accent: "bg-accent/15 text-accent",
       },
     },
     defaultVariants: {

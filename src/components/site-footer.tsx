@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLockup } from "@/components/brand-logo";
 
 const supportEmail =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@leoverify.org";
@@ -8,12 +9,7 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-card">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-accent">
-              LV
-            </span>
-            <span className="text-lg font-semibold tracking-tight">LeoVerify</span>
-          </div>
+          <BrandLockup size={32} />
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
             The certificate PDF is a convenience copy. The database record is the
             only thing that is ever authoritative.

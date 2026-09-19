@@ -1,10 +1,17 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 export const alt = "LeoVerify — Live certificate verification";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logoBytes = await readFile(
+    join(process.cwd(), "public/brand/leo-emblem.png"),
+  );
+  const logoSrc = `data:image/png;base64,${logoBytes.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -14,8 +21,9 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "linear-gradient(145deg, #0b1f3a 0%, #132a4a 55%, #0b1f3a 100%)",
-          color: "#f8fafc",
+          background:
+            "linear-gradient(145deg, #323232 0%, #2a2a2a 45%, #1f1f1f 100%)",
+          color: "#ffffff",
           padding: 72,
         }}
       >
@@ -26,34 +34,31 @@ export default function OpenGraphImage() {
             gap: 20,
           }}
         >
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 12,
-              background: "#0b1f3a",
-              border: "2px solid #d4af37",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#d4af37",
-              fontSize: 28,
-              fontWeight: 700,
-            }}
-          >
-            LV
-          </div>
+          <img
+            src={logoSrc}
+            width={72}
+            height={72}
+            alt=""
+            style={{ borderRadius: 12 }}
+          />
           <div style={{ fontSize: 36, fontWeight: 600 }}>LeoVerify</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.1, maxWidth: 900 }}>
+          <div
+            style={{
+              fontSize: 56,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              maxWidth: 900,
+            }}
+          >
             Live certificate verification
           </div>
-          <div style={{ fontSize: 28, color: "#cbd5e1", maxWidth: 820 }}>
+          <div style={{ fontSize: 28, color: "#c8c8c8", maxWidth: 820 }}>
             The PDF is a convenience copy. The database record is authoritative.
           </div>
         </div>
-        <div style={{ fontSize: 22, color: "#d4af37" }}>
+        <div style={{ fontSize: 22, color: "#38a3e3" }}>
           Leo Club of University of Moratuwa · District 306 A2
         </div>
       </div>

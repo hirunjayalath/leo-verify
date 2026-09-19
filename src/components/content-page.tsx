@@ -13,7 +13,7 @@ export function ContentPage({
   return (
     <div className="surface-grid">
       <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
-        <p className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">
           LeoVerify
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">

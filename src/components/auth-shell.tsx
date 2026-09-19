@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { BrandLockup } from "@/components/brand-logo";
 
 export function AuthShell({
   title,
@@ -14,11 +15,12 @@ export function AuthShell({
     <div className="grid min-h-full flex-1 lg:grid-cols-2">
       <aside className="auth-brand-panel relative hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
-              LV
-            </span>
-            <span className="text-lg font-semibold tracking-tight">LeoVerify</span>
+          <Link href="/" className="inline-flex">
+            <BrandLockup
+              size={36}
+              wordmarkClassName="text-white"
+              priority
+            />
           </Link>
           <h1 className="mt-16 max-w-md text-3xl font-semibold tracking-tight leading-snug">
             Credentials your community can trust — long after the board changes.
@@ -44,11 +46,8 @@ export function AuthShell({
       <div className="surface-grid flex items-center justify-center px-4 py-12 sm:px-8">
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-8 lg:hidden">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-sm font-bold text-accent">
-                LV
-              </span>
-              <span className="font-semibold">LeoVerify</span>
+            <Link href="/" className="inline-flex">
+              <BrandLockup size={32} priority />
             </Link>
           </div>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">

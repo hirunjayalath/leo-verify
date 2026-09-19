@@ -107,7 +107,7 @@ export default async function AdminDashboardPage() {
           ? "Upload a background"
           : "Saved certificate layouts",
       icon: LayoutTemplate,
-      tint: "bg-accent/20 text-accent-foreground dark:text-accent",
+      tint: "bg-accent/20 text-accent",
       href: "/admin/templates",
     },
     {

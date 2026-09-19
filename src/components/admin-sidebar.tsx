@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { signOutAction } from "@/app/(admin)/admin/actions";
+import { BrandMark } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -128,9 +129,7 @@ export function AdminSidebar({
   const panel = (
     <aside className="flex h-full w-64 flex-col bg-brand text-white">
       <div className="flex h-16 items-center gap-2.5 border-b border-white/10 px-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-sm font-bold text-accent">
-          LV
-        </span>
+        <BrandMark size={32} className="rounded-md" />
         <div className="min-w-0">
           <p className="text-sm font-semibold">LeoVerify</p>
           <p className="truncate text-xs text-white/55">

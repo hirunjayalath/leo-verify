@@ -1,55 +1,61 @@
 @import "tailwindcss";
 
+/* Leo MD 306–aligned theme: charcoal primary, cyan/blue accents, Poppins, white surfaces */
 :root {
-  --background: #f7f8fa;
-  --foreground: #0f172a;
+  --ash-1: #323232;
+  --ash-2: #646464;
+  --brand-primary: #38a3e3;
+  --brand-secondary: #1cbdd8;
+
+  --background: #ffffff;
+  --foreground: #323232;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --muted: #eef1f6;
-  --muted-foreground: #475569;
-  --border: #e2e8f0;
-  --primary: #0b1f3a;
-  --primary-foreground: #f8fafc;
-  --accent: #c9a227;
-  --accent-foreground: #0b1f3a;
+  --card-foreground: #323232;
+  --muted: #f0f7fb;
+  --muted-foreground: #646464;
+  --border: #d8e4ec;
+  --primary: #323232;
+  --primary-foreground: #ffffff;
+  --accent: #38a3e3;
+  --accent-foreground: #ffffff;
   --success: #166534;
   --success-muted: #dcfce7;
   --danger: #991b1b;
   --danger-muted: #fee2e2;
-  --info: #1d4ed8;
-  --info-muted: #dbeafe;
-  /* Non-inverting Leo brand chrome (stays navy in dark mode) */
-  --brand: #0b1f3a;
-  --brand-foreground: #f8fafc;
-  --ring: #0b1f3a;
-  --radius: 0.625rem;
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --info: #1cbdd8;
+  --info-muted: #e0f7fb;
+  /* Charcoal chrome for admin/auth (stays stable in dark mode) */
+  --brand: #323232;
+  --brand-foreground: #ffffff;
+  --ring: #1cbdd8;
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 2px rgba(50, 50, 50, 0.04), 0 1px 1px rgba(50, 50, 50, 0.03);
+  --shadow-md: 0 4px 12px rgba(50, 50, 50, 0.06), 0 1px 3px rgba(50, 50, 50, 0.04);
+  --shadow-lg: 0 12px 32px rgba(50, 50, 50, 0.1), 0 4px 8px rgba(50, 50, 50, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b1220;
-    --foreground: #e8eef7;
-    --card: #121a2b;
-    --card-foreground: #e8eef7;
-    --muted: #1a2438;
-    --muted-foreground: #cbd5e1;
-    --border: #243049;
-    --primary: #e8eef7;
-    --primary-foreground: #0b1f3a;
-    --accent: #d4af37;
-    --accent-foreground: #0b1f3a;
+    --background: #121416;
+    --foreground: #f2f2f2;
+    --card: #1a1d20;
+    --card-foreground: #f2f2f2;
+    --muted: #24282c;
+    --muted-foreground: #a8a8a8;
+    --border: #2e3439;
+    --primary: #f2f2f2;
+    --primary-foreground: #323232;
+    --accent: #38a3e3;
+    --accent-foreground: #ffffff;
     --success: #4ade80;
     --success-muted: #14532d;
     --danger: #f87171;
     --danger-muted: #7f1d1d;
-    --info: #60a5fa;
-    --info-muted: #1e3a5f;
-    --brand: #0b1f3a;
-    --brand-foreground: #f8fafc;
-    --ring: #d4af37;
+    --info: #5ad4e8;
+    --info-muted: #0e3a42;
+    --brand: #323232;
+    --brand-foreground: #ffffff;
+    --ring: #1cbdd8;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
@@ -57,12 +63,15 @@
 
   .surface-grid {
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 175, 55, 0.12), transparent),
-      linear-gradient(to bottom, #0b1220, #0f172a) !important;
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 163, 227, 0.14), transparent),
+      linear-gradient(to bottom, #121416, #1a1d20) !important;
   }
 
   .auth-brand-panel {
-    background: linear-gradient(160deg, var(--brand) 0%, #061018 100%) !important;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(56, 163, 227, 0.22), transparent 42%),
+      radial-gradient(circle at 80% 80%, rgba(28, 189, 216, 0.16), transparent 38%),
+      linear-gradient(160deg, #323232 0%, #1a1d20 100%) !important;
   }
 }
 
@@ -87,9 +96,9 @@
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-display);
+  --font-display: var(--font-poppins);
   --radius-lg: var(--radius);
 }
 
@@ -104,7 +113,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 
 :focus-visible {
@@ -121,25 +130,25 @@ textarea:focus:not(:focus-visible) {
 }
 
 ::selection {
-  background: rgba(201, 162, 39, 0.28);
+  background: rgba(56, 163, 227, 0.28);
   color: var(--foreground);
 }
 
 .font-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 
 .surface-grid {
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 162, 39, 0.18), transparent),
-    linear-gradient(to bottom, #f7f8fa, #eef2f7);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 163, 227, 0.12), transparent),
+    linear-gradient(to bottom, #ffffff, #f0f7fb);
 }
 
 .surface-hero {
   background-image:
-    radial-gradient(ellipse 70% 55% at 70% 10%, rgba(201, 162, 39, 0.22), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(11, 31, 58, 0.06), transparent 50%),
-    linear-gradient(to bottom, #f8fafc, #eef2f7 60%, #f7f8fa);
+    radial-gradient(ellipse 70% 55% at 70% 10%, rgba(56, 163, 227, 0.16), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(28, 189, 216, 0.1), transparent 50%),
+    linear-gradient(to bottom, #f5fbfe, #eef7fb 60%, #ffffff);
   background-size: auto, auto, auto;
 }
 
@@ -148,8 +157,8 @@ textarea:focus:not(:focus-visible) {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(11, 31, 58, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(11, 31, 58, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(56, 163, 227, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 163, 227, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
   mask-image: linear-gradient(to bottom, black 40%, transparent 90%);
   pointer-events: none;
@@ -157,9 +166,9 @@ textarea:focus:not(:focus-visible) {
 
 .auth-brand-panel {
   background-image:
-    radial-gradient(circle at 20% 20%, rgba(201, 162, 39, 0.18), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(201, 162, 39, 0.1), transparent 35%),
-    linear-gradient(160deg, var(--brand) 0%, #13294a 50%, var(--brand) 100%);
+    radial-gradient(circle at 20% 20%, rgba(56, 163, 227, 0.28), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(28, 189, 216, 0.18), transparent 35%),
+    linear-gradient(160deg, #323232 0%, #2a2a2a 50%, #1f1f1f 100%);
 }
 
 .shadow-elevated {
@@ -173,10 +182,10 @@ textarea:focus:not(:focus-visible) {
 .checkerboard {
   background-color: var(--muted);
   background-image:
-    linear-gradient(45deg, rgba(100, 116, 139, 0.08) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(100, 116, 139, 0.08) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(100, 116, 139, 0.08) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(100, 116, 139, 0.08) 75%);
+    linear-gradient(45deg, rgba(100, 100, 100, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(100, 100, 100, 0.08) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(100, 100, 100, 0.08) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(100, 100, 100, 0.08) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { BrandMark } from "@/components/brand-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PublicVerificationResult } from "@/lib/certificates/verify";
@@ -54,12 +55,10 @@ export function VerificationResult({
 
   return (
     <div className="animate-fade-up relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
-      <div
-        className="pointer-events-none absolute -right-6 -top-4 select-none text-[7rem] font-bold leading-none text-primary/[0.04]"
-        aria-hidden
-      >
-        LV
-      </div>
+      <BrandMark
+        size={112}
+        className="pointer-events-none absolute -right-2 -top-2 opacity-[0.06]"
+      />
 
       <div className="border-b border-border bg-brand px-6 py-5 text-white sm:px-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-accent">

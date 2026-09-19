@@ -5,8 +5,8 @@ import {
   QrCode,
   Search,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand-logo";
 import { VerifyForm } from "@/components/verify-form";
 import {
   Card,
@@ -84,12 +84,10 @@ function MockCertificate() {
           <p className="mt-1 text-lg font-semibold">Certificate of Appreciation</p>
         </div>
         <div className="relative px-6 py-8">
-          <div
-            className="pointer-events-none absolute right-4 top-4 text-6xl font-bold text-primary/4"
-            aria-hidden
-          >
-            LV
-          </div>
+          <BrandMark
+            size={64}
+            className="pointer-events-none absolute right-4 top-4 opacity-[0.08]"
+          />
           <p className="text-xs uppercase tracking-wider text-muted-foreground">
             Presented to
           </p>
@@ -166,14 +164,22 @@ export default function HomePage() {
       <section className="surface-hero relative overflow-hidden">
         <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-20 lg:grid-cols-2 lg:items-center">
           <div>
-            <p className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-medium text-accent-foreground dark:text-accent">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              Credentialing for Leo Clubs
-            </p>
-            <h1 className="animate-fade-up-delay-1 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-              LeoVerify
-              <span className="mt-2 block h-1 w-16 rounded-full bg-accent" aria-hidden />
-            </h1>
+            <div className="animate-fade-up mb-6 flex items-center gap-4">
+              <BrandMark
+                size={72}
+                labeled
+                priority
+                className="rounded-xl shadow-elevated"
+              />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+                  Credentialing for Leo Clubs
+                </p>
+                <h1 className="mt-3 text-4xl font-semibold tracking-tight text-[#323232] sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+                  LeoVerify
+                </h1>
+              </div>
+            </div>
             <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               Issue signed certificates your community can trust. Anyone can check a
               record independently of the PDF — no login required.
@@ -184,13 +190,13 @@ export default function HomePage() {
             <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap gap-3">
               <a
                 href="#verify"
-                className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-base font-medium text-accent-foreground shadow-sm transition-all hover:bg-accent/90 active:scale-[0.98]"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
               >
                 Verify a certificate
               </a>
               <Link
                 href="/login"
-                className="inline-flex h-11 items-center justify-center rounded-lg border border-border bg-card px-6 text-base font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.98]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-card px-6 text-base font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.98]"
               >
                 Club admin login
               </Link>
@@ -347,7 +353,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/about"
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-base font-medium text-accent-foreground shadow-sm transition-all hover:bg-accent/90 active:scale-[0.98]"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-6 text-base font-medium text-accent-foreground shadow-sm transition-all hover:bg-accent/90 active:scale-[0.98]"
           >
             About LeoVerify
           </Link>

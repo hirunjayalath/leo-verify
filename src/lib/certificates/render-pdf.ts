@@ -108,7 +108,7 @@ export async function renderCertificatePdf(
     const fontSize = field.fontSize ?? 16;
     const font =
       field.fontFamily?.toLowerCase().includes("courier") ? courier : helvetica;
-    const color = hexToRgb(field.color ?? "#0b1f3a");
+    const color = hexToRgb(field.color ?? "#323232");
     const textWidth = font.widthOfTextAtSize(text, fontSize);
     let x = field.x;
     if (field.align === "center") x = field.x - textWidth / 2;

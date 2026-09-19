@@ -87,7 +87,7 @@ export default async function DistrictAdminPage() {
       label: "Events",
       value: events,
       icon: CalendarDays,
-      tint: "bg-accent/20 text-accent-foreground dark:text-accent",
+      tint: "bg-accent/20 text-accent",
     },
     {
       label: "Certificates issued",

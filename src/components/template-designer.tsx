@@ -32,7 +32,7 @@ const FIELD_KEYS = Object.keys(FIELD_LABELS) as LayoutField["field"][];
 
 const CANVAS_W = 842;
 const CANVAS_H = 595;
-const BRAND_HEX = "#0b1f3a";
+const BRAND_HEX = "#323232";
 
 type Props = {
   templateId: string;
@@ -131,7 +131,7 @@ export function TemplateDesigner({
               width: field.width ?? 80,
               height: field.height ?? 80,
               fill: "rgba(201,162,39,0.25)",
-              stroke: "#c9a227",
+              stroke: "#38a3e3",
               strokeWidth: 2,
             });
             (box as unknown as { fieldKey: string }).fieldKey = field.field;

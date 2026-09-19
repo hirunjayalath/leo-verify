@@ -24,7 +24,7 @@ export const DEFAULT_LAYOUT: TemplateLayout = [
     y: 280,
     fontSize: 28,
     fontFamily: "Helvetica",
-    color: "#0b1f3a",
+    color: "#323232",
     align: "center",
   },
   {
@@ -33,7 +33,7 @@ export const DEFAULT_LAYOUT: TemplateLayout = [
     y: 330,
     fontSize: 16,
     fontFamily: "Helvetica",
-    color: "#334155",
+    color: "#646464",
     align: "center",
   },
   {
@@ -42,7 +42,7 @@ export const DEFAULT_LAYOUT: TemplateLayout = [
     y: 380,
     fontSize: 14,
     fontFamily: "Helvetica",
-    color: "#64748b",
+    color: "#646464",
     align: "center",
   },
   {
@@ -51,7 +51,7 @@ export const DEFAULT_LAYOUT: TemplateLayout = [
     y: 540,
     fontSize: 10,
     fontFamily: "Courier",
-    color: "#64748b",
+    color: "#646464",
     align: "left",
   },
   {
