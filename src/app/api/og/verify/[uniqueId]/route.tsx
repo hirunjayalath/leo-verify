@@ -3,8 +3,13 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { NextResponse } from "next/server";
 import { getVerifiedShareCard } from "@/lib/certificates/verify-lookup";
+import {
+  clientIpFromHeaders,
+  rateLimitExpensiveRender,
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
@@ -137,6 +142,13 @@ async function verifiedCard(input: {
  * with no personal data (Rule 8).
  */
 export async function GET(request: Request, { params }: Params) {
+  const limit = await rateLimitExpensiveRender(
+    clientIpFromHeaders(new Headers(request.headers)),
+  );
+  if (!limit.success) {
+    return new NextResponse("Too many requests", { status: 429 });
+  }
+
   const { uniqueId: raw } = await params;
   const uniqueId = decodeURIComponent(raw);
   const token = new URL(request.url).searchParams.get("t");

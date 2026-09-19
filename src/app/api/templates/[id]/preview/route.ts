@@ -3,10 +3,23 @@ import { requireClubAdmin } from "@/lib/auth";
 import { computeVerificationToken } from "@/lib/certificates/token";
 import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
 import { prisma } from "@/lib/db";
+import {
+  clientIpFromHeaders,
+  rateLimitExpensiveRender,
+} from "@/lib/rate-limit";
+
+export const maxDuration = 60;
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
+  const limit = await rateLimitExpensiveRender(
+    clientIpFromHeaders(new Headers(request.headers)),
+  );
+  if (!limit.success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const user = await requireClubAdmin();
   const { id } = await params;
   const template = await prisma.certificateTemplate.findFirst({
@@ -52,6 +65,7 @@ export async function GET(_request: Request, { params }: Params) {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="preview-${template.id}.pdf"`,
+      "Cache-Control": "private, no-store",
     },
   });
 }

@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
-import { TEMPLATE_GALLERY } from "@/lib/certificates/gallery";
+import { getCachedGalleryPresets } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
 import { DuplicateTemplateButton } from "@/components/duplicate-template-button";
 
@@ -30,7 +30,7 @@ export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
 
-  const [templates, events, club] = await Promise.all([
+  const [templates, events, club, gallery] = await Promise.all([
     prisma.certificateTemplate.findMany({
       where: { clubId },
       orderBy: { updatedAt: "desc" },
@@ -45,6 +45,7 @@ export default async function AdminTemplatesPage() {
       where: { id: clubId },
       select: { type: true },
     }),
+    getCachedGalleryPresets(),
   ]);
 
   const isPublicOrg = club.type === "public";
@@ -183,7 +184,7 @@ export default async function AdminTemplatesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GalleryCloneForm events={events} gallery={TEMPLATE_GALLERY} />
+              <GalleryCloneForm events={events} gallery={gallery} />
             </CardContent>
           </Card>
 

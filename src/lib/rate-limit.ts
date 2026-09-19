@@ -1,11 +1,18 @@
 /**
  * Public endpoint rate limiting.
- * Uses Upstash when configured; otherwise an in-memory fallback for local/dev.
+ * Production (Vercel): Upstash required — fail closed if unset.
+ * Local/dev: in-memory fallback when Upstash is absent.
  */
 
 type LimitResult = { success: boolean; remaining: number };
 
 const memoryHits = new Map<string, { count: number; resetAt: number }>();
+
+function isProductionRuntime(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return Boolean(env.VERCEL || env.VERCEL_ENV || env.NODE_ENV === "production");
+}
 
 async function memoryLimit(
   key: string,
@@ -49,24 +56,63 @@ async function upstashLimit(
   }
 }
 
+async function limitOrFailClosed(
+  ip: string,
+  prefix: string,
+  max: number,
+  window: `${number} ${"s" | "m" | "h" | "d"}`,
+  memoryKey: string,
+  windowMs: number,
+): Promise<LimitResult> {
+  const upstash = await upstashLimit(ip, prefix, max, window);
+  if (upstash) return upstash;
+
+  if (isProductionRuntime()) {
+    // Fail closed: missing/broken Upstash must not open the floodgates on Vercel.
+    return { success: false, remaining: 0 };
+  }
+
+  return memoryLimit(memoryKey, max, windowMs);
+}
+
+/** Public verify page — relatively permissive. */
 export async function rateLimitVerification(ip: string): Promise<LimitResult> {
-  return (
-    (await upstashLimit(ip, "leoverify:v", 60, "1 m")) ??
-    memoryLimit(`v:${ip}`, 60, 60_000)
-  );
+  return limitOrFailClosed(ip, "leoverify:v", 60, "1 m", `v:${ip}`, 60_000);
 }
 
 export async function rateLimitSignup(ip: string): Promise<LimitResult> {
-  return (
-    (await upstashLimit(ip, "leoverify:signup", 10, "1 m")) ??
-    memoryLimit(`signup:${ip}`, 10, 60_000)
+  return limitOrFailClosed(
+    ip,
+    "leoverify:signup",
+    10,
+    "1 m",
+    `signup:${ip}`,
+    60_000,
   );
 }
 
 export async function rateLimitBadge(ip: string): Promise<LimitResult> {
-  return (
-    (await upstashLimit(ip, "leoverify:badge", 60, "1 m")) ??
-    memoryLimit(`badge:${ip}`, 60, 60_000)
+  return limitOrFailClosed(
+    ip,
+    "leoverify:badge",
+    60,
+    "1 m",
+    `badge:${ip}`,
+    60_000,
+  );
+}
+
+/** Template preview + OG image — expensive PDF/image work; stricter. */
+export async function rateLimitExpensiveRender(
+  ip: string,
+): Promise<LimitResult> {
+  return limitOrFailClosed(
+    ip,
+    "leoverify:render",
+    20,
+    "1 m",
+    `render:${ip}`,
+    60_000,
   );
 }
 
@@ -77,3 +123,5 @@ export function clientIpFromHeaders(headers: Headers): string {
     "unknown"
   );
 }
+
+export { isProductionRuntime };

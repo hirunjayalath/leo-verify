@@ -5,8 +5,16 @@ import {
   PutObjectCommand,
   S3Client,
   GetObjectCommand,
+  HeadObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+/** Immutable public assets (logos, templates, gallery uploads). */
+export const CACHE_CONTROL_PUBLIC_ASSET =
+  "public, max-age=31536000, immutable";
+
+/** Certificate PDFs — short private cache; keys are unguessable. */
+export const CACHE_CONTROL_PDF = "private, max-age=3600";
 
 function r2Configured(): boolean {
   return Boolean(
@@ -33,7 +41,15 @@ export async function uploadObject(input: {
   key: string;
   body: Buffer | Uint8Array;
   contentType: string;
+  /** Defaults: long-cache for templates/logos/signatures; private short for PDFs. */
+  cacheControl?: string;
 }): Promise<{ key: string; url: string }> {
+  const cacheControl =
+    input.cacheControl ??
+    (input.key.startsWith("certificates/")
+      ? CACHE_CONTROL_PDF
+      : CACHE_CONTROL_PUBLIC_ASSET);
+
   if (r2Configured()) {
     const client = getR2Client();
     const bucket = process.env.R2_BUCKET_NAME!;
@@ -43,6 +59,7 @@ export async function uploadObject(input: {
         Key: input.key,
         Body: input.body,
         ContentType: input.contentType,
+        CacheControl: cacheControl,
       }),
     );
     const publicBase = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
@@ -137,6 +154,7 @@ export async function createPresignedUploadUrl(input: {
       Bucket: bucket,
       Key: input.key,
       ContentType: input.contentType,
+      CacheControl: CACHE_CONTROL_PUBLIC_ASSET,
     }),
     { expiresIn: 60 * 10 },
   );
@@ -145,4 +163,30 @@ export async function createPresignedUploadUrl(input: {
     ? `${publicBase}/${input.key}`
     : uploadUrl.split("?")[0];
   return { uploadUrl, publicUrl, key: input.key };
+}
+
+/** Optional R2 reachability check for /api/health */
+export async function pingR2(): Promise<boolean | "skipped"> {
+  if (!r2Configured()) return "skipped";
+  try {
+    const client = getR2Client();
+    const bucket = process.env.R2_BUCKET_NAME!;
+    await client.send(new HeadObjectCommand({ Bucket: bucket, Key: "__health__" }));
+    return true;
+  } catch (error) {
+    // Missing health probe object is fine — auth + bucket access worked if NotFound.
+    const name =
+      typeof error === "object" && error && "name" in error
+        ? String((error as { name: string }).name)
+        : "";
+    const code =
+      typeof error === "object" && error && "$metadata" in error
+        ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+            ?.httpStatusCode
+        : undefined;
+    if (name === "NotFound" || code === 404) return true;
+    // HeadObject on missing key often returns 404 from R2 — treat as reachable.
+    if (code === 403 || code === 401) return false;
+    return code === 404 || name.includes("NoSuchKey") ? true : false;
+  }
 }

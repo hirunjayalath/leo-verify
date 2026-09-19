@@ -24,6 +24,8 @@ export type IssueCertificateInput = {
   achievement?: string | null;
   issueDate?: Date;
   sendEmail?: boolean;
+  /** Bulk import: reuse prefetched template background bytes. */
+  backgroundBytes?: Uint8Array;
 };
 
 export type IssueCertificateResult = {
@@ -226,6 +228,7 @@ export async function issueCertificate(
   let pdfKey: string | null = null;
   const pdfBytes = await renderCertificatePdf({
     backgroundUrl: template.backgroundUrl,
+    backgroundBytes: input.backgroundBytes,
     layout: template.layout,
     recipientName: certificate.recipientName,
     role: certificate.role,
@@ -242,6 +245,7 @@ export async function issueCertificate(
     key: buildObjectKey("certificates", input.clubId, "pdf"),
     body: Buffer.from(pdfBytes),
     contentType: "application/pdf",
+    cacheControl: "private, max-age=3600",
   });
   pdfUrl = uploaded.url;
   pdfKey = uploaded.key;
@@ -387,6 +391,7 @@ export async function reissueCertificate(input: {
     key: buildObjectKey("certificates", input.clubId, "pdf"),
     body: Buffer.from(pdfBytes),
     contentType: "application/pdf",
+    cacheControl: "private, max-age=3600",
   });
 
   if (cert.pdfKey && cert.pdfKey !== uploaded.key) {

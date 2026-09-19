@@ -10,6 +10,7 @@ import {
   normalizeHexColor,
   slugifyPublic,
 } from "@/lib/branding";
+import { invalidateClubBranding } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 
@@ -73,6 +74,11 @@ export async function updateClubBrandingAction(
     logoUrl = uploaded.url;
   }
 
+  const previous = await prisma.club.findUnique({
+    where: { id: clubId },
+    select: { publicSlug: true },
+  });
+
   await prisma.club.update({
     where: { id: clubId },
     data: {
@@ -93,8 +99,16 @@ export async function updateClubBrandingAction(
     metadata: { slug: slugParsed.data },
   });
 
+  invalidateClubBranding({
+    clubId,
+    slug: slugParsed.data,
+    previousSlug: previous?.publicSlug,
+  });
   revalidatePath("/admin/settings");
   revalidatePath(`/o/${slugParsed.data}`);
+  if (previous?.publicSlug && previous.publicSlug !== slugParsed.data) {
+    revalidatePath(`/o/${previous.publicSlug}`);
+  }
   revalidatePath("/admin");
   return { ok: true };
 }

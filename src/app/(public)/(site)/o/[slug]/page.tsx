@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
+import { getCachedClubBrandingBySlug } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const club = await prisma.club.findUnique({ where: { publicSlug: slug } });
+  const club = await getCachedClubBrandingBySlug(slug);
   if (!club) return { title: "Organization", robots: { index: false } };
   return {
     title: club.name,
@@ -25,9 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function OrgPortalPage({ params }: PageProps) {
   const { slug } = await params;
-  const club = await prisma.club.findUnique({
-    where: { publicSlug: slug },
-  });
+  const club = await getCachedClubBrandingBySlug(slug);
   if (!club) notFound();
 
   const [issuedCount, publicCerts] = await Promise.all([

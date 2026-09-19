@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const supabaseHost = (() => {
   try {
@@ -16,7 +17,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self'${supabaseHost ? ` ${supabaseHost}` : ""} https://*.supabase.co wss://*.supabase.co`,
+  `connect-src 'self'${supabaseHost ? ` ${supabaseHost}` : ""} https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -47,8 +48,22 @@ const nextConfig: NextConfig = {
             : []),
         ],
       },
+      {
+        // Vercel CDN already caches public/ — reinforce long cache for gallery PNGs
+        source: "/template-gallery/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+});

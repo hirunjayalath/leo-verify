@@ -14,6 +14,8 @@ import { getPublicEnv } from "@/lib/env";
 
 export type RenderCertificateInput = {
   backgroundUrl: string;
+  /** When set (e.g. bulk import), skip re-fetching the same template background. */
+  backgroundBytes?: Uint8Array;
   layout: unknown;
   recipientName: string;
   role: string;
@@ -67,7 +69,9 @@ export async function renderCertificatePdf(
   const { width, height } = page.getSize();
 
   try {
-    const bgBytes = await fetchBackgroundBytes(input.backgroundUrl);
+    const bgBytes =
+      input.backgroundBytes ??
+      (await fetchBackgroundBytes(input.backgroundUrl));
     let image;
     try {
       image = await pdf.embedPng(bgBytes);

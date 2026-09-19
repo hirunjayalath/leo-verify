@@ -9,13 +9,14 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 | Layer | Choice |
 |---|---|
 | App | Next.js 16 · React 19 · TypeScript · App Router |
-| Database | PostgreSQL via Supabase · Prisma 7 |
+| Database | PostgreSQL via Supabase · Prisma 7 · transaction pooler on Vercel |
 | Auth | Supabase Auth (`src/proxy.ts`) |
 | Storage | Cloudflare R2 (local `/public/uploads` fallback) |
 | PDF / QR | pdf-lib · qrcode · Fabric.js designer |
 | Jobs | Inngest (sync fallback when unset) |
 | Email | Resend |
-| Rate limit | Upstash (in-memory fallback) |
+| Rate limit | Upstash (**required on Vercel**; in-memory only locally) |
+| Observability | `/api/health` · optional Sentry |
 | Hosting | Vercel + Supabase + R2 |
 | Runtime | Node.js ≥ 24 |
 
@@ -34,6 +35,16 @@ npm run db:seed
 npm run dev
 ```
 
+### Database URLs (serverless)
+
+| Env | Use |
+|---|---|
+| `DATABASE_URL` | App runtime. On Vercel use Supabase **transaction pooler** (`:6543`, `?pgbouncer=true`). |
+| `DIRECT_DATABASE_URL` | Prisma migrate / `db push` only (direct `:5432`). |
+| `PG_POOL_MAX` | `1` (default) or `2` per serverless isolate — never a large pool on Vercel. |
+
+Without the pooler + singleton `Pool`, concurrent verify/issue exhausts Postgres connections first.
+
 ### UOM operator smoke checklist
 
 Manual path for Leo Club of University of Moratuwa as platform operator:
@@ -51,19 +62,44 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### UOM production launch checklist
 
-1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase, R2, Resend, `NEXT_PUBLIC_APP_URL`).
+1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase **pooler** `DATABASE_URL`, R2, Resend, `NEXT_PUBLIC_APP_URL`, **Upstash**).
 2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`).
 3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (ignored outside development anyway).
 4. MFA (TOTP) required for club/district admins — enable Multi-Factor Authentication in the Supabase project, then complete enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
-5. Run the operator smoke checklist above.
-6. Optional: Inngest + Upstash for bulk import and rate limits at scale.
+5. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
+6. Optional: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` for error tracking.
+7. Run the operator smoke checklist above.
+8. Inngest configured for bulk import (emails fan out as separate steps).
 
 ### Security launch gates
 
 1. Apply `supabase/rls-policies.sql` after migrate (PostgREST/anon path). **Prisma uses `DATABASE_URL` as a privileged role and bypasses RLS** — app-layer `clubId` / session checks are the real boundary for the Next.js app.
 2. Never set `AUTH_DEV_BYPASS` on Vercel (ignored when `VERCEL`/`VERCEL_ENV` is set, and outside `NODE_ENV=development`).
-3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads.
+3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads. Logos/templates upload with long `Cache-Control`; PDFs stay short/private.
 4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.
+5. Upstash must be set in production — missing credentials **fail closed** on `/v` and PDF rate limits (no silent memory fallback on Vercel).
+
+### Capacity upgrade ladder
+
+| Signal | Upgrade |
+|---|---|
+| Connection errors / pool waits | Raise Supabase compute; keep pooler; **never** widen `PG_POOL_MAX` on serverless |
+| Import jobs > few minutes | Raise `IMPORT_ROW_CONCURRENCY` / Inngest concurrency; keep email as separate steps |
+| Email bounce / Resend rate limits | Move to SES + suppression list (~1–2k emails/day is still fine on Resend) |
+| Read-heavy org portals | Already short-TTL cached branding on `/o/[slug]`; add Edge HTML cache if needed |
+| Global audience | Vercel multi-region; R2 remains PDF origin |
+| Heavier PDF load | Dedicated queue worker reusing the same pdf-lib overlay code |
+
+Infrastructure stays **Vercel + Supabase + R2 + Upstash + Inngest** — upgrades are config and job shape, not a platform rewrite.
+
+**Do not** long-cache live verify status without revoke invalidation. Branding/gallery CDN caches are safe; certificate truth stays live from Postgres.
+
+### Load-test checklist (before launch spikes)
+
+1. Point k6/Artillery at `/v/[id]?t=…` and `/api/health` with pooler `DATABASE_URL`.
+2. Confirm p95 verify under ~500ms excluding cold start; watch Supabase connection count.
+3. Run a 500-row CSV import via Inngest; confirm no Vercel timeout and emails enqueue separately.
+4. Revoke mid-test — public page must flip without depending on a status cache.
 
 ### Admin MFA (Supabase AAL2)
 
