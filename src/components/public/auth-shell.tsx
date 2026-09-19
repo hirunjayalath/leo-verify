@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
-import { BrandLockup } from "@/components/brand-logo";
+import { BrandLockup } from "@/components/public/brand-logo";
 
 export function AuthShell({
   title,

@@ -9,7 +9,7 @@ import {
   CreateClubForm,
   InviteAdminForm,
   ReviewTemplateButtons,
-} from "@/components/district-forms";
+} from "@/components/admin/district-forms";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

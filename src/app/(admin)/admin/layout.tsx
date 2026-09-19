@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin-sidebar";
+import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin/admin-sidebar";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

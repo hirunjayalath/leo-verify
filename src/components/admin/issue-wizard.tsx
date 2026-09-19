@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { issueOneCertificateAction } from "@/app/(admin)/admin/certificates/actions";
-import { CsvImportForm } from "@/components/csv-import-form";
+import { CsvImportForm } from "@/components/admin/csv-import-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

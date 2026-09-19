@@ -1,4 +1,4 @@
-import { AdminMfaSetup } from "@/components/admin-mfa-setup";
+import { AdminMfaSetup } from "@/components/admin/admin-mfa-setup";
 import {
   getAuthenticatorAssuranceLevel,
   requireUser,

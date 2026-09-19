@@ -1,4 +1,4 @@
-import { IssueWizard } from "@/components/issue-wizard";
+import { IssueWizard } from "@/components/admin/issue-wizard";
 import {
   Card,
   CardContent,

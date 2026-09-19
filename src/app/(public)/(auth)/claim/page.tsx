@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AuthShell } from "@/components/auth-shell";
-import { ClaimForm } from "@/components/claim-form";
+import { AuthShell } from "@/components/public/auth-shell";
+import { ClaimForm } from "@/components/public/claim-form";
 import { getRecipientDashboard } from "@/app/(public)/(auth)/claim/actions";
 import { getSupabaseAuthUser } from "@/lib/auth";
 

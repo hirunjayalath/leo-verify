@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import type { GalleryPreset } from "@/lib/certificates/gallery";
+import type { GalleryPreset } from "@/lib/templates/gallery";
 
 export function GalleryCloneForm({
   events,

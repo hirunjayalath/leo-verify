@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileBadge2 } from "lucide-react";
 import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
-import { VerifyForm } from "@/components/verify-form";
+import { VerifyForm } from "@/components/verify/verify-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";

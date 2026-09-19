@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { TemplateStatus, UserRole } from "@/generated/prisma/client";
-import { writeAuditLog } from "@/lib/audit";
 import { requireDistrictAdmin } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import {
+  createClub,
+  inviteClubAdmin,
+  reviewTemplate,
+} from "@/lib/orgs/service";
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -29,24 +31,15 @@ export async function createClubAction(formData: FormData): Promise<ActionResult
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const club = await prisma.club.create({
-    data: {
-      name: parsed.data.name,
-      code: parsed.data.code.toUpperCase(),
-      districtId: user.districtId!,
-    },
-  });
-
-  await writeAuditLog({
+  const result = await createClub({
+    districtId: user.districtId!,
     actorUserId: user.id,
-    action: "club.create",
-    targetType: "Club",
-    targetId: club.id,
-    metadata: { code: club.code },
+    name: parsed.data.name,
+    code: parsed.data.code,
   });
-
+  if (!result.ok) return result;
   revalidatePath("/admin/district");
-  return { ok: true, id: club.id };
+  return result;
 }
 
 export async function inviteClubAdminAction(formData: FormData): Promise<ActionResult> {
@@ -68,92 +61,17 @@ export async function inviteClubAdminAction(formData: FormData): Promise<ActionR
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  const club = await prisma.club.findFirst({
-    where: { id: parsed.data.clubId, districtId: user.districtId! },
-  });
-  if (!club) return { ok: false, error: "Club not found in your district" };
-
-  const email = parsed.data.email.toLowerCase();
-  const supabaseId = parsed.data.supabaseId.trim();
-
-  const bySupabase = await prisma.user.findUnique({ where: { supabaseId } });
-  if (bySupabase && bySupabase.email.toLowerCase() !== email) {
-    return {
-      ok: false,
-      error: "That Auth UUID is already linked to a different user.",
-    };
-  }
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    if (existing.role === UserRole.district_admin) {
-      return {
-        ok: false,
-        error: "Cannot reassign a district admin via invite.",
-      };
-    }
-    if (existing.districtId && existing.districtId !== user.districtId) {
-      return {
-        ok: false,
-        error: "That user belongs to another district.",
-      };
-    }
-    if (
-      existing.supabaseId &&
-      existing.supabaseId !== supabaseId
-    ) {
-      return {
-        ok: false,
-        error: "That email is already linked to a different Auth user.",
-      };
-    }
-
-    const invited = await prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        supabaseId,
-        role: UserRole.club_admin,
-        clubId: club.id,
-        districtId: user.districtId!,
-        name: parsed.data.name || existing.name,
-      },
-    });
-
-    await writeAuditLog({
-      actorUserId: user.id,
-      action: "user.invite",
-      targetType: "User",
-      targetId: invited.id,
-      clubId: club.id,
-      metadata: { email: invited.email, mode: "update" },
-    });
-
-    revalidatePath("/admin/district");
-    return { ok: true, id: invited.id };
-  }
-
-  const invited = await prisma.user.create({
-    data: {
-      email,
-      supabaseId,
-      role: UserRole.club_admin,
-      clubId: club.id,
-      districtId: user.districtId!,
-      name: parsed.data.name || null,
-    },
-  });
-
-  await writeAuditLog({
+  const result = await inviteClubAdmin({
+    districtId: user.districtId!,
     actorUserId: user.id,
-    action: "user.invite",
-    targetType: "User",
-    targetId: invited.id,
-    clubId: club.id,
-    metadata: { email: invited.email, mode: "create" },
+    clubId: parsed.data.clubId,
+    email: parsed.data.email,
+    name: parsed.data.name || undefined,
+    supabaseId: parsed.data.supabaseId,
   });
-
+  if (!result.ok) return result;
   revalidatePath("/admin/district");
-  return { ok: true, id: invited.id };
+  return result;
 }
 
 export async function reviewTemplateAction(formData: FormData): Promise<ActionResult> {
@@ -165,36 +83,15 @@ export async function reviewTemplateAction(formData: FormData): Promise<ActionRe
     return { ok: false, error: "Invalid review" };
   }
 
-  const template = await prisma.certificateTemplate.findFirst({
-    where: {
-      id,
-      club: { districtId: user.districtId! },
-    },
-  });
-  if (!template) return { ok: false, error: "Template not found" };
-
-  await prisma.certificateTemplate.update({
-    where: { id },
-    data: {
-      status:
-        decision === "approved"
-          ? TemplateStatus.approved
-          : TemplateStatus.rejected,
-      reviewNote: note || null,
-      lastEditedById: user.id,
-    },
-  });
-
-  await writeAuditLog({
+  const result = await reviewTemplate({
+    districtId: user.districtId!,
     actorUserId: user.id,
-    action: decision === "approved" ? "template.approve" : "template.reject",
-    targetType: "CertificateTemplate",
-    targetId: id,
-    clubId: template.clubId,
-    metadata: { note },
+    templateId: id,
+    decision,
+    note,
   });
-
+  if (!result.ok) return result;
   revalidatePath("/admin/district");
   revalidatePath("/admin/templates");
-  return { ok: true, id };
+  return result;
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { BrandLockup } from "@/components/brand-logo";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { BrandLockup } from "@/components/public/brand-logo";
+import { SiteFooter } from "@/components/public/site-footer";
+import { SiteHeader } from "@/components/public/site-header";
 
 export function SiteChrome({ children }: { children: React.ReactNode }) {
   return (

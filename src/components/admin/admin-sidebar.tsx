@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { signOutAction } from "@/app/(admin)/admin/actions";
-import { BrandMark } from "@/components/brand-logo";
+import { BrandMark } from "@/components/public/brand-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

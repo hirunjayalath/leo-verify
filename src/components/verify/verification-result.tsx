@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { BrandMark } from "@/components/brand-logo";
+import { BrandMark } from "@/components/public/brand-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { PublicVerificationResult } from "@/lib/certificates/verify";

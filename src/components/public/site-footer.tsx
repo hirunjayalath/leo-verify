@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandLockup } from "@/components/brand-logo";
+import { BrandLockup } from "@/components/public/brand-logo";
 
 const supportEmail =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@leoverify.org";

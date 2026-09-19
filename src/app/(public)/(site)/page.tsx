@@ -7,8 +7,8 @@ import {
   Share2,
   ShieldCheck,
 } from "lucide-react";
-import { BrandMark } from "@/components/brand-logo";
-import { VerifyForm } from "@/components/verify-form";
+import { BrandMark } from "@/components/public/brand-logo";
+import { VerifyForm } from "@/components/verify/verify-form";
 import {
   Card,
   CardContent,

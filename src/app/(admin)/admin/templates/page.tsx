@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { LayoutTemplate } from "lucide-react";
-import { ApproveTemplateButton } from "@/components/approve-template-button";
-import { CreateTemplateForm } from "@/components/create-template-form";
-import { GalleryCloneForm } from "@/components/gallery-clone-form";
-import { RevertTemplateButton } from "@/components/revert-template-button";
+import { ApproveTemplateButton } from "@/components/admin/approve-template-button";
+import { CreateTemplateForm } from "@/components/admin/create-template-form";
+import { GalleryCloneForm } from "@/components/admin/gallery-clone-form";
+import { RevertTemplateButton } from "@/components/admin/revert-template-button";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -24,7 +24,7 @@ import {
 import { requireClubAdmin } from "@/lib/auth";
 import { getCachedGalleryPresets } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
-import { DuplicateTemplateButton } from "@/components/duplicate-template-button";
+import { DuplicateTemplateButton } from "@/components/admin/duplicate-template-button";
 
 export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();

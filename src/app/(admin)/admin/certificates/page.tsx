@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { CertificatesTable } from "@/components/certificates-table";
-import { CertificateHubExports } from "@/components/certificate-hub-exports";
-import { CsvImportForm } from "@/components/csv-import-form";
-import { IssueCertificateForm } from "@/components/issue-certificate-form";
-import { RecentImportsTable } from "@/components/recent-imports-table";
+import { CertificatesTable } from "@/components/admin/certificates-table";
+import { CertificateHubExports } from "@/components/admin/certificate-hub-exports";
+import { CsvImportForm } from "@/components/admin/csv-import-form";
+import { IssueCertificateForm } from "@/components/admin/issue-certificate-form";
+import { RecentImportsTable } from "@/components/admin/recent-imports-table";
 import { Button } from "@/components/ui/button";
 import {
   Card,

@@ -1,6 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
-import { TEMPLATE_GALLERY, type GalleryPreset } from "@/lib/certificates/gallery";
+import { TEMPLATE_GALLERY, type GalleryPreset } from "@/lib/templates/gallery";
 
 export type ClubBrandingCached = {
   id: string;

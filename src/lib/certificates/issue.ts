@@ -1,269 +1,58 @@
-import { assertWithinCertLimit } from "@/lib/certificates/limits";
-import {
-  CertificateStatus,
-  TemplateStatus,
-} from "@/generated/prisma/client";
-import { writeAuditLog } from "@/lib/audit";
-import { formatCertificateId } from "@/lib/certificates/id";
-import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
-import {
-  buildPdfDownloadPath,
-  computeVerificationToken,
-} from "@/lib/certificates/token";
-import { prisma } from "@/lib/db";
+import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { sendCertificateEmail } from "@/lib/email/resend";
-import { buildObjectKey, deleteObject, uploadObject } from "@/lib/storage/r2";
+import {
+  attachCertificatePdf,
+  auditCertificateIssue,
+  commitReissue,
+  createCertificateRecord,
+  prepareReissue,
+  revokeCertificateRecord,
+  type IssueCertificateInput,
+  type IssueCertificateResult,
+} from "@/lib/certificates/issue-core";
+import {
+  deleteCertificatePdfObject,
+  renderAndUploadCertificatePdf,
+} from "@/lib/certificates/issue-pdf";
 
-export type IssueCertificateInput = {
-  eventId: string;
-  clubId: string;
-  actorUserId: string;
-  recipientName: string;
-  recipientEmail?: string | null;
-  role: string;
-  achievement?: string | null;
-  issueDate?: Date;
-  sendEmail?: boolean;
-  backgroundBytes?: Uint8Array;
-};
-
-export type IssueCertificateResult = {
-  id: string;
-  uniqueId: string;
-  verificationToken: string;
-  pdfUrl: string | null;
-  skipped?: boolean;
-  emailSent?: boolean;
-};
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "P2002"
-  );
-}
-
-async function nextSequence(clubId: string, year: number): Promise<number> {
-  const club = await prisma.club.findUniqueOrThrow({ where: { id: clubId } });
-  const prefix = `LEO-${club.code.toUpperCase()}-${year}-`;
-  const latest = await prisma.certificate.findFirst({
-    where: { clubId, uniqueId: { startsWith: prefix } },
-    orderBy: { uniqueId: "desc" },
-    select: { uniqueId: true },
-  });
-  if (!latest) return 1;
-  const seq = Number(latest.uniqueId.slice(-6));
-  return Number.isFinite(seq) ? seq + 1 : 1;
-}
-
-async function requireApprovedTemplate(eventId: string, clubId: string) {
-  const template = await prisma.certificateTemplate.findFirst({
-    where: {
-      eventId,
-      clubId,
-      status: TemplateStatus.approved,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
-  if (!template) {
-    throw new Error(
-      "No approved template for this event. Approve a template before issuing.",
-    );
-  }
-  return template;
-}
-
-async function findIssuedDuplicate(input: {
-  eventId: string;
-  recipientName: string;
-  recipientEmail: string | null;
-}) {
-  if (input.recipientEmail) {
-    return prisma.certificate.findFirst({
-      where: {
-        eventId: input.eventId,
-        recipientEmail: {
-          equals: input.recipientEmail,
-          mode: "insensitive",
-        },
-        recipientName: input.recipientName,
-        status: CertificateStatus.issued,
-      },
-    });
-  }
-  return prisma.certificate.findFirst({
-    where: {
-      eventId: input.eventId,
-      recipientName: input.recipientName,
-      recipientEmail: null,
-      status: CertificateStatus.issued,
-    },
-  });
-}
+export type { IssueCertificateInput, IssueCertificateResult };
 
 export async function issueCertificate(
   input: IssueCertificateInput,
 ): Promise<IssueCertificateResult> {
-  const issueDate = input.issueDate ?? new Date();
-  const year = issueDate.getUTCFullYear();
-  const club = await prisma.club.findUniqueOrThrow({
-    where: { id: input.clubId },
-  });
-  const event = await prisma.event.findFirst({
-    where: { id: input.eventId, clubId: input.clubId },
-  });
-  if (!event) throw new Error("Event not found for club");
+  const created = await createCertificateRecord(input);
+  if (created.skipped) return created.result;
 
-  const template = await requireApprovedTemplate(input.eventId, input.clubId);
+  const { certificate, uniqueId, verificationToken, issueDateIso, club, event, template } =
+    created;
 
-  const recipientName = input.recipientName.trim();
-  const recipientEmail = input.recipientEmail?.trim().toLowerCase() || null;
-  const role = input.role.trim();
-
-  const existing = await findIssuedDuplicate({
-    eventId: input.eventId,
-    recipientName,
-    recipientEmail,
-  });
-  if (existing) {
-    return {
-      id: existing.id,
-      uniqueId: existing.uniqueId,
-      verificationToken: existing.verificationToken,
-      pdfUrl: existing.pdfUrl,
-      skipped: true,
-    };
-  }
-
-  await assertWithinCertLimit(input.clubId);
-
-  let recipientId: string | null = null;
-  if (recipientEmail) {
-    const recipient = await prisma.recipient.findFirst({
-      where: { email: { equals: recipientEmail, mode: "insensitive" } },
-      select: { id: true },
-    });
-    recipientId = recipient?.id ?? null;
-  }
-
-  const issueDateIso = issueDate.toISOString().slice(0, 10);
-  const tokenVersion = 1;
-
-  let certificate:
-    | {
-        id: string;
-        uniqueId: string;
-        verificationToken: string;
-        recipientName: string;
-        recipientEmail: string | null;
-        role: string;
-        achievement: string | null;
-      }
-    | undefined;
-  let uniqueId = "";
-  let verificationToken = "";
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const sequence = await nextSequence(input.clubId, year);
-    uniqueId = formatCertificateId(club.code, year, sequence);
-    verificationToken = computeVerificationToken({
-      uniqueId,
-      recipientName,
-      eventId: input.eventId,
-      clubId: input.clubId,
-      issueDate: issueDateIso,
-      role,
-      tokenVersion,
-    });
-
-    try {
-      certificate = await prisma.certificate.create({
-        data: {
-          uniqueId,
-          verificationToken,
-          tokenVersion,
-          clubId: input.clubId,
-          eventId: input.eventId,
-          recipientName,
-          recipientEmail,
-          role,
-          achievement: input.achievement?.trim() || null,
-          issueDate,
-          status: CertificateStatus.issued,
-          recipientId,
-        },
-      });
-      break;
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        // Concurrent issue may have claimed this uniqueId — re-check duplicate.
-        const raced = await findIssuedDuplicate({
-          eventId: input.eventId,
-          recipientName,
-          recipientEmail,
-        });
-        if (raced) {
-          return {
-            id: raced.id,
-            uniqueId: raced.uniqueId,
-            verificationToken: raced.verificationToken,
-            pdfUrl: raced.pdfUrl,
-            skipped: true,
-          };
-        }
-        continue;
-      }
-      throw error;
-    }
-  }
-
-  if (!certificate) {
-    throw new Error("Could not allocate a unique certificate ID. Try again.");
-  }
-
-  let pdfUrl: string | null = null;
-  let pdfKey: string | null = null;
-  const pdfBytes = await renderCertificatePdf({
-    backgroundUrl: template.backgroundUrl,
+  const uploaded = await renderAndUploadCertificatePdf({
+    clubId: input.clubId,
+    template,
     backgroundBytes: input.backgroundBytes,
-    layout: template.layout,
     recipientName: certificate.recipientName,
     role: certificate.role,
-    issueDate: issueDateIso,
+    issueDateIso,
     uniqueId: certificate.uniqueId,
     verificationToken: certificate.verificationToken,
     achievement: certificate.achievement,
     eventName: event.name,
     clubName: club.name,
-    pageSize:
-      template.pageSize === "a4_portrait" ? "a4_portrait" : "a4_landscape",
-  });
-  const uploaded = await uploadObject({
-    key: buildObjectKey("certificates", input.clubId, "pdf"),
-    body: Buffer.from(pdfBytes),
-    contentType: "application/pdf",
-    cacheControl: "private, max-age=3600",
-  });
-  pdfUrl = uploaded.url;
-  pdfKey = uploaded.key;
-  await prisma.certificate.update({
-    where: { id: certificate.id },
-    data: { pdfUrl, pdfKey },
   });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId === "system" ? null : input.actorUserId,
-    action: "certificate.issue",
-    targetType: "Certificate",
-    targetId: certificate.id,
+  await attachCertificatePdf({
+    certificateId: certificate.id,
+    pdfUrl: uploaded.url,
+    pdfKey: uploaded.key,
+  });
+
+  await auditCertificateIssue({
+    actorUserId: input.actorUserId,
+    certificateId: certificate.id,
     clubId: input.clubId,
-    metadata: {
-      uniqueId,
-      recipientName: certificate.recipientName,
-      eventId: input.eventId,
-    },
+    uniqueId,
+    recipientName: certificate.recipientName,
+    eventId: input.eventId,
   });
 
   let emailSent = false;
@@ -290,7 +79,7 @@ export async function issueCertificate(
     id: certificate.id,
     uniqueId,
     verificationToken,
-    pdfUrl,
+    pdfUrl: uploaded.url,
     emailSent,
   };
 }
@@ -301,42 +90,11 @@ export async function revokeCertificate(input: {
   actorUserId: string;
   reason: string;
 }) {
-  const cert = await prisma.certificate.findFirst({
-    where: { id: input.certificateId, clubId: input.clubId },
-  });
-  if (!cert) throw new Error("Certificate not found");
-  if (cert.status === CertificateStatus.revoked) return cert;
+  const result = await revokeCertificateRecord(input);
+  if (result.alreadyRevoked) return result.cert;
 
-  const updated = await prisma.certificate.update({
-    where: { id: cert.id },
-    data: {
-      status: CertificateStatus.revoked,
-      revokedReason: input.reason,
-      revokedAt: new Date(),
-      revokedById: input.actorUserId,
-      pdfUrl: null,
-      pdfKey: null,
-    },
-  });
-
-  if (cert.pdfKey) {
-    try {
-      await deleteObject(cert.pdfKey);
-    } catch {
-      /* best-effort; gated route already refuses revoked */
-    }
-  }
-
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "certificate.revoke",
-    targetType: "Certificate",
-    targetId: cert.id,
-    clubId: input.clubId,
-    metadata: { reason: input.reason, uniqueId: cert.uniqueId },
-  });
-
-  return updated;
+  await deleteCertificatePdfObject(result.previousPdfKey);
+  return result.updated;
 }
 
 /** New token + PDF; status stays issued. Does not revoke. */
@@ -345,79 +103,36 @@ export async function reissueCertificate(input: {
   clubId: string;
   actorUserId: string;
 }): Promise<IssueCertificateResult> {
-  const cert = await prisma.certificate.findFirst({
-    where: { id: input.certificateId, clubId: input.clubId },
-    include: {
-      event: { select: { name: true } },
-    },
-  });
-  if (!cert) throw new Error("Certificate not found");
-  if (cert.status !== CertificateStatus.issued) {
-    throw new Error("Only issued certificates can be reissued");
-  }
+  const prepared = await prepareReissue(input);
+  const { cert, template, issueDateIso, tokenVersion, verificationToken, club } =
+    prepared;
 
-  const template = await requireApprovedTemplate(cert.eventId, input.clubId);
-  const issueDateIso = cert.issueDate.toISOString().slice(0, 10);
-  const tokenVersion = (cert.tokenVersion ?? 1) + 1;
-  const verificationToken = computeVerificationToken({
-    uniqueId: cert.uniqueId,
-    recipientName: cert.recipientName,
-    eventId: cert.eventId,
+  const uploaded = await renderAndUploadCertificatePdf({
     clubId: input.clubId,
-    issueDate: issueDateIso,
-    role: cert.role,
-    tokenVersion,
-  });
-
-  const club = await prisma.club.findUniqueOrThrow({
-    where: { id: input.clubId },
-  });
-  const pdfBytes = await renderCertificatePdf({
-    backgroundUrl: template.backgroundUrl,
-    layout: template.layout,
+    template,
     recipientName: cert.recipientName,
     role: cert.role,
-    issueDate: issueDateIso,
+    issueDateIso,
     uniqueId: cert.uniqueId,
     verificationToken,
     achievement: cert.achievement,
     eventName: cert.event.name,
     clubName: club.name,
-    pageSize:
-      template.pageSize === "a4_portrait" ? "a4_portrait" : "a4_landscape",
-  });
-  const uploaded = await uploadObject({
-    key: buildObjectKey("certificates", input.clubId, "pdf"),
-    body: Buffer.from(pdfBytes),
-    contentType: "application/pdf",
-    cacheControl: "private, max-age=3600",
   });
 
   if (cert.pdfKey && cert.pdfKey !== uploaded.key) {
-    try {
-      await deleteObject(cert.pdfKey);
-    } catch {
-      /* ignore */
-    }
+    await deleteCertificatePdfObject(cert.pdfKey);
   }
 
-  const updated = await prisma.certificate.update({
-    where: { id: cert.id },
-    data: {
-      verificationToken,
-      tokenVersion,
-      pdfUrl: uploaded.url,
-      pdfKey: uploaded.key,
-    },
-  });
-
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "certificate.reissue",
-    targetType: "Certificate",
-    targetId: cert.id,
+  const updated = await commitReissue({
+    certificateId: cert.id,
     clubId: input.clubId,
-    metadata: { uniqueId: cert.uniqueId, tokenVersion },
+    actorUserId: input.actorUserId,
+    verificationToken,
+    tokenVersion,
+    uniqueId: cert.uniqueId,
+    pdfUrl: uploaded.url,
+    pdfKey: uploaded.key,
   });
 
   return {

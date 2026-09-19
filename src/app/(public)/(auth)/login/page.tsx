@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import { AuthShell } from "@/components/auth-shell";
+import { AuthShell } from "@/components/public/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

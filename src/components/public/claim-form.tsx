@@ -7,8 +7,8 @@ import { claimCertificatesAction } from "@/app/(public)/(auth)/claim/actions";
 import {
   RecipientSettings,
   type RecipientDashboardCert,
-} from "@/components/recipient-settings";
-import { RecipientSignOut } from "@/components/recipient-sign-out";
+} from "@/components/public/recipient-settings";
+import { RecipientSignOut } from "@/components/public/recipient-sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

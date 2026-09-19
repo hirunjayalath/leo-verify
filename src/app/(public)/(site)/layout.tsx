@@ -1,4 +1,4 @@
-import { SiteChrome } from "@/components/site-chrome";
+import { SiteChrome } from "@/components/public/site-chrome";
 
 export default function SiteLayout({
   children,

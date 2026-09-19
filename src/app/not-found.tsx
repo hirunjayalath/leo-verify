@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-logo";
-import { SiteChrome } from "@/components/site-chrome";
+import { BrandMark } from "@/components/public/brand-logo";
+import { SiteChrome } from "@/components/public/site-chrome";
 
 export default function NotFound() {
   return (

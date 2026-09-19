@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { VerificationResult } from "@/components/verification-result";
+import { VerificationResult } from "@/components/verify/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { lookupCertificateForVerify } from "@/lib/certificates/verify-lookup";
 import {

@@ -127,11 +127,39 @@ Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admi
 
 ## Architecture
 
+```
+Adapters (app/)          Domain (lib/)              Infra
+─────────────────        ─────────────────          ──────────
+Server actions    →      certificates/              db (Prisma)
+API routes        →      templates/                 storage/r2
+Inngest jobs      →      recipients/                email/resend
+UI components     →      orgs/                      auth / supabase
+```
+
+**Rules of the house**
+
+- Server actions and route handlers are **adapters**: auth → validate → call `lib/*` → `revalidatePath`. Prefer zero Prisma in actions.
+- `lib/certificates/pure/` (token, verify, id, layout, parse) must not import `db`, `r2`, or `email`. Stable import paths remain `@/lib/certificates/token` etc. via re-exports.
+- Issuance: `issue.ts` facade → `issue-core` (DB) + `issue-pdf` (render/upload).
+- Jobs: `inngest/client.ts` + `inngest/jobs/*`; `functions.ts` only registers handlers.
+- UI: `components/admin`, `components/public`, `components/verify`, `components/ui`.
+- Verification is always live DB + HMAC — never long-cache certificate status.
+
+**Vendor swaps (same function names)**
+
+| Concern | Today | Swap by replacing |
+|--------|--------|-------------------|
+| Object storage | Cloudflare R2 | `src/lib/storage/r2.ts` (`uploadObject`, `getShortLivedObjectUrl`, …) |
+| Email | Resend | `src/lib/email/resend.ts` (`sendCertificateEmail`) |
+| Jobs | Inngest | `src/inngest/jobs/*` (keep event names if possible) |
+
+**Product notes**
+
 - Multi-tenant schema (`clubId` / `districtId`) from day one.
-- Public org portals: `/signup`, white-label `/o/[slug]`, branding in Settings. Client-delivered product — no self-serve payments; certificate quotas are operator-set (`Club.monthlyCertLimit`).
+- Client-delivered product — no self-serve payments; quotas are operator-set (`Club.monthlyCertLimit`).
 - Verification: `/v/[id]?t=<token>` — live DB + HMAC; no login wall.
-- Template gallery + Fabric drag-drop designer; layout JSON is data (Rule 5).
-- Bulk CSV/Excel validates all rows before any write; issue wizard at `/admin/issue`.
+- Template gallery + Fabric designer; layout JSON is data (Rule 5).
+- Bulk CSV validates all rows before any write; issue wizard at `/admin/issue`.
 - Open Badges 3.0 export: `GET /api/credentials/[uniqueId]/badge?t=<token>` (HMAC still primary).
 
 ## Roadmap

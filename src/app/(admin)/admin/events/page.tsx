@@ -1,6 +1,6 @@
 import { CalendarDays } from "lucide-react";
-import { CreateEventForm } from "@/components/create-event-form";
-import { EditEventForm } from "@/components/edit-event-form";
+import { CreateEventForm } from "@/components/admin/create-event-form";
+import { EditEventForm } from "@/components/admin/edit-event-form";
 import {
   Card,
   CardContent,

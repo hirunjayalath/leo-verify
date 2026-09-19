@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ClubBrandingForm } from "@/components/club-branding-form";
+import { ClubBrandingForm } from "@/components/public/club-branding-form";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 

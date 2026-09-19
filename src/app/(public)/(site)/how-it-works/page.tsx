@@ -1,4 +1,4 @@
-import { ContentPage, contentMetadata } from "@/components/content-page";
+import { ContentPage, contentMetadata } from "@/components/public/content-page";
 
 export const metadata = contentMetadata(
   "How it works",

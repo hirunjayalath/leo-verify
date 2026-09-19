@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { BrandLockup } from "@/components/brand-logo";
+import { BrandLockup } from "@/components/public/brand-logo";
 import { cn } from "@/lib/utils";
 
 const links = [

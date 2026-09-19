@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { FileBadge2, Search } from "lucide-react";
-import { RevokeButton } from "@/components/revoke-button";
-import { ReissueButton } from "@/components/reissue-button";
+import { RevokeButton } from "@/components/admin/revoke-button";
+import { ReissueButton } from "@/components/admin/reissue-button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";

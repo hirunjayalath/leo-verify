@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AuthShell } from "@/components/auth-shell";
-import { SignupForm } from "@/components/signup-form";
+import { AuthShell } from "@/components/public/auth-shell";
+import { SignupForm } from "@/components/public/signup-form";
 import { getSupabaseAuthUser } from "@/lib/auth";
 
 export default async function SignupPage() {

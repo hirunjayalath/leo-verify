@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/public/site-footer";
+import { SiteHeader } from "@/components/public/site-header";
 import { Button } from "@/components/ui/button";
 
 export default function GlobalError({

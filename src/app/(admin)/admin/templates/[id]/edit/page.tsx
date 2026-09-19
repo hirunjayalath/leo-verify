@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TemplateDesigner } from "@/components/template-designer";
+import { TemplateDesigner } from "@/components/admin/template-designer";
 import {
   Card,
   CardContent,
