@@ -7,7 +7,6 @@ import { issueCertificate } from "@/lib/certificates/issue";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
-import type { PrismaClient } from "@/generated/prisma/client";
 import { prismaService, withRlsContext } from "@/lib/db";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
@@ -65,11 +64,6 @@ async function mapPool<T, R>(
   return results;
 }
 
-type RowOutcome =
-  | { kind: "skipped"; certificateId: string; email?: CertificateEmailPayload }
-  | { kind: "issued"; certificateId: string; email?: CertificateEmailPayload }
-  | { kind: "failed"; error: string };
-
 export type ImportBatchResult = {
   done: boolean;
   emails: CertificateEmailPayload[];
@@ -77,105 +71,142 @@ export type ImportBatchResult = {
 };
 
 async function actorSupabaseIdForJob(jobId: string): Promise<string> {
-  const job = await prismaService.importJob.findUnique({
-    where: { id: jobId },
-    select: { createdById: true },
-  });
-  if (!job?.createdById) {
+  const rows = await prismaService.$queryRaw<Array<{ supabase_id: string | null }>>`
+    SELECT public.import_job_actor_supabase_id(${jobId}) AS supabase_id
+  `;
+  const supabaseId = rows[0]?.supabase_id;
+  if (!supabaseId) {
     throw new Error("Import job is missing an actor");
   }
-  const actor = await prismaService.user.findUnique({
-    where: { id: job.createdById },
-    select: { supabaseId: true },
-  });
-  if (!actor?.supabaseId) {
-    throw new Error("Import actor is missing a Supabase id");
-  }
-  return actor.supabaseId;
+  return supabaseId;
 }
+
+type LoadedImportBatch = {
+  clubId: string;
+  eventId: string;
+  createdById: string | null;
+  eventName: string;
+  clubName: string;
+  clubLogoUrl: string | null;
+  primaryColor: string;
+  accentColor: string;
+  backgroundUrl: string | null;
+  rows: {
+    id: string;
+    recipientName: string;
+    recipientEmail: string | null;
+    role: string;
+    achievement: string | null;
+  }[];
+};
 
 export async function processImportBatch(
   jobId: string,
 ): Promise<ImportBatchResult> {
   const supabaseId = await actorSupabaseIdForJob(jobId);
-  return withRlsContext(supabaseId, (tx) =>
-    processImportBatchAsActor(jobId, tx),
-  );
-}
 
-async function processImportBatchAsActor(
-  jobId: string,
-  tx: PrismaClient,
-): Promise<ImportBatchResult> {
-  const job = await tx.importJob.findUnique({
-    where: { id: jobId },
-    include: {
-      rows: {
-        where: { status: ImportRowStatus.pending },
-        take: IMPORT_BATCH_SIZE,
-        orderBy: { rowNumber: "asc" },
-      },
-      event: {
+  const loaded = await withRlsContext(
+    supabaseId,
+    async (tx): Promise<LoadedImportBatch | { empty: true }> => {
+      const job = await tx.importJob.findUnique({
+        where: { id: jobId },
         include: {
-          club: true,
-          templates: {
-            where: { status: TemplateStatus.approved },
-            take: 1,
+          rows: {
+            where: { status: ImportRowStatus.pending },
+            take: IMPORT_BATCH_SIZE,
+            orderBy: { rowNumber: "asc" },
+          },
+          event: {
+            include: {
+              club: true,
+              templates: {
+                where: { status: TemplateStatus.approved },
+                take: 1,
+              },
+            },
           },
         },
-      },
-    },
-  });
-  if (!job) throw new Error("Import job not found");
-
-  if (job.rows.length === 0) {
-    if (job.status !== ImportJobStatus.completed) {
-      await tx.importJob.update({
-        where: { id: jobId },
-        data: { status: ImportJobStatus.completed },
       });
-    }
-    return { done: true, emails: [], processed: 0 };
-  }
+      if (!job) throw new Error("Import job not found");
 
-  if (job.status !== ImportJobStatus.running) {
-    await tx.importJob.update({
-      where: { id: jobId },
-      data: { status: ImportJobStatus.running },
-    });
+      if (job.rows.length === 0) {
+        if (job.status !== ImportJobStatus.completed) {
+          await tx.importJob.update({
+            where: { id: jobId },
+            data: { status: ImportJobStatus.completed },
+          });
+        }
+        return { empty: true };
+      }
+
+      if (job.status !== ImportJobStatus.running) {
+        await tx.importJob.update({
+          where: { id: jobId },
+          data: { status: ImportJobStatus.running },
+        });
+      }
+
+      return {
+        clubId: job.clubId,
+        eventId: job.eventId,
+        createdById: job.createdById,
+        eventName: job.event.name,
+        clubName: job.event.club.name,
+        clubLogoUrl: job.event.club.logoUrl,
+        primaryColor: job.event.club.primaryColor,
+        accentColor: job.event.club.accentColor,
+        backgroundUrl: job.event.templates[0]?.backgroundUrl ?? null,
+        rows: job.rows.map((row) => ({
+          id: row.id,
+          recipientName: row.recipientName,
+          recipientEmail: row.recipientEmail,
+          role: row.role,
+          achievement: row.achievement,
+        })),
+      };
+    },
+  );
+
+  if ("empty" in loaded) {
+    return { done: true, emails: [], processed: 0 };
   }
 
   logOps("import.batch", {
     jobId,
-    clubId: job.clubId,
-    rows: job.rows.length,
+    clubId: loaded.clubId,
+    rows: loaded.rows.length,
   });
 
   let backgroundBytes: Uint8Array | undefined;
-  const published = job.event.templates[0];
-  if (published?.backgroundUrl) {
-    backgroundBytes = await fetchBackgroundBytes(published.backgroundUrl);
+  if (loaded.backgroundUrl) {
+    try {
+      backgroundBytes = await fetchBackgroundBytes(loaded.backgroundUrl);
+    } catch (error) {
+      logOps("import.background_fetch_failed", {
+        jobId,
+        clubId: loaded.clubId,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
   }
 
   const outcomes = await mapPool(
-    job.rows,
+    loaded.rows,
     IMPORT_PDF_CONCURRENCY,
     async (row) => {
       try {
-        const issued = await issueCertificate(
-          {
-            eventId: job.eventId,
-            clubId: job.clubId,
-            actorUserId: job.createdById ?? "system",
-            recipientName: row.recipientName,
-            recipientEmail: row.recipientEmail,
-            role: row.role,
-            achievement: row.achievement,
-            sendEmail: false,
-            backgroundBytes,
-          },
-          tx,
-        );
+        const issued = await issueCertificate({
+          eventId: loaded.eventId,
+          clubId: loaded.clubId,
+          actorUserId: loaded.createdById ?? "system",
+          actorSupabaseId: supabaseId,
+          recipientName: row.recipientName,
+          recipientEmail: row.recipientEmail,
+          role: row.role,
+          achievement: row.achievement,
+          sendEmail: false,
+          backgroundBytes,
+        });
 
         const email: CertificateEmailPayload | undefined =
           !issued.skipped && row.recipientEmail
@@ -184,59 +215,34 @@ async function processImportBatchAsActor(
                 recipientName: row.recipientName,
                 uniqueId: issued.uniqueId,
                 verificationToken: issued.verificationToken,
-                eventName: job.event.name,
-                clubName: job.event.club.name,
-                clubLogoUrl: job.event.club.logoUrl,
-                primaryColor: job.event.club.primaryColor,
-                accentColor: job.event.club.accentColor,
+                eventName: loaded.eventName,
+                clubName: loaded.clubName,
+                clubLogoUrl: loaded.clubLogoUrl,
+                primaryColor: loaded.primaryColor,
+                accentColor: loaded.accentColor,
                 jobId,
-                clubId: job.clubId,
+                clubId: loaded.clubId,
               }
             : undefined;
 
-        if (issued.skipped) {
-          await tx.importJobRow.update({
-            where: { id: row.id },
-            data: {
-              status: ImportRowStatus.skipped,
-              certificateId: issued.id,
-            },
-          });
-          return {
-            kind: "skipped",
-            certificateId: issued.id,
-            email,
-          } satisfies RowOutcome;
-        }
-
-        await tx.importJobRow.update({
-          where: { id: row.id },
-          data: {
-            status: ImportRowStatus.issued,
-            certificateId: issued.id,
-          },
-        });
         return {
-          kind: "issued",
+          rowId: row.id,
+          kind: issued.skipped ? ("skipped" as const) : ("issued" as const),
           certificateId: issued.id,
           email,
-        } satisfies RowOutcome;
+        };
       } catch (error) {
         captureException(error, {
           jobId,
-          clubId: job.clubId,
+          clubId: loaded.clubId,
           rowId: row.id,
           phase: "issue",
         });
-        const message = error instanceof Error ? error.message : "Failed";
-        await tx.importJobRow.update({
-          where: { id: row.id },
-          data: {
-            status: ImportRowStatus.failed,
-            error: message,
-          },
-        });
-        return { kind: "failed", error: message } satisfies RowOutcome;
+        return {
+          rowId: row.id,
+          kind: "failed" as const,
+          error: error instanceof Error ? error.message : "Failed",
+        };
       }
     },
   );
@@ -246,33 +252,60 @@ async function processImportBatchAsActor(
     if (outcome.kind === "issued" && outcome.email) emails.push(outcome.email);
   }
 
-  const remaining = await tx.importJobRow.count({
-    where: { jobId, status: ImportRowStatus.pending },
-  });
-  const groups = await tx.importJobRow.groupBy({
-    by: ["status"],
-    where: { jobId },
-    _count: { _all: true },
-  });
-  const done = remaining === 0;
-  const counters = countersFromRowGroups(groups);
+  const done = await withRlsContext(supabaseId, async (tx) => {
+    for (const outcome of outcomes) {
+      if (outcome.kind === "failed") {
+        await tx.importJobRow.update({
+          where: { id: outcome.rowId },
+          data: {
+            status: ImportRowStatus.failed,
+            error: outcome.error,
+          },
+        });
+        continue;
+      }
+      await tx.importJobRow.update({
+        where: { id: outcome.rowId },
+        data: {
+          status:
+            outcome.kind === "skipped"
+              ? ImportRowStatus.skipped
+              : ImportRowStatus.issued,
+          certificateId: outcome.certificateId,
+        },
+      });
+    }
 
-  await tx.importJob.update({
-    where: { id: jobId },
-    data: {
-      status: done ? ImportJobStatus.completed : ImportJobStatus.running,
-      ...counters,
-    },
-  });
-
-  if (done) {
-    logOps("import.complete", {
-      jobId,
-      clubId: job.clubId,
-      ...counters,
-      emailsQueued: emails.length,
+    const remaining = await tx.importJobRow.count({
+      where: { jobId, status: ImportRowStatus.pending },
     });
-  }
+    const groups = await tx.importJobRow.groupBy({
+      by: ["status"],
+      where: { jobId },
+      _count: { _all: true },
+    });
+    const finished = remaining === 0;
+    const counters = countersFromRowGroups(groups);
+
+    await tx.importJob.update({
+      where: { id: jobId },
+      data: {
+        status: finished ? ImportJobStatus.completed : ImportJobStatus.running,
+        ...counters,
+      },
+    });
+
+    if (finished) {
+      logOps("import.complete", {
+        jobId,
+        clubId: loaded.clubId,
+        ...counters,
+        emailsQueued: emails.length,
+      });
+    }
+
+    return finished;
+  });
 
   return { done, emails, processed: outcomes.length };
 }

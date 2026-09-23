@@ -29,7 +29,20 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const cert = await prismaService.certificate.findUnique({ where: { uniqueId } });
+  const cert = await prismaService.certificate.findUnique({
+    where: { uniqueId },
+    select: {
+      uniqueId: true,
+      recipientName: true,
+      eventId: true,
+      clubId: true,
+      issueDate: true,
+      role: true,
+      tokenVersion: true,
+      status: true,
+      pdfKey: true,
+    },
+  });
   if (!cert || cert.status !== CertificateStatus.issued) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

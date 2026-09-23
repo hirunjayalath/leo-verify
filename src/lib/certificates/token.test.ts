@@ -1,13 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { formatCertificateId, parseCertificateId } from "@/lib/certificates/id";
 import {
   computeVerificationToken,
   verifyVerificationToken,
   type CertificateCanonicalFields,
-} from "@/lib/certificates/token";
-import { evaluateVerification } from "@/lib/certificates/verify";
-import { CertificateStatus } from "@/generated/prisma/client";
-import { resetServerEnvCache } from "@/lib/env";
+} from "@/lib/certificates/pure/token";
+import { evaluateVerification } from "@/lib/certificates/pure/verify";
+
+const SECRET = "test-hmac-secret-at-least-32-characters-long";
+const PREVIOUS = "previous-hmac-secret-at-least-32-chars";
+const secrets = { current: SECRET, previous: PREVIOUS };
 
 const fields: CertificateCanonicalFields = {
   uniqueId: "LEO-UOM-2026-000123",
@@ -17,10 +19,6 @@ const fields: CertificateCanonicalFields = {
   issueDate: "2026-03-15",
   role: "Volunteer",
 };
-
-afterEach(() => {
-  resetServerEnvCache();
-});
 
 describe("certificate ID", () => {
   it("formats LEO-{CLUB}-{YEAR}-{SEQ}", () => {
@@ -38,43 +36,44 @@ describe("certificate ID", () => {
 
 describe("HMAC verification token (Rule 2 / Rule 11)", () => {
   it("issues a token retrievable by ID+token", () => {
-    const token = computeVerificationToken(fields);
+    const token = computeVerificationToken(fields, SECRET);
     expect(token).toMatch(/^[a-f0-9]{64}$/);
-    expect(verifyVerificationToken(fields, token)).toBe(true);
+    expect(verifyVerificationToken(fields, token, secrets)).toBe(true);
   });
 
   it("rejects a wrong or tampered token", () => {
-    const token = computeVerificationToken(fields);
-    expect(verifyVerificationToken(fields, token.slice(0, -1) + "0")).toBe(false);
-    expect(verifyVerificationToken(fields, "not-a-token")).toBe(false);
+    const token = computeVerificationToken(fields, SECRET);
+    expect(
+      verifyVerificationToken(fields, token.slice(0, -1) + "0", secrets),
+    ).toBe(false);
+    expect(verifyVerificationToken(fields, "not-a-token", secrets)).toBe(false);
   });
 
   it("rejects when canonical fields were altered", () => {
-    const token = computeVerificationToken(fields);
+    const token = computeVerificationToken(fields, SECRET);
     expect(
-      verifyVerificationToken({ ...fields, role: "Winner" }, token),
+      verifyVerificationToken({ ...fields, role: "Winner" }, token, secrets),
     ).toBe(false);
   });
 
   it("accepts tokens signed with the previous secret (rotation)", () => {
-    const previous = process.env.CERT_HMAC_SECRET_PREVIOUS!;
-    const legacyToken = computeVerificationToken(fields, previous);
-    expect(verifyVerificationToken(fields, legacyToken)).toBe(true);
+    const legacyToken = computeVerificationToken(fields, PREVIOUS);
+    expect(verifyVerificationToken(fields, legacyToken, secrets)).toBe(true);
   });
 
   it("rotates when tokenVersion changes (reissue)", () => {
-    const v1 = computeVerificationToken({ ...fields, tokenVersion: 1 });
-    const v2 = computeVerificationToken({ ...fields, tokenVersion: 2 });
+    const v1 = computeVerificationToken({ ...fields, tokenVersion: 1 }, SECRET);
+    const v2 = computeVerificationToken({ ...fields, tokenVersion: 2 }, SECRET);
     expect(v1).not.toEqual(v2);
-    expect(verifyVerificationToken({ ...fields, tokenVersion: 1 }, v1)).toBe(
-      true,
-    );
-    expect(verifyVerificationToken({ ...fields, tokenVersion: 2 }, v1)).toBe(
-      false,
-    );
-    expect(verifyVerificationToken({ ...fields, tokenVersion: 2 }, v2)).toBe(
-      true,
-    );
+    expect(
+      verifyVerificationToken({ ...fields, tokenVersion: 1 }, v1, secrets),
+    ).toBe(true);
+    expect(
+      verifyVerificationToken({ ...fields, tokenVersion: 2 }, v1, secrets),
+    ).toBe(false);
+    expect(
+      verifyVerificationToken({ ...fields, tokenVersion: 2 }, v2, secrets),
+    ).toBe(true);
   });
 });
 
@@ -86,7 +85,7 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
     role: fields.role,
     achievement: "Community Service",
     issueDate: new Date("2026-03-15T00:00:00.000Z"),
-    status: CertificateStatus.issued,
+    status: "issued" as const,
     clubId: fields.clubId,
     eventId: fields.eventId,
     clubName: "Leo Club of University of Moratuwa",
@@ -95,8 +94,8 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
   };
 
   it("returns valid public fields for a matching token", () => {
-    const token = computeVerificationToken(fields);
-    const result = evaluateVerification(row, token);
+    const token = computeVerificationToken(fields, SECRET);
+    const result = evaluateVerification(row, token, secrets);
     expect(result).toEqual({
       status: "valid",
       uniqueId: fields.uniqueId,
@@ -111,10 +110,11 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
   });
 
   it("shows revoked with no further detail", () => {
-    const token = computeVerificationToken(fields);
+    const token = computeVerificationToken(fields, SECRET);
     const result = evaluateVerification(
-      { ...row, status: CertificateStatus.revoked },
+      { ...row, status: "revoked" },
       token,
+      secrets,
     );
     expect(result).toEqual({
       status: "revoked",
@@ -124,15 +124,15 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
   });
 
   it("uses a uniform invalid message (no existence oracle)", () => {
-    expect(evaluateVerification(null, "deadbeef")).toEqual({
+    expect(evaluateVerification(null, "deadbeef", secrets)).toEqual({
       status: "invalid",
       message: "Could not check this certificate.",
     });
-    expect(evaluateVerification(row, null)).toEqual({
+    expect(evaluateVerification(row, null, secrets)).toEqual({
       status: "invalid",
       message: "Could not check this certificate.",
     });
-    expect(evaluateVerification(row, "deadbeef")).toEqual({
+    expect(evaluateVerification(row, "deadbeef", secrets)).toEqual({
       status: "invalid",
       message: "Could not check this certificate.",
     });

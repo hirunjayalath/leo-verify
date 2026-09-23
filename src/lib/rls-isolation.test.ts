@@ -30,6 +30,10 @@ async function roleReady(): Promise<boolean> {
 
 const ready = await roleReady();
 
+if (process.env.CI && !ready) {
+  throw new Error("Rule 11 tests require Postgres in CI");
+}
+
 describe.skipIf(!ready)(
   "RLS: club A cannot read club B as leoverify_app",
   { timeout: 20_000 },

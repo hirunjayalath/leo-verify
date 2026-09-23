@@ -102,6 +102,18 @@ AS $$
   WHERE "supabaseId" = public.current_supabase_id();
 $$;
 
+CREATE OR REPLACE FUNCTION public.recipient_id_for_email(lookup_email text)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT id FROM "Recipient"
+  WHERE lower(email) = lower(lookup_email)
+  LIMIT 1;
+$$;
+
 -- Drop policies we (re)create so migrate is idempotent
 DROP POLICY IF EXISTS district_select ON "District";
 DROP POLICY IF EXISTS club_select ON "Club";
@@ -258,7 +270,15 @@ CREATE POLICY audit_insert ON "AuditLog"
   FOR INSERT
   WITH CHECK (
     "clubId" = public.current_user_club_id()
-    OR public.current_user_role() = 'district_admin'
+    OR (
+      public.current_user_role() = 'district_admin'
+      AND (
+        "clubId" IS NULL
+        OR "clubId" IN (
+          SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
+        )
+      )
+    )
   );
 
 -- User: self via Auth UUID or Prisma GUC; club/district peers
@@ -425,6 +445,61 @@ CREATE POLICY sequence_club_access ON "ClubCertSequence"
       )
     )
   );
+
+CREATE OR REPLACE FUNCTION public.protect_certificate_recipient_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF public.current_user_role() IS NULL THEN
+    IF NEW."uniqueId" IS DISTINCT FROM OLD."uniqueId"
+      OR NEW."clubId" IS DISTINCT FROM OLD."clubId"
+      OR NEW."eventId" IS DISTINCT FROM OLD."eventId"
+      OR NEW."recipientName" IS DISTINCT FROM OLD."recipientName"
+      OR NEW."recipientEmail" IS DISTINCT FROM OLD."recipientEmail"
+      OR NEW."role" IS DISTINCT FROM OLD."role"
+      OR NEW."achievement" IS DISTINCT FROM OLD."achievement"
+      OR NEW."issueDate" IS DISTINCT FROM OLD."issueDate"
+      OR NEW."status" IS DISTINCT FROM OLD."status"
+      OR NEW."revokedReason" IS DISTINCT FROM OLD."revokedReason"
+      OR NEW."revokedAt" IS DISTINCT FROM OLD."revokedAt"
+      OR NEW."revokedById" IS DISTINCT FROM OLD."revokedById"
+      OR NEW."pdfUrl" IS DISTINCT FROM OLD."pdfUrl"
+      OR NEW."pdfKey" IS DISTINCT FROM OLD."pdfKey"
+      OR NEW."tokenVersion" IS DISTINCT FROM OLD."tokenVersion"
+    THEN
+      RAISE EXCEPTION 'Recipients may only update recipientId and unlisted';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS certificate_recipient_column_guard ON "Certificate";
+CREATE TRIGGER certificate_recipient_column_guard
+  BEFORE UPDATE ON "Certificate"
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_certificate_recipient_columns();
+
+REVOKE ALL ON FUNCTION public.recipient_id_for_email(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.recipient_id_for_email(text) TO leoverify_app;
+
+CREATE OR REPLACE FUNCTION public.import_job_actor_supabase_id(job_id text)
+RETURNS text
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT u."supabaseId"
+  FROM "ImportJob" j
+  JOIN "User" u ON u.id = j."createdById"
+  WHERE j.id = job_id
+$$;
+
+REVOKE ALL ON FUNCTION public.import_job_actor_supabase_id(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_service;
+GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_app;
 
 -- NOTE: Public verification MUST NOT use the anon key against these tables.
 -- Use prismaService (leoverify_service). See supabase/app-role.sql.

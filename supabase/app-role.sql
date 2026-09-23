@@ -100,6 +100,30 @@ CREATE POLICY service_certificate_select ON "Certificate"
   FOR SELECT TO leoverify_service
   USING (true);
 
+REVOKE SELECT ON "Certificate" FROM leoverify_service;
+GRANT SELECT (
+  id,
+  "uniqueId",
+  "clubId",
+  "eventId",
+  "recipientName",
+  role,
+  achievement,
+  "issueDate",
+  status,
+  "recipientId",
+  unlisted,
+  "pdfUrl",
+  "pdfKey",
+  "tokenVersion",
+  "createdAt",
+  "updatedAt"
+) ON "Certificate" TO leoverify_service;
+
+GRANT EXECUTE ON FUNCTION public.recipient_id_for_email(text) TO leoverify_app;
+GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_service;
+GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_app;
+
 CREATE POLICY service_recipient_select ON "Recipient"
   FOR SELECT TO leoverify_service
   USING (true);

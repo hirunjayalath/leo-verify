@@ -30,8 +30,24 @@ export async function GET(request: Request, { params }: Params) {
 
   const cert = await prismaService.certificate.findUnique({
     where: { uniqueId },
-    include: {
-      event: { include: { club: true } },
+    select: {
+      uniqueId: true,
+      recipientName: true,
+      eventId: true,
+      clubId: true,
+      issueDate: true,
+      role: true,
+      achievement: true,
+      status: true,
+      pdfKey: true,
+      pdfUrl: true,
+      tokenVersion: true,
+      event: {
+        select: {
+          name: true,
+          club: { select: { name: true, publicSlug: true } },
+        },
+      },
     },
   });
 

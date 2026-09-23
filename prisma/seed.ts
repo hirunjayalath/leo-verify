@@ -3,7 +3,6 @@ import { PrismaClient, PlanTier, UserRole } from "../src/generated/prisma/client
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { issueCertificate } from "../src/lib/certificates/issue";
-import { withRlsContext } from "../src/lib/db";
 import { ensureAuthUser } from "../src/lib/supabase/admin";
 
 async function linkAuthUser(input: {
@@ -197,21 +196,17 @@ async function main() {
     if (!template) {
       console.log("  Skip recipient certificate: no approved UOM template");
     } else {
-      const issued = await withRlsContext(admin.supabaseId, (tx) =>
-        issueCertificate(
-          {
-            eventId: template.eventId,
-            clubId: club.id,
-            actorUserId: admin.id,
-            recipientName: "QA2 Recipient",
-            recipientEmail,
-            role: "Participant",
-            achievement: "QA2 claim seed",
-            sendEmail: false,
-          },
-          tx,
-        ),
-      );
+      const issued = await issueCertificate({
+        eventId: template.eventId,
+        clubId: club.id,
+        actorUserId: admin.id,
+        actorSupabaseId: admin.supabaseId,
+        recipientName: "QA2 Recipient",
+        recipientEmail,
+        role: "Participant",
+        achievement: "QA2 claim seed",
+        sendEmail: false,
+      });
       console.log(
         `  Recipient cert: ${issued.uniqueId}${issued.skipped ? " (skipped)" : ""} · ${template.event.name}`,
       );

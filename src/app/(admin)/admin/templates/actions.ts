@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { ActionResult } from "@/lib/action-result";
 import { asClubAdmin } from "@/lib/auth";
 import {
   approveOwnTemplate,
@@ -14,7 +15,7 @@ import {
   uploadTemplateSignature,
 } from "@/lib/templates/service";
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
+export type { ActionResult };
 
 export async function createTemplateAction(formData: FormData): Promise<ActionResult> {
   return asClubAdmin(async (user) => {

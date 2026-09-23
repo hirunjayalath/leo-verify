@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { asClubAdmin, requireClubAdmin } from "@/lib/auth";
+import type { ActionResult } from "@/lib/action-result";
 import { createEvent, updateEvent } from "@/lib/events/service";
 
 const eventSchema = z.object({
@@ -11,7 +12,7 @@ const eventSchema = z.object({
   eventDate: z.string().optional().or(z.literal("")),
 });
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
+export type { ActionResult };
 
 function clubIdFor(user: Awaited<ReturnType<typeof requireClubAdmin>>): string {
   if (user.clubId) return user.clubId;

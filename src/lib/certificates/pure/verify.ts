@@ -1,6 +1,6 @@
-import { CertificateStatus } from "@/generated/prisma/client";
 import {
   type CertificateCanonicalFields,
+  type HmacSecrets,
   buildPdfDownloadPath,
   verifyVerificationToken,
 } from "@/lib/certificates/pure/token";
@@ -39,7 +39,7 @@ export type CertificateLookupRow = {
   role: string;
   achievement: string | null;
   issueDate: Date;
-  status: CertificateStatus;
+  status: "issued" | "revoked";
   clubId: string;
   eventId: string;
   clubName: string;
@@ -53,6 +53,7 @@ export type CertificateLookupRow = {
 export function evaluateVerification(
   row: CertificateLookupRow | null,
   providedToken: string | null | undefined,
+  secrets: HmacSecrets,
 ): PublicVerificationResult {
   if (!row || !providedToken) {
     return { status: "invalid", message: INVALID_MESSAGE };
@@ -68,11 +69,11 @@ export function evaluateVerification(
     tokenVersion: row.tokenVersion ?? 1,
   };
 
-  if (!verifyVerificationToken(fields, providedToken)) {
+  if (!verifyVerificationToken(fields, providedToken, secrets)) {
     return { status: "invalid", message: INVALID_MESSAGE };
   }
 
-  if (row.status === CertificateStatus.revoked) {
+  if (row.status === "revoked") {
     return {
       status: "revoked",
       uniqueId: row.uniqueId,

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { ActionResult } from "@/lib/action-result";
 import { asDistrictAdmin } from "@/lib/auth";
 import {
   createClub,
@@ -9,7 +10,7 @@ import {
   reviewTemplate,
 } from "@/lib/orgs/service";
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
+export type { ActionResult };
 
 export async function createClubAction(formData: FormData): Promise<ActionResult> {
   return asDistrictAdmin(async (user) => {

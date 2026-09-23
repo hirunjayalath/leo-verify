@@ -8,6 +8,27 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CI: true
+      CERT_HMAC_SECRET: ci-hmac-secret-at-least-32-characters-long
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      DATABASE_URL: postgresql://leoverify_app:ci-app-pass@localhost:5432/postgres
+      SERVICE_DATABASE_URL: postgresql://leoverify_service:ci-service-pass@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,9 +37,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: npx prisma migrate deploy --config prisma7.config.ts
+      - name: Set tenant role passwords
+        env:
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: |
+          node --input-type=module -e "
+          import { Client } from 'pg';
+          const client = new Client({ connectionString: process.env.DIRECT_DATABASE_URL });
+          await client.connect();
+          await client.query(\"ALTER ROLE leoverify_app PASSWORD 'ci-app-pass'\");
+          await client.query(\"ALTER ROLE leoverify_service PASSWORD 'ci-service-pass'\");
+          await client.end();
+          "
       - run: npm test
       - run: npm run lint
       - run: npm run build
-        env:
-          CERT_HMAC_SECRET: ci-hmac-secret-at-least-32-characters-long
-          NEXT_PUBLIC_APP_URL: http://localhost:3000

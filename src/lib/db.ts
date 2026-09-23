@@ -154,6 +154,17 @@ export async function pingDatabase(): Promise<boolean> {
   }
 }
 
+export function isInRlsContext(): boolean {
+  return Boolean(rlsStore.getStore());
+}
+
+/** Issue/import I/O must not run inside an open RLS transaction. */
+export function assertNotInRlsContext(label: string): void {
+  if (isInRlsContext()) {
+    throw new Error(`${label} must not run inside withRlsContext`);
+  }
+}
+
 export type RlsContextOptions = {
   recipientEmail?: string | null;
 };

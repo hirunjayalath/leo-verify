@@ -2,7 +2,6 @@ import {
   ImportJobStatus,
   ImportRowStatus,
   TemplateStatus,
-  type PrismaClient,
 } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import {
@@ -11,7 +10,7 @@ import {
   validateCertificateCsv,
   validateCertificateXlsx,
 } from "@/lib/certificates/csv";
-import { prisma } from "@/lib/db";
+import { assertNotInRlsContext, withRlsContext } from "@/lib/db";
 import { inngest, processImportJob } from "@/inngest/functions";
 
 export type ImportServiceResult =
@@ -72,16 +71,16 @@ export function isSpreadsheetFile(file: File): boolean {
   );
 }
 
-export async function startCertificateImport(
-  input: {
-    clubId: string;
-    actorUserId: string;
-    eventId: string;
-    file: File;
-    mapping?: ColumnMapping;
-  },
-  tx: PrismaClient = prisma,
-): Promise<ImportServiceResult> {
+export async function startCertificateImport(input: {
+  clubId: string;
+  actorUserId: string;
+  actorSupabaseId: string;
+  eventId: string;
+  file: File;
+  mapping?: ColumnMapping;
+}): Promise<ImportServiceResult> {
+  assertNotInRlsContext("startCertificateImport");
+
   if (!input.eventId) return { ok: false, error: "Event is required" };
   if (!(input.file instanceof File) || input.file.size === 0) {
     return { ok: false, error: "Spreadsheet file is required" };
@@ -91,27 +90,6 @@ export async function startCertificateImport(
   }
   if (!isSpreadsheetFile(input.file)) {
     return { ok: false, error: "Upload a .csv or .xlsx file" };
-  }
-
-  const event = await tx.event.findFirst({
-    where: { id: input.eventId, clubId: input.clubId },
-  });
-  if (!event) return { ok: false, error: "Event not found" };
-
-  const approved = await tx.certificateTemplate.findFirst({
-    where: {
-      eventId: input.eventId,
-      clubId: input.clubId,
-      status: TemplateStatus.approved,
-    },
-    select: { id: true },
-  });
-  if (!approved) {
-    return {
-      ok: false,
-      error:
-        "This event has no approved template. Create and approve a template before importing.",
-    };
   }
 
   const name = input.file.name.toLowerCase();
@@ -131,61 +109,90 @@ export async function startCertificateImport(
     };
   }
 
-  const job = await tx.importJob.create({
-    data: {
-      clubId: input.clubId,
-      eventId: input.eventId,
-      createdById: input.actorUserId,
-      status: ImportJobStatus.pending,
-      totalRows: validated.rows.length,
-      rows: {
-        create: validated.rows.map((row) => ({
-          rowNumber: row.rowNumber,
-          recipientName: row.recipientName,
-          recipientEmail: row.recipientEmail ?? null,
-          role: row.role,
-          achievement: row.achievement ?? null,
-          status: ImportRowStatus.pending,
-        })),
+  const created = await withRlsContext(input.actorSupabaseId, async (tx) => {
+    const event = await tx.event.findFirst({
+      where: { id: input.eventId, clubId: input.clubId },
+    });
+    if (!event) return { ok: false as const, error: "Event not found" };
+
+    const approved = await tx.certificateTemplate.findFirst({
+      where: {
+        eventId: input.eventId,
+        clubId: input.clubId,
+        status: TemplateStatus.approved,
       },
-    },
+      select: { id: true },
+    });
+    if (!approved) {
+      return {
+        ok: false as const,
+        error:
+          "This event has no approved template. Create and approve a template before importing.",
+      };
+    }
+
+    const job = await tx.importJob.create({
+      data: {
+        clubId: input.clubId,
+        eventId: input.eventId,
+        createdById: input.actorUserId,
+        status: ImportJobStatus.pending,
+        totalRows: validated.rows.length,
+        rows: {
+          create: validated.rows.map((row) => ({
+            rowNumber: row.rowNumber,
+            recipientName: row.recipientName,
+            recipientEmail: row.recipientEmail ?? null,
+            role: row.role,
+            achievement: row.achievement ?? null,
+            status: ImportRowStatus.pending,
+          })),
+        },
+      },
+    });
+
+    await writeAuditLog({
+      actorUserId: input.actorUserId,
+      action: "import.start",
+      targetType: "ImportJob",
+      targetId: job.id,
+      clubId: input.clubId,
+      metadata: {
+        eventId: input.eventId,
+        totalRows: validated.rows.length,
+        name: event.name,
+      },
+      client: tx,
+    });
+
+    return { ok: true as const, jobId: job.id };
   });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "import.start",
-    targetType: "ImportJob",
-    targetId: job.id,
-    clubId: input.clubId,
-    metadata: {
-      eventId: input.eventId,
-      totalRows: validated.rows.length,
-      name: event.name,
-    },
-    client: tx,
-  });
+  if (!created.ok) return created;
 
   const hasInngest = Boolean(process.env.INNGEST_EVENT_KEY);
   if (hasInngest) {
     await inngest.send({
       name: "certificate/import.start",
-      data: { jobId: job.id },
+      data: { jobId: created.jobId },
     });
     return {
       ok: true,
-      jobId: job.id,
+      jobId: created.jobId,
       mode: "async",
       totalRows: validated.rows.length,
     };
   }
 
-  await processImportJob(job.id);
-  const finished = await tx.importJob.findUniqueOrThrow({
-    where: { id: job.id },
-  });
+  await processImportJob(created.jobId);
+  const finished = await withRlsContext(input.actorSupabaseId, (tx) =>
+    tx.importJob.findUniqueOrThrow({
+      where: { id: created.jobId },
+    }),
+  );
   return {
     ok: true,
-    jobId: job.id,
+    jobId: created.jobId,
     mode: "sync",
     successRows: finished.successRows,
     skippedRows: finished.skippedRows,

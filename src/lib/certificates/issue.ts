@@ -1,4 +1,3 @@
-import type { PrismaClient } from "@/generated/prisma/client";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { sendCertificateEmail } from "@/lib/email/resend";
 import {
@@ -15,58 +14,76 @@ import {
   deleteCertificatePdfObject,
   renderAndUploadCertificatePdf,
 } from "@/lib/certificates/issue-pdf";
-import { prisma } from "@/lib/db";
+import { assertNotInRlsContext, withRlsContext } from "@/lib/db";
+import { logOps } from "@/lib/observability";
 
 export type { IssueCertificateInput, IssueCertificateResult };
 
 export async function issueCertificate(
   input: IssueCertificateInput,
-  tx: PrismaClient = prisma,
 ): Promise<IssueCertificateResult> {
-  const created = await createCertificateRecord(input, tx);
+  assertNotInRlsContext("issueCertificate");
+
+  const created = await withRlsContext(input.actorSupabaseId, async (tx) => {
+    const record = await createCertificateRecord(input, tx);
+    if (record.skipped) return record;
+    await auditCertificateIssue(
+      {
+        actorUserId: input.actorUserId,
+        certificateId: record.certificate.id,
+        clubId: input.clubId,
+        uniqueId: record.uniqueId,
+        recipientName: record.certificate.recipientName,
+        eventId: input.eventId,
+      },
+      tx,
+    );
+    return record;
+  });
+
   if (created.skipped) return created.result;
 
   const { certificate, uniqueId, verificationToken, issueDateIso, club, event, template } =
     created;
 
-  const uploaded = await renderAndUploadCertificatePdf({
-    clubId: input.clubId,
-    template,
-    backgroundBytes: input.backgroundBytes,
-    recipientName: certificate.recipientName,
-    role: certificate.role,
-    issueDateIso,
-    uniqueId: certificate.uniqueId,
-    verificationToken,
-    achievement: certificate.achievement,
-    eventName: event.name,
-    clubName: club.name,
-  });
-
   const gatedPdfUrl = buildPdfDownloadPath(
     certificate.uniqueId,
     verificationToken,
   );
-  await attachCertificatePdf(
-    {
-      certificateId: certificate.id,
-      pdfUrl: gatedPdfUrl,
-      pdfKey: uploaded.key,
-    },
-    tx,
-  );
 
-  await auditCertificateIssue(
-    {
-      actorUserId: input.actorUserId,
-      certificateId: certificate.id,
+  let pdfUrl: string | null = null;
+  try {
+    const uploaded = await renderAndUploadCertificatePdf({
       clubId: input.clubId,
-      uniqueId,
+      template,
+      backgroundBytes: input.backgroundBytes,
       recipientName: certificate.recipientName,
-      eventId: input.eventId,
-    },
-    tx,
-  );
+      role: certificate.role,
+      issueDateIso,
+      uniqueId: certificate.uniqueId,
+      verificationToken,
+      achievement: certificate.achievement,
+      eventName: event.name,
+      clubName: club.name,
+    });
+    await withRlsContext(input.actorSupabaseId, (tx) =>
+      attachCertificatePdf(
+        {
+          certificateId: certificate.id,
+          pdfUrl: gatedPdfUrl,
+          pdfKey: uploaded.key,
+        },
+        tx,
+      ),
+    );
+    pdfUrl = gatedPdfUrl;
+  } catch (error) {
+    logOps("certificate.pdf_attach_failed", {
+      certificateId: certificate.id,
+      uniqueId,
+      message: error instanceof Error ? error.message : "unknown",
+    });
+  }
 
   let emailSent = false;
   if (input.sendEmail !== false && certificate.recipientEmail) {
@@ -77,10 +94,7 @@ export async function issueCertificate(
       verificationToken,
       eventName: event.name,
       clubName: club.name,
-      pdfUrl: buildPdfDownloadPath(
-        certificate.uniqueId,
-        verificationToken,
-      ),
+      pdfUrl: gatedPdfUrl,
       clubLogoUrl: club.logoUrl,
       primaryColor: club.primaryColor,
       accentColor: club.accentColor,
@@ -92,21 +106,22 @@ export async function issueCertificate(
     id: certificate.id,
     uniqueId,
     verificationToken,
-    pdfUrl: gatedPdfUrl,
+    pdfUrl,
     emailSent,
   };
 }
 
-export async function revokeCertificate(
-  input: {
-    certificateId: string;
-    clubId: string;
-    actorUserId: string;
-    reason: string;
-  },
-  tx: PrismaClient = prisma,
-) {
-  const result = await revokeCertificateRecord(input, tx);
+export async function revokeCertificate(input: {
+  certificateId: string;
+  clubId: string;
+  actorUserId: string;
+  actorSupabaseId: string;
+  reason: string;
+}) {
+  assertNotInRlsContext("revokeCertificate");
+  const result = await withRlsContext(input.actorSupabaseId, (tx) =>
+    revokeCertificateRecord(input, tx),
+  );
   if (result.alreadyRevoked) return result.cert;
 
   await deleteCertificatePdfObject(result.previousPdfKey);
@@ -114,15 +129,16 @@ export async function revokeCertificate(
 }
 
 /** New token + PDF; status stays issued. Does not revoke. */
-export async function reissueCertificate(
-  input: {
-    certificateId: string;
-    clubId: string;
-    actorUserId: string;
-  },
-  tx: PrismaClient = prisma,
-): Promise<IssueCertificateResult> {
-  const prepared = await prepareReissue(input, tx);
+export async function reissueCertificate(input: {
+  certificateId: string;
+  clubId: string;
+  actorUserId: string;
+  actorSupabaseId: string;
+}): Promise<IssueCertificateResult> {
+  assertNotInRlsContext("reissueCertificate");
+  const prepared = await withRlsContext(input.actorSupabaseId, (tx) =>
+    prepareReissue(input, tx),
+  );
   const { cert, template, issueDateIso, tokenVersion, verificationToken, club } =
     prepared;
 
@@ -140,18 +156,20 @@ export async function reissueCertificate(
   });
 
   const gatedPdfUrl = buildPdfDownloadPath(cert.uniqueId, verificationToken);
-  const updated = await commitReissue(
-    {
-      certificateId: cert.id,
-      clubId: input.clubId,
-      actorUserId: input.actorUserId,
-      verificationToken,
-      tokenVersion,
-      uniqueId: cert.uniqueId,
-      pdfUrl: gatedPdfUrl,
-      pdfKey: uploaded.key,
-    },
-    tx,
+  const updated = await withRlsContext(input.actorSupabaseId, (tx) =>
+    commitReissue(
+      {
+        certificateId: cert.id,
+        clubId: input.clubId,
+        actorUserId: input.actorUserId,
+        verificationToken,
+        tokenVersion,
+        uniqueId: cert.uniqueId,
+        pdfUrl: gatedPdfUrl,
+        pdfKey: uploaded.key,
+      },
+      tx,
+    ),
   );
 
   if (!updated) {

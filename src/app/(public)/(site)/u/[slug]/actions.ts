@@ -14,7 +14,16 @@ export async function openPublicVerifyAction(formData: FormData) {
 
   const cert = await prismaService.certificate.findUnique({
     where: { uniqueId },
-    include: {
+    select: {
+      uniqueId: true,
+      recipientName: true,
+      eventId: true,
+      clubId: true,
+      issueDate: true,
+      role: true,
+      status: true,
+      unlisted: true,
+      tokenVersion: true,
       recipient: { select: { publicProfile: true } },
     },
   });

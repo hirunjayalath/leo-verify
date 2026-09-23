@@ -71,6 +71,8 @@ model Club {
   events   Event[]
   templates CertificateTemplate[]
   sequences ClubCertSequence[]
+  certificates Certificate[]
+  importJobs ImportJob[]
 
   @@index([districtId])
 }
@@ -189,6 +191,7 @@ model Certificate {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
+  club      Club       @relation(fields: [clubId], references: [id], onDelete: Restrict)
   event     Event      @relation(fields: [eventId], references: [id])
   recipient Recipient? @relation(fields: [recipientId], references: [id])
   revokedBy User?      @relation("CertificateRevoker", fields: [revokedById], references: [id])
@@ -229,6 +232,7 @@ model ImportJob {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  club  Club           @relation(fields: [clubId], references: [id], onDelete: Restrict)
   event Event          @relation(fields: [eventId], references: [id])
   rows  ImportJobRow[]
 

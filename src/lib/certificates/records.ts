@@ -8,13 +8,14 @@ import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";
 import { tokenForCertificate } from "@/lib/certificates/token";
 import { allocateSequence } from "@/lib/certificates/sequence";
-import { prisma, prismaService } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { logOps } from "@/lib/observability";
 
 export type IssueCertificateInput = {
   eventId: string;
   clubId: string;
   actorUserId: string;
+  actorSupabaseId: string;
   recipientName: string;
   recipientEmail?: string | null;
   role: string;
@@ -182,11 +183,10 @@ export async function createCertificateRecord(
 
   let recipientId: string | null = null;
   if (recipientEmail) {
-    const recipient = await prismaService.recipient.findFirst({
-      where: { email: { equals: recipientEmail, mode: "insensitive" } },
-      select: { id: true },
-    });
-    recipientId = recipient?.id ?? null;
+    const rows = await tx.$queryRaw<Array<{ id: string | null }>>`
+      SELECT public.recipient_id_for_email(${recipientEmail}) AS id
+    `;
+    recipientId = rows[0]?.id ?? null;
   }
 
   const issueDateIso = issueDate.toISOString().slice(0, 10);
