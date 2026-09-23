@@ -404,6 +404,7 @@ describe.skipIf(!dbReady)(
           create: [
             {
               rowNumber: 1,
+              clubId: clubAId,
               recipientName: "Import Twin",
               recipientEmail: email,
               role: "Volunteer",

@@ -24,7 +24,6 @@ GRANT USAGE ON SCHEMA public TO leoverify_service;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO leoverify_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO leoverify_app;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO leoverify_service;
-GRANT INSERT, UPDATE ON "District", "Club", "User", "AuditLog" TO leoverify_service;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO leoverify_service;
 GRANT leoverify_app TO CURRENT_USER;
 GRANT leoverify_service TO CURRENT_USER;
@@ -56,8 +55,9 @@ BEGIN
 END
 $$;
 
--- Service role: public reads + signup bootstrap. No tenant-wide DML on certificates.
+-- Service role: public reads. Signup writes go through signup_public_org.
 DROP POLICY IF EXISTS service_district_all ON "District";
+DROP POLICY IF EXISTS service_district_select ON "District";
 DROP POLICY IF EXISTS service_club_select ON "Club";
 DROP POLICY IF EXISTS service_club_insert ON "Club";
 DROP POLICY IF EXISTS service_user_select ON "User";
@@ -68,25 +68,17 @@ DROP POLICY IF EXISTS service_certificate_select ON "Certificate";
 DROP POLICY IF EXISTS service_recipient_select ON "Recipient";
 DROP POLICY IF EXISTS service_audit_insert ON "AuditLog";
 
-CREATE POLICY service_district_all ON "District"
-  FOR ALL TO leoverify_service
-  USING (true) WITH CHECK (true);
+CREATE POLICY service_district_select ON "District"
+  FOR SELECT TO leoverify_service
+  USING (true);
 
 CREATE POLICY service_club_select ON "Club"
   FOR SELECT TO leoverify_service
   USING (true);
 
-CREATE POLICY service_club_insert ON "Club"
-  FOR INSERT TO leoverify_service
-  WITH CHECK (true);
-
 CREATE POLICY service_user_select ON "User"
   FOR SELECT TO leoverify_service
   USING (true);
-
-CREATE POLICY service_user_insert ON "User"
-  FOR INSERT TO leoverify_service
-  WITH CHECK (true);
 
 CREATE POLICY service_event_select ON "Event"
   FOR SELECT TO leoverify_service
@@ -121,16 +113,14 @@ GRANT SELECT (
 ) ON "Certificate" TO leoverify_service;
 
 GRANT EXECUTE ON FUNCTION public.recipient_id_for_email(text) TO leoverify_app;
+GRANT EXECUTE ON FUNCTION public.club_in_scope(text) TO leoverify_app;
 GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_service;
 GRANT EXECUTE ON FUNCTION public.import_job_actor_supabase_id(text) TO leoverify_app;
+GRANT EXECUTE ON FUNCTION public.signup_public_org(text, text, text, text, text) TO leoverify_service;
 
 CREATE POLICY service_recipient_select ON "Recipient"
   FOR SELECT TO leoverify_service
   USING (true);
-
-CREATE POLICY service_audit_insert ON "AuditLog"
-  FOR INSERT TO leoverify_service
-  WITH CHECK (true);
 
 -- ALTER ROLE leoverify_app PASSWORD 'generate-a-long-random-password';
 -- ALTER ROLE leoverify_service PASSWORD 'generate-a-long-random-password';

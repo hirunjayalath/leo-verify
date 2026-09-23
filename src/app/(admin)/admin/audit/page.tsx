@@ -33,7 +33,7 @@ type PageProps = {
 
 export default async function AdminAuditPage({ searchParams }: PageProps) {
   const user = await requireClubAdmin();
-  const clubId = user.clubId!;
+  const clubId = user.clubId;
   const params = await searchParams;
   const page = Math.max(1, Number(params.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;

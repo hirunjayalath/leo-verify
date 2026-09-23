@@ -13,7 +13,7 @@ export default async function AdminIssuePage() {
   const user = await requireClubAdmin();
   const events = await withSessionRls(user, () =>
     prisma.event.findMany({
-      where: { clubId: user.clubId! },
+      where: { clubId: user.clubId },
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true },
     }),

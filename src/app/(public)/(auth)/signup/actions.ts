@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { type ActionResult, fail } from "@/lib/action-result";
 import { getSupabaseAuthUser } from "@/lib/auth";
 import { signupPublicOrg } from "@/lib/orgs/service";
 import {
@@ -10,26 +11,19 @@ import {
   rateLimitSignup,
 } from "@/lib/rate-limit";
 
-export type SignupResult =
-  | { ok: true; clubId: string }
-  | { ok: false; error: string };
-
 /** Requires authenticated Supabase session; binds identity from the session only. */
 export async function signupPublicOrgAction(
   formData: FormData,
-): Promise<SignupResult> {
+): Promise<ActionResult<{ clubId: string }>> {
   const auth = await getSupabaseAuthUser();
   if (!auth) {
-    return {
-      ok: false,
-      error: "Sign in before creating an organization.",
-    };
+    return fail("Sign in before creating an organization.");
   }
 
   const headerList = await headers();
   const limit = await rateLimitSignup(clientIpFromHeaders(headerList));
   if (!limit.success) {
-    return { ok: false, error: "Too many signup attempts. Try again later." };
+    return fail("Too many signup attempts. Try again later.");
   }
 
   const parsed = z
@@ -50,7 +44,7 @@ export async function signupPublicOrgAction(
     });
 
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return fail(parsed.error.issues[0]?.message ?? "Invalid input");
   }
 
   const result = await signupPublicOrg({

@@ -22,7 +22,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
   const user = await requireClubAdmin();
   const template = await withSessionRls(user, () =>
     prisma.certificateTemplate.findFirst({
-      where: { id, clubId: user.clubId! },
+      where: { id, clubId: user.clubId },
       include: { event: { select: { name: true } } },
     }),
   );

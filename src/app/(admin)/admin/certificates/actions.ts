@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { type ActionResult, fail, ok } from "@/lib/action-result";
 import { requireClubAdmin } from "@/lib/auth";
-import type { ActionResult } from "@/lib/action-result";
 import {
   issueCertificate,
   PDF_ATTACH_FAILED_MESSAGE,
@@ -11,8 +11,6 @@ import {
   revokeCertificate,
 } from "@/lib/certificates/issue";
 import { captureException } from "@/lib/observability";
-
-export type { ActionResult };
 
 const issueSchema = z.object({
   eventId: z.string().min(1),
@@ -23,9 +21,23 @@ const issueSchema = z.object({
   issueDate: z.string().optional().or(z.literal("")),
 });
 
+const revokeSchema = z.object({
+  id: z.string().min(1),
+  reason: z.string().trim().min(3),
+});
+
+const idSchema = z.object({
+  id: z.string().min(1),
+});
+
 export async function issueOneCertificateAction(
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<ActionResult<{
+  uniqueId?: string;
+  verificationToken?: string;
+  pdfUrl?: string | null;
+  skipped?: boolean;
+}>> {
   const user = await requireClubAdmin();
   const parsed = issueSchema.safeParse({
     eventId: formData.get("eventId"),
@@ -36,7 +48,7 @@ export async function issueOneCertificateAction(
     issueDate: formData.get("issueDate") || "",
   });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+    return fail(parsed.error.issues[0]?.message ?? "Invalid input");
   }
 
   try {
@@ -58,18 +70,17 @@ export async function issueOneCertificateAction(
     revalidatePath("/admin");
     revalidatePath("/admin/audit");
     if (result.pdfAttachFailed) {
-      return { ok: false, error: PDF_ATTACH_FAILED_MESSAGE };
+      return fail(PDF_ATTACH_FAILED_MESSAGE);
     }
-    return {
-      ok: true,
+    return ok({
       uniqueId: result.uniqueId,
       verificationToken: result.verificationToken,
       pdfUrl: result.pdfUrl,
       skipped: result.skipped,
-    };
+    });
   } catch (error) {
     await captureException(error, { phase: "issue" });
-    return { ok: false, error: "Issuance failed" };
+    return fail("Issuance failed");
   }
 }
 
@@ -77,40 +88,46 @@ export async function revokeCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const user = await requireClubAdmin();
-  const id = String(formData.get("id") || "");
-  const reason = String(formData.get("reason") || "").trim();
-  if (!id || reason.length < 3) {
-    return { ok: false, error: "Certificate id and reason are required" };
+  const parsed = revokeSchema.safeParse({
+    id: formData.get("id"),
+    reason: formData.get("reason"),
+  });
+  if (!parsed.success) {
+    return fail("Certificate id and reason are required");
   }
 
   try {
     await revokeCertificate({
-      certificateId: id,
+      certificateId: parsed.data.id,
       clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
-      reason,
+      reason: parsed.data.reason,
     });
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
     revalidatePath("/admin/audit");
-    return { ok: true };
+    return ok();
   } catch (error) {
     await captureException(error, { phase: "revoke" });
-    return { ok: false, error: "Revoke failed" };
+    return fail("Revoke failed");
   }
 }
 
 export async function reissueCertificateAction(
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<ActionResult<{
+  uniqueId?: string;
+  verificationToken?: string;
+  pdfUrl?: string | null;
+}>> {
   const user = await requireClubAdmin();
-  const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, error: "Certificate id required" };
+  const parsed = idSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return fail("Certificate id required");
 
   try {
     const result = await reissueCertificate({
-      certificateId: id,
+      certificateId: parsed.data.id,
       clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
@@ -118,14 +135,13 @@ export async function reissueCertificateAction(
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
     revalidatePath("/admin/audit");
-    return {
-      ok: true,
+    return ok({
       uniqueId: result.uniqueId,
       verificationToken: result.verificationToken,
       pdfUrl: result.pdfUrl,
-    };
+    });
   } catch (error) {
     await captureException(error, { phase: "reissue" });
-    return { ok: false, error: "Reissue failed" };
+    return fail("Reissue failed");
   }
 }

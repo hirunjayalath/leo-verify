@@ -1,4 +1,5 @@
 import { TemplateStatus, ClubType } from "@/generated/prisma/client";
+import { type ActionResult, fail, ok } from "@/lib/action-result";
 import { writeAuditLog } from "@/lib/audit";
 import {
   DEFAULT_LAYOUT,
@@ -9,9 +10,7 @@ import { assertNotInRlsContext, prisma, withRlsContext } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 import { galleryById } from "@/lib/templates/gallery";
 
-export type TemplateServiceResult =
-  | { ok: true; id?: string; url?: string }
-  | { ok: false; error: string };
+type TemplateResult = ActionResult<{ id?: string; url?: string }>;
 
 function approvalStatus(clubType: ClubType): TemplateStatus {
   return clubType === ClubType.public
@@ -26,7 +25,7 @@ export async function createTemplate(input: {
   eventId: string;
   name: string;
   background: File;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   assertNotInRlsContext("createTemplate");
   if (!input.eventId || input.name.length < 2) {
     return { ok: false, error: "Event and template name are required" };
@@ -106,7 +105,7 @@ export async function approveOwnTemplate(input: {
   clubId: string;
   actorUserId: string;
   templateId: string;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   if (!input.templateId) return { ok: false, error: "Template id required" };
 
   const template = await prisma.certificateTemplate.findFirst({
@@ -138,7 +137,7 @@ export async function saveTemplateLayout(input: {
   actorUserId: string;
   templateId: string;
   layout: unknown;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   const parsed = templateLayoutSchema.safeParse(input.layout);
   if (!parsed.success) {
     return { ok: false, error: "Invalid layout JSON" };
@@ -175,7 +174,7 @@ export async function uploadTemplateSignature(input: {
   actorSupabaseId: string;
   templateId: string;
   signature: File;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   assertNotInRlsContext("uploadTemplateSignature");
   if (!input.templateId) return { ok: false, error: "Template id required" };
   if (!(input.signature instanceof File) || input.signature.size === 0) {
@@ -223,7 +222,7 @@ export async function renameTemplate(input: {
   actorUserId: string;
   templateId: string;
   name: string;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   if (!input.templateId || input.name.trim().length < 2) {
     return { ok: false, error: "Invalid name" };
   }
@@ -245,7 +244,7 @@ export async function revertTemplateToDraft(input: {
   clubId: string;
   actorUserId: string;
   templateId: string;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   if (!input.templateId) return { ok: false, error: "Template id required" };
 
   const template = await prisma.certificateTemplate.findFirst({
@@ -283,7 +282,7 @@ export async function createFromGallery(input: {
   eventId: string;
   galleryId: string;
   name: string;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   assertNotInRlsContext("createFromGallery");
   const preset = galleryById(input.galleryId);
   if (!preset) return { ok: false, error: "Gallery template not found" };
@@ -354,7 +353,7 @@ export async function duplicateTemplate(input: {
   clubId: string;
   actorUserId: string;
   templateId: string;
-}): Promise<TemplateServiceResult> {
+}): Promise<TemplateResult> {
   if (!input.templateId) return { ok: false, error: "Template id required" };
 
   const source = await prisma.certificateTemplate.findFirst({

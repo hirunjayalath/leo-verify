@@ -54,7 +54,7 @@ function parseYear(raw: string | undefined): number | null {
 
 export default async function AdminCertificatesPage({ searchParams }: PageProps) {
   const user = await requireClubAdmin();
-  const clubId = user.clubId!;
+  const clubId = user.clubId;
   const params = await searchParams;
   const q = (params.q ?? "").trim();
   const eventId = (params.eventId ?? "").trim();

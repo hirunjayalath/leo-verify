@@ -15,6 +15,13 @@ export type SessionUser = AppUser & {
 };
 
 export type ClubAdminUser = SessionUser & { clubId: string };
+export type DistrictAdminUser = SessionUser & { districtId: string };
+
+/**
+ * Write rule: DB-only actions use asClubAdmin (ALS transaction).
+ * I/O services use requireClubAdmin + their own short withRlsContext
+ * + assertNotInRlsContext. Do not wrap file/PDF/email work in asClubAdmin.
+ */
 
 /** Local-only. Never honor on Vercel even if NODE_ENV is wrongly development. */
 export function isAuthDevBypassEnabled(
@@ -191,7 +198,7 @@ export async function requireClubAdmin(): Promise<ClubAdminUser> {
   return user as ClubAdminUser;
 }
 
-export async function requireDistrictAdmin(): Promise<SessionUser> {
+export async function requireDistrictAdmin(): Promise<DistrictAdminUser> {
   const user = await requireUser();
   if (user.role !== "district_admin") {
     redirect("/admin");
@@ -200,7 +207,7 @@ export async function requireDistrictAdmin(): Promise<SessionUser> {
   if (!user.districtId) {
     throw new Error("District admin is missing districtId");
   }
-  return user;
+  return user as DistrictAdminUser;
 }
 
 export function isDistrictAdmin(role: UserRole): boolean {
@@ -215,7 +222,7 @@ export async function asClubAdmin<T>(
 }
 
 export async function asDistrictAdmin<T>(
-  fn: (user: SessionUser, tx: PrismaClient) => Promise<T>,
+  fn: (user: DistrictAdminUser, tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   const user = await requireDistrictAdmin();
   return withSessionRls(user, (tx) => fn(user, tx));

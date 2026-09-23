@@ -90,6 +90,17 @@ describe.skipIf(!ready)(
          VALUES (concat('rlsc', substr(md5(random()::text), 1, 20)), $1, $2, $3, 'Secret', 'Volunteer', now(), 'issued', 1, now(), now())`,
         [uniqueId, clubBId, eventB.rows[0].id],
       );
+      const jobB = await owner.query(
+        `INSERT INTO "ImportJob" (id, "clubId", "eventId", status, "createdAt", "updatedAt")
+         VALUES (concat('rlsj', substr(md5(random()::text), 1, 20)), $1, $2, 'pending', now(), now())
+         RETURNING id`,
+        [clubBId, eventB.rows[0].id],
+      );
+      await owner.query(
+        `INSERT INTO "ImportJobRow" (id, "jobId", "clubId", "rowNumber", "recipientName", role, status, "createdAt", "updatedAt")
+         VALUES (concat('rlsr', substr(md5(random()::text), 1, 20)), $1, $2, 1, 'Secret Row', 'Volunteer', 'pending', now(), now())`,
+        [jobB.rows[0].id, clubBId],
+      );
 
       const client = await owner.connect();
       try {
@@ -102,8 +113,13 @@ describe.skipIf(!ready)(
           `SELECT "uniqueId" FROM "Certificate" WHERE "clubId" = $1`,
           [clubBId],
         );
+        const leakedRows = await client.query(
+          `SELECT id FROM "ImportJobRow" WHERE "clubId" = $1`,
+          [clubBId],
+        );
         await client.query("ROLLBACK");
         expect(leaked.rowCount).toBe(0);
+        expect(leakedRows.rowCount).toBe(0);
       } finally {
         client.release();
       }

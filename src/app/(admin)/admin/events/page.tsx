@@ -22,7 +22,7 @@ import { prisma } from "@/lib/db";
 
 export default async function AdminEventsPage() {
   const user = await requireClubAdmin();
-  const clubId = user.clubId!;
+  const clubId = user.clubId;
 
   const events = await withSessionRls(user, () => prisma.event.findMany({
     where: { clubId },

@@ -1,9 +1,6 @@
 import { writeAuditLog } from "@/lib/audit";
+import { type ActionResult, fail, ok } from "@/lib/action-result";
 import { prisma } from "@/lib/db";
-
-export type EventServiceResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string };
 
 export async function createEvent(input: {
   clubId: string;
@@ -11,7 +8,7 @@ export async function createEvent(input: {
   name: string;
   description?: string | null;
   eventDate?: string | null;
-}): Promise<EventServiceResult> {
+}): Promise<ActionResult<{ id: string }>> {
   const event = await prisma.event.create({
     data: {
       clubId: input.clubId,
@@ -30,7 +27,7 @@ export async function createEvent(input: {
     metadata: { name: event.name },
   });
 
-  return { ok: true, id: event.id };
+  return ok({ id: event.id });
 }
 
 export async function updateEvent(input: {
@@ -40,11 +37,11 @@ export async function updateEvent(input: {
   name: string;
   description?: string | null;
   eventDate?: string | null;
-}): Promise<EventServiceResult> {
+}): Promise<ActionResult<{ id: string }>> {
   const existing = await prisma.event.findFirst({
     where: { id: input.eventId, clubId: input.clubId },
   });
-  if (!existing) return { ok: false, error: "Event not found" };
+  if (!existing) return fail("Event not found");
 
   const event = await prisma.event.update({
     where: { id: input.eventId },
@@ -64,5 +61,5 @@ export async function updateEvent(input: {
     metadata: { name: event.name },
   });
 
-  return { ok: true, id: event.id };
+  return ok({ id: event.id });
 }

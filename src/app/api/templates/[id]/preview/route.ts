@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: Params) {
   const { id } = await params;
   const template = await withSessionRls(user, () =>
     prisma.certificateTemplate.findFirst({
-      where: { id, clubId: user.clubId! },
+      where: { id, clubId: user.clubId },
       include: { event: true },
     }),
   );

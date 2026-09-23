@@ -11,23 +11,19 @@ import {
   validateCertificateXlsx,
 } from "@/lib/certificates/csv";
 import { assertNotInRlsContext, withRlsContext } from "@/lib/db";
+import { type ActionResult } from "@/lib/action-result";
 import { inngest, processImportJob } from "@/inngest/functions";
 
 export type ImportServiceResult =
-  | {
-      ok: true;
+  | ActionResult<{
       jobId: string;
       mode: "async" | "sync";
       successRows?: number;
       skippedRows?: number;
       failedRows?: number;
       totalRows?: number;
-    }
-  | {
-      ok: false;
-      error: string;
-      rowErrors?: { rowNumber: number; message: string }[];
-    };
+    }>
+  | { ok: false; error: string; rowErrors: { rowNumber: number; message: string }[] };
 
 const ROSTER_FIELD_KEYS = new Set<RosterField>([
   "recipientName",
@@ -140,6 +136,7 @@ export async function startCertificateImport(input: {
         totalRows: validated.rows.length,
         rows: {
           create: validated.rows.map((row) => ({
+            clubId: input.clubId,
             rowNumber: row.rowNumber,
             recipientName: row.recipientName,
             recipientEmail: row.recipientEmail ?? null,

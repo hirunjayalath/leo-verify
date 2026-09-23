@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { asClubAdmin, requireClubAdmin } from "@/lib/auth";
-import type { ActionResult } from "@/lib/action-result";
+import { type ActionResult, fail, ok } from "@/lib/action-result";
+import { asClubAdmin } from "@/lib/auth";
+import { captureException } from "@/lib/observability";
 import { createEvent, updateEvent } from "@/lib/events/service";
 
 const eventSchema = z.object({
@@ -12,70 +13,72 @@ const eventSchema = z.object({
   eventDate: z.string().optional().or(z.literal("")),
 });
 
-export type { ActionResult };
+const updateSchema = eventSchema.extend({
+  id: z.string().min(1),
+});
 
-function clubIdFor(user: Awaited<ReturnType<typeof requireClubAdmin>>): string {
-  if (user.clubId) return user.clubId;
-  throw new Error("Club context required");
+export async function createEventAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
+  try {
+    return await asClubAdmin(async (user) => {
+      const parsed = eventSchema.safeParse({
+        name: formData.get("name"),
+        description: formData.get("description") || "",
+        eventDate: formData.get("eventDate") || "",
+      });
+      if (!parsed.success) {
+        return fail(parsed.error.issues[0]?.message ?? "Invalid input");
+      }
+
+      const result = await createEvent({
+        clubId: user.clubId,
+        actorUserId: user.id,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        eventDate: parsed.data.eventDate,
+      });
+      if (!result.ok) return result;
+
+      revalidatePath("/admin");
+      revalidatePath("/admin/events");
+      revalidatePath("/admin/audit");
+      return ok({ id: result.id });
+    });
+  } catch (error) {
+    await captureException(error, { phase: "event.create" });
+    return fail("Could not create event");
+  }
 }
 
-export async function createEventAction(formData: FormData): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
-  const clubId = clubIdFor(user);
+export async function updateEventAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
+  try {
+    return await asClubAdmin(async (user) => {
+      const parsed = updateSchema.safeParse({
+        id: formData.get("id"),
+        name: formData.get("name"),
+        description: formData.get("description") || "",
+        eventDate: formData.get("eventDate") || "",
+      });
+      if (!parsed.success) {
+        return fail(parsed.error.issues[0]?.message ?? "Missing event id");
+      }
 
-  const parsed = eventSchema.safeParse({
-    name: formData.get("name"),
-    description: formData.get("description") || "",
-    eventDate: formData.get("eventDate") || "",
-  });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+      const result = await updateEvent({
+        clubId: user.clubId,
+        actorUserId: user.id,
+        eventId: parsed.data.id,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        eventDate: parsed.data.eventDate,
+      });
+      if (!result.ok) return result;
+
+      revalidatePath("/admin");
+      revalidatePath("/admin/events");
+      revalidatePath("/admin/audit");
+      return ok({ id: result.id });
+    });
+  } catch (error) {
+    await captureException(error, { phase: "event.update" });
+    return fail("Could not update event");
   }
-
-  const result = await createEvent({
-    clubId,
-    actorUserId: user.id,
-    name: parsed.data.name,
-    description: parsed.data.description,
-    eventDate: parsed.data.eventDate,
-  });
-  if (!result.ok) return result;
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidatePath("/admin/audit");
-  return { ok: true, id: result.id };
-  });
-}
-
-export async function updateEventAction(formData: FormData): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
-  const clubId = clubIdFor(user);
-  const id = String(formData.get("id") || "");
-  if (!id) return { ok: false, error: "Missing event id" };
-
-  const parsed = eventSchema.safeParse({
-    name: formData.get("name"),
-    description: formData.get("description") || "",
-    eventDate: formData.get("eventDate") || "",
-  });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
-  }
-
-  const result = await updateEvent({
-    clubId,
-    actorUserId: user.id,
-    eventId: id,
-    name: parsed.data.name,
-    description: parsed.data.description,
-    eventDate: parsed.data.eventDate,
-  });
-  if (!result.ok) return result;
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidatePath("/admin/audit");
-  return { ok: true, id: result.id };
-  });
 }

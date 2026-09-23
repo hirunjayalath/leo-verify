@@ -33,7 +33,7 @@ import { prisma } from "@/lib/db";
 
 export default async function DistrictAdminPage() {
   const user = await requireDistrictAdmin();
-  const districtId = user.districtId!;
+  const districtId = user.districtId;
 
   const clubs = await withSessionRls(user, () =>
     prisma.club.findMany({

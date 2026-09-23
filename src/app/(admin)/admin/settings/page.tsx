@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
   const user = await requireClubAdmin();
   const club = await withSessionRls(user, () =>
     prisma.club.findUniqueOrThrow({
-      where: { id: user.clubId! },
+      where: { id: user.clubId },
     }),
   );
 

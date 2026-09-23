@@ -67,6 +67,24 @@ AS $$
   SELECT "role"::text FROM public.current_app_user();
 $$;
 
+CREATE OR REPLACE FUNCTION public.club_in_scope(target_club_id text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT target_club_id = public.current_user_club_id()
+      OR (
+        public.current_user_role() = 'district_admin'
+        AND EXISTS (
+          SELECT 1 FROM "Club"
+          WHERE id = target_club_id
+            AND "districtId" = public.current_user_district_id()
+        )
+      );
+$$;
+
 CREATE OR REPLACE FUNCTION public.current_supabase_id()
 RETURNS text
 LANGUAGE sql
@@ -165,68 +183,20 @@ CREATE POLICY club_modify ON "Club"
 -- Event
 CREATE POLICY event_club_access ON "Event"
   FOR ALL
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  )
-  WITH CHECK (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 -- CertificateTemplate
 CREATE POLICY template_club_access ON "CertificateTemplate"
   FOR ALL
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  )
-  WITH CHECK (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 -- Certificate (admin/dashboard)
 CREATE POLICY certificate_club_access ON "Certificate"
   FOR ALL
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  )
-  WITH CHECK (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 -- Recipient can see certificates issued to their email / bound supabaseId
 CREATE POLICY certificate_recipient_select ON "Certificate"
@@ -256,15 +226,7 @@ CREATE POLICY certificate_recipient_update ON "Certificate"
 -- AuditLog
 CREATE POLICY audit_select ON "AuditLog"
   FOR SELECT
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"));
 
 CREATE POLICY audit_insert ON "AuditLog"
   FOR INSERT
@@ -324,15 +286,7 @@ CREATE POLICY recipient_club_select ON "Recipient"
     EXISTS (
       SELECT 1 FROM "Certificate" c
       WHERE c."recipientId" = "Recipient".id
-        AND (
-          c."clubId" = public.current_user_club_id()
-          OR (
-            public.current_user_role() = 'district_admin'
-            AND c."clubId" IN (
-              SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-            )
-          )
-        )
+        AND public.club_in_scope(c."clubId")
     )
   );
 
@@ -373,78 +327,18 @@ CREATE POLICY recipient_self_update ON "Recipient"
 -- ImportJob
 CREATE POLICY import_job_club_access ON "ImportJob"
   FOR ALL
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  )
-  WITH CHECK (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 CREATE POLICY import_job_row_club_access ON "ImportJobRow"
   FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM "ImportJob" j
-      WHERE j.id = "ImportJobRow"."jobId"
-        AND (
-          j."clubId" = public.current_user_club_id()
-          OR (
-            public.current_user_role() = 'district_admin'
-            AND j."clubId" IN (
-              SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-            )
-          )
-        )
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM "ImportJob" j
-      WHERE j.id = "ImportJobRow"."jobId"
-        AND (
-          j."clubId" = public.current_user_club_id()
-          OR (
-            public.current_user_role() = 'district_admin'
-            AND j."clubId" IN (
-              SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-            )
-          )
-        )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 CREATE POLICY sequence_club_access ON "ClubCertSequence"
   FOR ALL
-  USING (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  )
-  WITH CHECK (
-    "clubId" = public.current_user_club_id()
-    OR (
-      public.current_user_role() = 'district_admin'
-      AND "clubId" IN (
-        SELECT id FROM "Club" WHERE "districtId" = public.current_user_district_id()
-      )
-    )
-  );
+  USING (public.club_in_scope("clubId"))
+  WITH CHECK (public.club_in_scope("clubId"));
 
 CREATE OR REPLACE FUNCTION public.protect_certificate_recipient_columns()
 RETURNS trigger
@@ -483,6 +377,8 @@ CREATE TRIGGER certificate_recipient_column_guard
 
 REVOKE ALL ON FUNCTION public.recipient_id_for_email(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.recipient_id_for_email(text) TO leoverify_app;
+REVOKE ALL ON FUNCTION public.club_in_scope(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.club_in_scope(text) TO leoverify_app;
 
 CREATE OR REPLACE FUNCTION public.import_job_actor_supabase_id(job_id text)
 RETURNS text

@@ -73,6 +73,7 @@ model Club {
   sequences ClubCertSequence[]
   certificates Certificate[]
   importJobs ImportJob[]
+  importJobRows ImportJobRow[]
 
   @@index([districtId])
 }
@@ -244,6 +245,7 @@ model ImportJob {
 model ImportJobRow {
   id             String          @id @default(cuid())
   jobId          String
+  clubId         String
   rowNumber      Int
   recipientName  String
   recipientEmail String?
@@ -255,10 +257,12 @@ model ImportJobRow {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job  ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  club Club      @relation(fields: [clubId], references: [id], onDelete: Restrict)
 
   @@unique([jobId, rowNumber])
   @@index([jobId, status])
+  @@index([clubId])
 }
 
 model AuditLog {

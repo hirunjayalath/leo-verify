@@ -1,44 +1,56 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { fail } from "@/lib/action-result";
 import { requireClubAdmin } from "@/lib/auth";
 import {
   type ImportServiceResult,
   parseColumnMapping,
   startCertificateImport,
 } from "@/lib/certificates/import-service";
+import { captureException } from "@/lib/observability";
 
-export type ImportActionResult = ImportServiceResult;
+const importSchema = z.object({
+  eventId: z.string().min(1),
+});
 
 export async function startCsvImportAction(
   formData: FormData,
-): Promise<ImportActionResult> {
+): Promise<ImportServiceResult> {
   const user = await requireClubAdmin();
-  const clubId = user.clubId!;
-  const eventId = String(formData.get("eventId") || "");
+  const parsed = importSchema.safeParse({ eventId: formData.get("eventId") });
+  if (!parsed.success) {
+    return fail("Event is required");
+  }
   const file = formData.get("csv");
   const mapping = parseColumnMapping(formData.get("columnMapping"));
 
   if (!(file instanceof File)) {
-    return { ok: false, error: "Spreadsheet file is required" };
+    return fail("Spreadsheet file is required");
   }
 
-  const result = await startCertificateImport({
-    clubId,
-    actorUserId: user.id,
-    actorSupabaseId: user.supabaseId,
-    eventId,
-    file,
-    mapping,
-  });
+  try {
+    const result = await startCertificateImport({
+      clubId: user.clubId,
+      actorUserId: user.id,
+      actorSupabaseId: user.supabaseId,
+      eventId: parsed.data.eventId,
+      file,
+      mapping,
+    });
 
-  if (result.ok) {
-    revalidatePath("/admin/certificates");
-    if (result.mode === "sync") {
-      revalidatePath("/admin");
-      revalidatePath("/admin/audit");
+    if (result.ok) {
+      revalidatePath("/admin/certificates");
+      if (result.mode === "sync") {
+        revalidatePath("/admin");
+        revalidatePath("/admin/audit");
+      }
     }
-  }
 
-  return result;
+    return result;
+  } catch (error) {
+    await captureException(error, { phase: "import.start" });
+    return fail("Could not start import");
+  }
 }

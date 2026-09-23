@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   Ban,
   CalendarDays,
@@ -27,10 +26,7 @@ import {
 
 export default async function AdminDashboardPage() {
   const user = await requireClubAdmin();
-  if (user.role === "district_admin" && !user.clubId) {
-    redirect("/admin/district");
-  }
-  const clubId = user.clubId!;
+  const clubId = user.clubId;
 
   const monthStart = new Date();
   monthStart.setUTCDate(1);

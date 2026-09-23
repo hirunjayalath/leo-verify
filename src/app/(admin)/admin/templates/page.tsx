@@ -28,7 +28,7 @@ import { DuplicateTemplateButton } from "@/components/admin/duplicate-template-b
 
 export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
-  const clubId = user.clubId!;
+  const clubId = user.clubId;
 
   const gallery = await getCachedGalleryPresets();
   const [templates, events, club] = await withSessionRls(user, async () => {

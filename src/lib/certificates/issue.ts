@@ -15,7 +15,7 @@ import {
   renderAndUploadCertificatePdf,
 } from "@/lib/certificates/issue-pdf";
 import { assertNotInRlsContext, withRlsContext } from "@/lib/db";
-import { logOps } from "@/lib/observability";
+import { captureException, logOps } from "@/lib/observability";
 
 export type { IssueCertificateInput, IssueCertificateResult };
 
@@ -95,6 +95,10 @@ export async function issueCertificate(
       certificateId: certificate.id,
       uniqueId,
       message: error instanceof Error ? error.message : "unknown",
+    });
+    await captureException(error, {
+      phase: "pdf-attach",
+      uniqueId,
     });
     return {
       id: certificate.id,

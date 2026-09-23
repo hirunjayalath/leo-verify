@@ -1,9 +1,8 @@
 import {
-  ClubType,
-  PlanTier,
   TemplateStatus,
   UserRole,
 } from "@/generated/prisma/client";
+import { type ActionResult, fail, ok } from "@/lib/action-result";
 import { writeAuditLog } from "@/lib/audit";
 import { sniffImageBytes } from "@/lib/certificates/image-sniff";
 import {
@@ -20,16 +19,18 @@ import {
 } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 
-export type OrgServiceResult =
-  | { ok: true; id?: string; slug?: string; previousSlug?: string | null }
-  | { ok: false; error: string };
+type OrgResult = ActionResult<{
+  id?: string;
+  slug?: string;
+  previousSlug?: string | null;
+}>;
 
 export async function createClub(input: {
   districtId: string;
   actorUserId: string;
   name: string;
   code: string;
-}): Promise<OrgServiceResult> {
+}): Promise<OrgResult> {
   const club = await prisma.club.create({
     data: {
       name: input.name,
@@ -56,7 +57,7 @@ export async function inviteClubAdmin(input: {
   email: string;
   name?: string;
   supabaseId: string;
-}): Promise<OrgServiceResult> {
+}): Promise<OrgResult> {
   const club = await prisma.club.findFirst({
     where: { id: input.clubId, districtId: input.districtId },
   });
@@ -146,7 +147,7 @@ export async function reviewTemplate(input: {
   templateId: string;
   decision: "approved" | "rejected";
   note: string;
-}): Promise<OrgServiceResult> {
+}): Promise<OrgResult> {
   const template = await prisma.certificateTemplate.findFirst({
     where: {
       id: input.templateId,
@@ -190,7 +191,7 @@ export async function updateClubBranding(input: {
   primaryColor: string;
   accentColor: string;
   logo?: File | null;
-}): Promise<OrgServiceResult> {
+}): Promise<OrgResult> {
   assertNotInRlsContext("updateClubBranding");
   const slug = slugifyPublic(input.publicSlug || input.orgNameFallback);
   if (slug.length < 2 || slug.length > 48 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
@@ -271,10 +272,6 @@ export async function updateClubBranding(input: {
   return { ok: true, slug, previousSlug: previous?.publicSlug };
 }
 
-export type SignupOrgResult =
-  | { ok: true; clubId: string }
-  | { ok: false; error: string };
-
 /** Creates a public org bound to an authenticated Supabase identity. */
 export async function signupPublicOrg(input: {
   supabaseId: string;
@@ -282,83 +279,21 @@ export async function signupPublicOrg(input: {
   orgName: string;
   orgCode: string;
   adminName: string;
-}): Promise<SignupOrgResult> {
-  const adminEmail = input.adminEmail.toLowerCase();
-
-  const existingByEmail = await prismaService.user.findUnique({
-    where: { email: adminEmail },
-  });
-  if (existingByEmail) {
-    return {
-      ok: false,
-      error:
-        "An account with this email already exists. Contact support if this is unexpected.",
-    };
-  }
-
-  const existingBySupabase = await prismaService.user.findUnique({
-    where: { supabaseId: input.supabaseId },
-  });
-  if (existingBySupabase) {
-    return {
-      ok: false,
-      error: "This account is already linked to an organization.",
-    };
-  }
-
-  const district = await prismaService.district.upsert({
-    where: { code: "PUBLIC" },
-    update: {},
-    create: { code: "PUBLIC", name: "Public organizations" },
-  });
-
-  const existing = await prismaService.club.findUnique({
-    where: { code: input.orgCode.toUpperCase() },
-  });
-  if (existing) return { ok: false, error: "Organization code already taken" };
-
-  const baseSlug =
-    slugifyPublic(input.orgName) || slugifyPublic(input.orgCode);
-  let publicSlug = baseSlug;
-  let n = 1;
-  while (await prismaService.club.findUnique({ where: { publicSlug } })) {
-    publicSlug = `${baseSlug}-${n++}`.slice(0, 48);
-  }
-
-  const club = await prismaService.club.create({
-    data: {
-      name: input.orgName,
-      code: input.orgCode.toUpperCase(),
-      districtId: district.id,
-      type: ClubType.public,
-      // PlanTier retained for schema compat; monthlyCertLimit is the real quota.
-      plan: PlanTier.free,
-      monthlyCertLimit: 100,
-      publicSlug,
-      primaryColor: "#323232",
-      accentColor: "#38a3e3",
-    },
-  });
-
-  await prismaService.user.create({
-    data: {
-      email: adminEmail,
-      supabaseId: input.supabaseId,
-      name: input.adminName,
-      role: UserRole.club_admin,
-      clubId: club.id,
-      districtId: district.id,
-    },
-  });
-
-  await writeAuditLog({
-    action: "club.create",
-    targetType: "Club",
-    targetId: club.id,
-    clubId: club.id,
-    metadata: { type: "public", monthlyCertLimit: 100 },
-    client: prismaService,
-  });
-
-  return { ok: true, clubId: club.id };
+}): Promise<ActionResult<{ clubId: string }>> {
+  const rows = await prismaService.$queryRaw<
+    Array<{ club_id: string | null; error: string | null }>
+  >`
+    SELECT club_id, error
+    FROM public.signup_public_org(
+      ${input.supabaseId},
+      ${input.adminEmail},
+      ${input.orgName},
+      ${input.orgCode},
+      ${input.adminName}
+    )
+  `;
+  const row = rows[0];
+  if (row?.error) return fail(row.error);
+  if (!row?.club_id) return fail("Could not create organization.");
+  return ok({ clubId: row.club_id });
 }
