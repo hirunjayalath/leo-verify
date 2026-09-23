@@ -211,6 +211,12 @@ export function IssueWizard({
             <p className="mt-1">
               <span className="text-muted-foreground">Role:</span> {draft.role}
             </p>
+            {draft.achievement.trim() ? (
+              <p className="mt-1">
+                <span className="text-muted-foreground">Achievement:</span>{" "}
+                {draft.achievement}
+              </p>
+            ) : null}
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => setStep(1)}>

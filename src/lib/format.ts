@@ -26,6 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
   "certificate.reissue": "Reissued certificate",
   "import.start": "Started CSV import",
   "club.create": "Onboarded club",
+  "club.branding.update": "Updated club branding",
   "user.invite": "Linked club admin",
   // Legacy underscore keys (if any old rows exist)
   create_event: "Created event",
@@ -46,4 +47,35 @@ export function formatAuditAction(action: string): string {
   return action
     .replace(/[._]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function formatAuditTarget(
+  targetType: string,
+  metadata?: unknown,
+): string {
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const rec = metadata as Record<string, unknown>;
+    if (typeof rec.uniqueId === "string" && rec.uniqueId.trim()) {
+      return rec.uniqueId.trim();
+    }
+    if (typeof rec.name === "string" && rec.name.trim()) {
+      return rec.name.trim();
+    }
+    if (typeof rec.slug === "string" && rec.slug.trim()) {
+      return rec.slug.trim();
+    }
+  }
+  return targetType;
+}
+
+export function formatCheckedAt(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Colombo",
+    });
+  } catch {
+    return iso;
+  }
 }

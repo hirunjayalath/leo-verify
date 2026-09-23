@@ -16,6 +16,18 @@ export const CACHE_CONTROL_PUBLIC_ASSET =
 /** Certificate PDFs — short private cache; keys are unguessable. */
 export const CACHE_CONTROL_PDF = "private, max-age=3600";
 
+function isCertificateKey(key: string): boolean {
+  return key.startsWith("certificates/");
+}
+
+function localObjectFilename(key: string): string {
+  return key.replace(/\//g, "_");
+}
+
+function privateCertificateDir(): string {
+  return path.join(process.cwd(), ".data", "certificates");
+}
+
 function r2Configured(): boolean {
   return Boolean(
     process.env.R2_ACCOUNT_ID &&
@@ -85,9 +97,16 @@ export async function uploadObject(input: {
     return { key: input.key, url };
   }
 
+  const filename = localObjectFilename(input.key);
+  if (isCertificateKey(input.key)) {
+    const dir = privateCertificateDir();
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), input.body);
+    return { key: input.key, url: "" };
+  }
+
   const uploadsDir = path.join(process.cwd(), "public", "uploads");
   await mkdir(uploadsDir, { recursive: true });
-  const filename = input.key.replace(/\//g, "_");
   await writeFile(path.join(uploadsDir, filename), input.body);
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
     /\/$/,
@@ -109,7 +128,9 @@ export async function getShortLivedObjectUrl(
       { expiresIn: expiresInSeconds },
     );
   }
-  const filename = key.replace(/\//g, "_");
+  if (isCertificateKey(key)) return null;
+
+  const filename = localObjectFilename(key);
   const filePath = path.join(process.cwd(), "public", "uploads", filename);
   try {
     const { access } = await import("node:fs/promises");
@@ -124,6 +145,26 @@ export async function getShortLivedObjectUrl(
   }
 }
 
+/** Local disk only. Private dir first, then leftover public/uploads copies. */
+export async function readLocalCertificatePdf(
+  key: string,
+): Promise<Buffer | null> {
+  if (!isCertificateKey(key)) return null;
+  const filename = localObjectFilename(key);
+  const { readFile } = await import("node:fs/promises");
+  for (const filePath of [
+    path.join(privateCertificateDir(), filename),
+    path.join(process.cwd(), "public", "uploads", filename),
+  ]) {
+    try {
+      return await readFile(filePath);
+    } catch {
+      /* try next location */
+    }
+  }
+  return null;
+}
+
 export async function deleteObject(key: string): Promise<void> {
   if (r2Configured()) {
     const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
@@ -134,13 +175,17 @@ export async function deleteObject(key: string): Promise<void> {
     );
     return;
   }
-  const filename = key.replace(/\//g, "_");
-  const filePath = path.join(process.cwd(), "public", "uploads", filename);
-  try {
-    const { unlink } = await import("node:fs/promises");
-    await unlink(filePath);
-  } catch {
-    /* already gone */
+  const filename = localObjectFilename(key);
+  const { unlink } = await import("node:fs/promises");
+  for (const filePath of [
+    path.join(privateCertificateDir(), filename),
+    path.join(process.cwd(), "public", "uploads", filename),
+  ]) {
+    try {
+      await unlink(filePath);
+    } catch {
+      /* already gone */
+    }
   }
 }
 

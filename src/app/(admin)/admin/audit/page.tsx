@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/table";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { formatAuditAction, formatRelativeTime } from "@/lib/format";
+import {
+  formatAuditAction,
+  formatAuditTarget,
+  formatRelativeTime,
+} from "@/lib/format";
 
 const PAGE_SIZE = 50;
 
@@ -90,7 +94,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
                           {formatAuditAction(log.action)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {log.targetType}
+                          {formatAuditTarget(log.targetType, log.metadata)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {log.actor?.email ?? "system"}
@@ -115,7 +119,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
                     <p className="font-medium">
                       {formatAuditAction(log.action)}{" "}
                       <span className="font-normal text-muted-foreground">
-                        on {log.targetType}
+                        on {formatAuditTarget(log.targetType, log.metadata)}
                       </span>
                     </p>
                     <p className="mt-1 text-muted-foreground">

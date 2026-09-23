@@ -13,10 +13,12 @@ import { prisma } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const club = await getCachedClubBrandingBySlug(slug);
-  if (!club) return { title: "Organization", robots: { index: false } };
+  if (!club) notFound();
   return {
     title: club.name,
     description: club.tagline ?? `${club.name} credentials on LeoVerify`,

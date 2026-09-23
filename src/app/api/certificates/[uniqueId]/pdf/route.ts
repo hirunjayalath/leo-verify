@@ -6,7 +6,10 @@ import {
   clientIpFromHeaders,
   rateLimitVerification,
 } from "@/lib/rate-limit";
-import { getShortLivedObjectUrl } from "@/lib/storage/r2";
+import {
+  getShortLivedObjectUrl,
+  readLocalCertificatePdf,
+} from "@/lib/storage/r2";
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
@@ -49,6 +52,17 @@ export async function GET(request: Request, { params }: Params) {
 
   if (!cert.pdfKey) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const localPdf = await readLocalCertificatePdf(cert.pdfKey);
+  if (localPdf) {
+    return new NextResponse(new Uint8Array(localPdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": `inline; filename="${uniqueId}.pdf"`,
+      },
+    });
   }
 
   const url = await getShortLivedObjectUrl(cert.pdfKey, 120);

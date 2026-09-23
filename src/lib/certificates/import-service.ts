@@ -153,7 +153,11 @@ export async function startCertificateImport(input: {
     targetType: "ImportJob",
     targetId: job.id,
     clubId: input.clubId,
-    metadata: { eventId: input.eventId, totalRows: validated.rows.length },
+    metadata: {
+      eventId: input.eventId,
+      totalRows: validated.rows.length,
+      name: event.name,
+    },
   });
 
   const hasInngest = Boolean(process.env.INNGEST_EVENT_KEY);

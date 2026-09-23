@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# local private certificate PDFs (never public/)
+.data/
+
 # next.js
 /.next/
 /out/

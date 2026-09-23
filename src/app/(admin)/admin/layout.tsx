@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin/admin-sidebar";
 import { requireUser } from "@/lib/auth";
@@ -19,6 +20,14 @@ export default async function AdminLayout({
   const user = await requireUser();
   if (user.role !== "club_admin" && user.role !== "district_admin") {
     redirect("/login");
+  }
+
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  if (
+    pathname.startsWith("/admin/district") &&
+    user.role !== "district_admin"
+  ) {
+    redirect("/admin");
   }
 
   const chip = initials(user.email, user.name);

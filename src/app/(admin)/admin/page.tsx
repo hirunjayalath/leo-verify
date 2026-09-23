@@ -18,7 +18,11 @@ import {
 import { CertificateStatus } from "@/generated/prisma/client";
 import { requireClubAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { formatAuditAction, formatRelativeTime } from "@/lib/format";
+import {
+  formatAuditAction,
+  formatAuditTarget,
+  formatRelativeTime,
+} from "@/lib/format";
 
 export default async function AdminDashboardPage() {
   const user = await requireClubAdmin();
@@ -407,7 +411,7 @@ export default async function AdminDashboardPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {log.actor?.name || log.actor?.email || "system"} ·{" "}
-                        {log.targetType}
+                        {formatAuditTarget(log.targetType, log.metadata)}
                       </p>
                     </div>
                     <time

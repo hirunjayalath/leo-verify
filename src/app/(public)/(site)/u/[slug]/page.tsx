@@ -10,12 +10,12 @@ import { prisma } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const recipient = await prisma.recipient.findUnique({ where: { slug } });
-  if (!recipient?.publicProfile) {
-    return { title: "Profile", robots: { index: false, follow: false } };
-  }
+  if (!recipient?.publicProfile) notFound();
   return {
     title: recipient.name ?? "Recipient",
     description: "Public LeoVerify credential profile",

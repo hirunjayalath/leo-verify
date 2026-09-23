@@ -225,7 +225,7 @@ export async function updateClubBranding(input: {
 
   const previous = await prisma.club.findUnique({
     where: { id: input.clubId },
-    select: { publicSlug: true },
+    select: { publicSlug: true, name: true },
   });
 
   await prisma.club.update({
@@ -245,7 +245,7 @@ export async function updateClubBranding(input: {
     targetType: "Club",
     targetId: input.clubId,
     clubId: input.clubId,
-    metadata: { slug },
+    metadata: { slug, name: previous?.name ?? input.orgNameFallback },
   });
 
   invalidateClubBranding({

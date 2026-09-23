@@ -13,6 +13,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/public/brand-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { formatCheckedAt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { PublicVerificationResult } from "@/lib/certificates/verify";
 
@@ -20,10 +21,12 @@ export function VerificationResult({
   uniqueId,
   result,
   checkedAt,
+  shareUrl,
 }: {
   uniqueId: string;
   result: PublicVerificationResult;
   checkedAt: string;
+  shareUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -91,16 +94,12 @@ export function VerificationResult({
                 )}
                 Copy link
               </Button>
-              {result.status === "valid" && (
+              {result.status === "valid" && shareUrl && (
                 <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noreferrer"
                   className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-                  onClick={(e) => {
-                    const url = encodeURIComponent(window.location.href);
-                    e.currentTarget.href = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
-                  }}
                 >
                   Share on LinkedIn
                 </a>
@@ -187,17 +186,6 @@ export function VerificationResult({
       </div>
     </div>
   );
-}
-
-function formatCheckedAt(iso: string) {
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function StatusSeal({ status }: { status: PublicVerificationResult["status"] }) {

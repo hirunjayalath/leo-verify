@@ -154,7 +154,7 @@ export async function saveTemplateLayout(input: {
     targetType: "CertificateTemplate",
     targetId: template.id,
     clubId: input.clubId,
-    metadata: { fields: parsed.data.length },
+    metadata: { fields: parsed.data.length, name: template.name },
   });
 
   return { ok: true, id: template.id };
@@ -314,7 +314,12 @@ export async function createFromGallery(input: {
     targetType: "CertificateTemplate",
     targetId: template.id,
     clubId: input.clubId,
-    metadata: { galleryId: input.galleryId, eventId: input.eventId, status },
+    metadata: {
+      galleryId: input.galleryId,
+      eventId: input.eventId,
+      status,
+      name: template.name,
+    },
   });
 
   return { ok: true, id: template.id };
