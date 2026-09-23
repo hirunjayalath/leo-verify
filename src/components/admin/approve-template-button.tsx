@@ -20,7 +20,7 @@ export function ApproveTemplateButton({ templateId }: { templateId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Template approved — ready to issue");
+      toast.success("Template approved. Ready to issue.");
       router.refresh();
     });
   }

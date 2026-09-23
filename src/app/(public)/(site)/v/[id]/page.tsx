@@ -32,7 +32,7 @@ export async function generateMetadata({
   } catch {
     return {
       title: "Certificate check",
-      description: "Live certificate verification on LeoVerify.",
+      description: "Certificate check on LeoVerify.",
       robots,
     };
   }
@@ -44,7 +44,7 @@ export async function generateMetadata({
 
   if (result.status === "valid") {
     const title = `${result.recipientName} · ${result.eventName}`;
-    const description = `${result.role} — ${result.clubName}. Verified live on LeoVerify.`;
+    const description = `${result.role}, ${result.clubName}. Checked on LeoVerify.`;
     return {
       title,
       description,
@@ -66,11 +66,11 @@ export async function generateMetadata({
 
   return {
     title: `Verify ${uniqueId}`,
-    description: "Live certificate verification on LeoVerify.",
+    description: "Certificate check on LeoVerify.",
     robots,
     openGraph: {
       title: "LeoVerify certificate check",
-      description: "Live certificate verification.",
+      description: "Certificate check on LeoVerify.",
       images: [{ url: ogImagePath, width: 1200, height: 630 }],
     },
   };
@@ -89,7 +89,7 @@ export default async function VerificationPage({
           <EmptyState
             icon={Clock}
             title="Too many requests"
-            description="Please wait a minute before verifying again. This limit protects the public verify endpoint."
+            description="Wait a minute before checking again. This limit keeps the public check page from being hammered."
             action={
               <Link href="/#verify">
                 <Button variant="outline">Back to verify</Button>
@@ -113,8 +113,8 @@ export default async function VerificationPage({
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
           <EmptyState
             icon={ServerOff}
-            title="Verification is temporarily unavailable"
-            description="We could not reach the live records. Try again in a moment."
+            title="Certificate check is temporarily unavailable"
+            description="We could not reach the records. Try again in a moment."
             action={
               <Link href="/#verify">
                 <Button variant="outline">Back to verify</Button>
@@ -141,13 +141,13 @@ export default async function VerificationPage({
         {!isRevoked && (
           <>
             <p className="mb-2 text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Independent authenticity check
+              LeoVerify
             </p>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground">
               Certificate check
             </h1>
             <p className="mt-2 text-muted-foreground">
-              This result is checked against the live record, not a downloaded file.
+              This result comes from the site, not from a downloaded PDF.
             </p>
           </>
         )}

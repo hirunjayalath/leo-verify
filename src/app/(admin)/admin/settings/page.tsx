@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 text-muted-foreground">
-          White-label your organization portal, emails, and verify chrome.
+          Colors, logo, and public club page used on emails and check pages.
         </p>
       </div>
 
@@ -33,7 +33,7 @@ export default async function AdminSettingsPage() {
           <CardDescription>
             {club.publicSlug ? (
               <>
-                Public portal:{" "}
+                Club page:{" "}
                 <Link
                   href={`/o/${club.publicSlug}`}
                   className="font-medium text-primary underline-offset-4 hover:underline"
@@ -42,7 +42,7 @@ export default async function AdminSettingsPage() {
                 </Link>
               </>
             ) : (
-              "Set a public slug to publish your org portal."
+              "Set a public slug to publish your club page."
             )}
           </CardDescription>
         </CardHeader>

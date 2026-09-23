@@ -25,7 +25,7 @@ export default function GlobalError({
           Something went wrong
         </h1>
         <p className="mt-2 max-w-md text-center text-sm text-muted-foreground">
-          An unexpected error occurred. You can retry, or return to the public site.
+          Something broke on our side. Try again, or go back to the home page.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button type="button" onClick={reset}>

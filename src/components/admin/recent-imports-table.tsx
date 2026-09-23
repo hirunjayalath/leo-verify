@@ -62,7 +62,7 @@ export function RecentImportsTable({ jobs }: { jobs: RecentImportJob[] }) {
                       {open ? "Hide" : `Show ${job.rowErrors.length}`}
                     </button>
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-xs text-muted-foreground">None</span>
                   )}
                 </TableCell>
               </TableRow>

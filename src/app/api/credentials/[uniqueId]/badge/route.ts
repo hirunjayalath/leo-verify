@@ -88,7 +88,7 @@ export async function GET(request: Request, { params }: Params) {
         : {}),
     },
     validFrom: cert.issueDate.toISOString(),
-    name: `${cert.event.name} — ${cert.role}`,
+    name: `${cert.event.name}, ${cert.role}`,
     credentialSubject: {
       type: ["AchievementSubject"],
       name: cert.recipientName,

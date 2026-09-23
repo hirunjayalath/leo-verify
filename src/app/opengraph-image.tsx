@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "LeoVerify — Live certificate verification";
+export const alt = "LeoVerify, live certificate checks";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -52,10 +52,10 @@ export default async function OpenGraphImage() {
               maxWidth: 900,
             }}
           >
-            Live certificate verification
+            Check a Leo Club certificate
           </div>
           <div style={{ fontSize: 28, color: "#c8c8c8", maxWidth: 820 }}>
-            The PDF is a convenience copy. The database record is authoritative.
+            If the PDF and the site disagree, believe the site.
           </div>
         </div>
         <div style={{ fontSize: 22, color: "#38a3e3" }}>

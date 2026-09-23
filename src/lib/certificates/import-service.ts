@@ -126,7 +126,7 @@ export async function startCertificateImport(
   if (!validated.ok) {
     return {
       ok: false,
-      error: "Validation failed — fix rows before importing",
+      error: "Validation failed. Fix the rows before importing.",
       rowErrors: validated.errors,
     };
   }

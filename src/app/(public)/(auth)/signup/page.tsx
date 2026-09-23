@@ -9,7 +9,7 @@ export default async function SignupPage() {
   return (
     <AuthShell
       title="Create an organization"
-      description="Create an organization account. Design templates, issue credentials, and publish a public verify page for your club."
+      description="Create a club account. Design templates, issue certificates, and put a check page online."
     >
       <SignupForm signedInEmail={auth?.email ?? null} />
       <p className="mt-5 text-center text-sm text-muted-foreground">
@@ -20,7 +20,7 @@ export default async function SignupPage() {
       </p>
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
-          Back to public site
+          Back to home
         </Link>
       </p>
     </AuthShell>

@@ -18,11 +18,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!recipient?.publicProfile) notFound();
   return {
     title: recipient.name ?? "Recipient",
-    description: "Public LeoVerify credential profile",
+    description: "Public LeoVerify certificate profile",
     robots: { index: false, follow: false },
     openGraph: {
-      title: `${recipient.name ?? "Recipient"} credentials`,
-      description: "Verified certificates on LeoVerify",
+      title: `${recipient.name ?? "Recipient"} certificates`,
+      description: "Certificates on LeoVerify",
     },
   };
 }
@@ -84,8 +84,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
               {name}
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Opt-in credential listing. Single-certificate verification remains
-              available via QR without a profile.
+              This person chose to list certificates here. You can still check
+              one certificate from the QR without a profile.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             <EmptyState
               icon={FileBadge2}
               title="No public certificates listed"
-              description="When this recipient opts to list issued certificates, they will appear here as shareable cards."
+              description="When this person lists issued certificates, they show up here."
             />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">

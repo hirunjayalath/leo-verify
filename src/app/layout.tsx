@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -24,21 +25,21 @@ export const metadata: Metadata = {
     template: "%s · LeoVerify",
   },
   description:
-    "Issue, archive, and verify Leo Club certificates — the database record is authoritative. Operated by Leo Club of University of Moratuwa.",
+    "Issue Leo Club certificates and let anyone check them. Run by Leo Club of University of Moratuwa.",
   applicationName: "LeoVerify",
   openGraph: {
     type: "website",
     locale: "en_LK",
     siteName: "LeoVerify",
-    title: "LeoVerify — Live certificate verification",
+    title: "LeoVerify, live certificate checks",
     description:
-      "Anyone can check a Leo Club certificate against the live database — no login required.",
+      "Anyone can check a Leo Club certificate. No account needed.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeoVerify — Live certificate verification",
+    title: "LeoVerify, live certificate checks",
     description:
-      "Anyone can check a Leo Club certificate against the live database — no login required.",
+      "Anyone can check a Leo Club certificate. No account needed.",
   },
   robots: {
     index: true,
@@ -55,7 +56,13 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }}
+        />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         {children}
         <Toaster />

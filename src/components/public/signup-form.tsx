@@ -31,7 +31,7 @@ export function SignupForm({
         toast.error(result.error);
         return;
       }
-      toast.success("Organization created. Opening admin…");
+      toast.success("Organization created. Opening admin.");
       router.push("/admin");
       router.refresh();
     });
@@ -41,8 +41,8 @@ export function SignupForm({
     return (
       <div className="space-y-4 rounded-xl border border-border bg-muted/40 p-4">
         <p className="text-sm text-muted-foreground">
-          Create a Supabase Auth account and sign in first. Your signed-in email
-          becomes the organization admin — we never accept a pasted Auth UUID.
+          Sign in first. Your signed-in email becomes the organization admin. We
+          do not accept a pasted Auth user id.
         </p>
         <Link href="/login?next=/signup">
           <Button type="button" variant="brand" size="lg" className="w-full">

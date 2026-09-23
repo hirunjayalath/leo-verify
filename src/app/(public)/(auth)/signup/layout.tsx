@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Create organization",
   description:
-    "Self-serve signup for public clubs and organizations on LeoVerify.",
+    "Create a club account on LeoVerify.",
   robots: { index: false, follow: false },
 };
 

@@ -37,7 +37,7 @@ export default async function AdminEventsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
         <p className="mt-1 text-muted-foreground">
-          Events scope templates and certificate batches to your club.
+          Events group templates and certificate batches for your club.
         </p>
       </div>
 
@@ -47,7 +47,7 @@ export default async function AdminEventsPage() {
             <CardTitle>Your events</CardTitle>
             <CardDescription>
               {events.length === 0
-                ? "No events yet — create one to begin."
+                ? "No events yet. Create one to start."
                 : `${events.length} event${events.length === 1 ? "" : "s"}`}
             </CardDescription>
           </CardHeader>
@@ -80,7 +80,7 @@ export default async function AdminEventsPage() {
                           <TableCell className="text-muted-foreground tabular-nums">
                             {event.eventDate
                               ? event.eventDate.toISOString().slice(0, 10)
-                              : "—"}
+                              : "None"}
                           </TableCell>
                           <TableCell>{event._count.templates}</TableCell>
                           <TableCell>{event._count.certificates}</TableCell>
@@ -140,7 +140,7 @@ export default async function AdminEventsPage() {
         <Card>
           <CardHeader>
             <CardTitle>New event</CardTitle>
-            <CardDescription>Creates an audit log entry.</CardDescription>
+            <CardDescription>This write is saved in the audit log.</CardDescription>
           </CardHeader>
           <CardContent>
             <CreateEventForm />

@@ -47,7 +47,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="certificate-id">Certificate ID or full verify link</Label>
+        <Label htmlFor="certificate-id">Certificate ID or full check link</Label>
         <Input
           id="certificate-id"
           placeholder="LEO-UOM-2026-000123 or paste /v/…?t=…"
@@ -59,7 +59,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
           disabled={pending}
         />
         <p className="text-xs text-muted-foreground">
-          Paste the full link from the QR if you have it — we will fill the token.
+          Paste the full link from the QR if you have it. We will fill the token.
         </p>
       </div>
       {!compact && (
@@ -81,7 +81,7 @@ export function VerifyForm({ compact = false }: { compact?: boolean }) {
         </div>
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending}>
+        <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
           {pending && <Spinner />}
           {pending ? "Checking…" : "Verify certificate"}
         </Button>

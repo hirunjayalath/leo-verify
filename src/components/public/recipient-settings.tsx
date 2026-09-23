@@ -75,7 +75,7 @@ export function RecipientSettings({
       <div className="space-y-3 rounded-xl border border-border p-4">
         <p className="text-sm font-medium">Public profile</p>
         <p className="text-xs text-muted-foreground">
-          When enabled, anyone can see your listed certificates at{" "}
+          When this is on, anyone can see your listed certificates at{" "}
           {slug ? (
             <Link href={`/u/${slug}`} className="underline underline-offset-4">
               /u/{slug}

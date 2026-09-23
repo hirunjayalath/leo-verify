@@ -55,7 +55,7 @@ export default async function EditTemplatePage({ params }: PageProps) {
         <CardHeader>
           <CardTitle>Layout designer</CardTitle>
           <CardDescription>
-            Drag fields onto the background, then save. Preview renders with pdf-lib.
+            Drag fields onto the background, then save. Preview uses the same PDF renderer.
           </CardDescription>
         </CardHeader>
         <CardContent>

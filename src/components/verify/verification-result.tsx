@@ -34,7 +34,7 @@ export function VerificationResult({
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      toast.success("Verification link copied");
+      toast.success("Check link copied");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Could not copy link");
@@ -65,7 +65,7 @@ export function VerificationResult({
 
       <div className="border-b border-border bg-brand px-6 py-5 text-white sm:px-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-accent">
-          Public verification
+          Public check
         </p>
         <p className="mt-1 font-mono text-sm text-white/80">{uniqueId}</p>
       </div>
@@ -151,7 +151,7 @@ export function VerificationResult({
                   {result.message}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Open the QR or share link from the certificate — verification needs
+                  Open the QR or share link from the certificate. The check needs
                   both the ID and the code in that link.
                 </p>
               </div>
@@ -171,15 +171,15 @@ export function VerificationResult({
         <div>
           <p className="font-medium text-foreground">What this check means</p>
           <p className="mt-1">
-            This page checks the live LeoVerify record. If a downloaded PDF
-            disagrees with these details, trust this page.
+            This page checks the LeoVerify record. If a downloaded PDF
+            disagrees with these details, believe this page.
           </p>
         </div>
         <div>
           <p className="font-medium text-foreground">Privacy</p>
           <p className="mt-1">
-            This page shows only what is needed to confirm authenticity — email and
-            contact details are never shown.
+            This page shows name, club, event, date, role, and status. It never
+            shows email or phone.
           </p>
         </div>
       </div>
@@ -199,7 +199,7 @@ function StatusSeal({ status }: { status: PublicVerificationResult["status"] }) 
             Valid
           </p>
           <p className="text-lg font-semibold text-foreground">
-            Authentic certificate
+            This certificate is valid
           </p>
         </div>
       </div>
@@ -229,7 +229,7 @@ function StatusSeal({ status }: { status: PublicVerificationResult["status"] }) 
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Invalid
         </p>
-        <p className="text-lg font-semibold text-foreground">Could not verify</p>
+        <p className="text-lg font-semibold text-foreground">Could not check this certificate</p>
       </div>
     </div>
   );

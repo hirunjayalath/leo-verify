@@ -452,7 +452,7 @@ export function TemplateDesigner({
       }
       canvas.requestRenderAll();
       setDirty(true);
-      toast.success("Signature stamp uploaded — save layout to keep it");
+      toast.success("Signature stamp uploaded. Save the layout to keep it.");
     } finally {
       setSigUploading(false);
     }

@@ -23,17 +23,17 @@ export function AuthShell({
             />
           </Link>
           <h1 className="mt-16 max-w-md text-3xl font-semibold tracking-tight leading-snug">
-            Credentials your community can trust — long after the board changes.
+            Issue a certificate. Anyone with the link can check it.
           </h1>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
-            A scan checks the live record, not a file someone emailed you.
+            Scan the QR. The site is the record, not the PDF.
           </p>
         </div>
         <ul className="space-y-3 text-sm text-white/80">
           {[
-            "Live QR verification — no login wall",
-            "Club-scoped admin with audit trail",
-            "Bulk CSV issuance without duplicate rows",
+            "Anyone can check a QR. No account needed.",
+            "Club admins see their own club only.",
+            "CSV import will not create the same row twice.",
           ].map((item) => (
             <li key={item} className="flex items-start gap-2.5">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />

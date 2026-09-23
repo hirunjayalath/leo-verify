@@ -30,7 +30,7 @@ export function IssueCertificateForm({
         return;
       }
       if (result.skipped) {
-        toast.message("Already issued — returning existing certificate", {
+        toast.message("Already issued. Returning the existing certificate", {
           description: result.uniqueId,
         });
         router.refresh();
@@ -45,12 +45,12 @@ export function IssueCertificateForm({
           ? `${window.location.origin}${path}`
           : path;
       toast.success(`Issued ${result.uniqueId}`, {
-        description: "Copy the verify link to share or open the QR target.",
+        description: "Copy the check link to share, or open the QR target.",
         action: {
-          label: "Copy verify link",
+          label: "Copy check link",
           onClick: () => {
             void navigator.clipboard.writeText(absolute).then(
-              () => toast.success("Verify link copied"),
+              () => toast.success("Check link copied"),
               () => toast.error("Could not copy"),
             );
           },
@@ -64,7 +64,7 @@ export function IssueCertificateForm({
   if (events.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Create an event (and preferably a template) before issuing.
+        Create an event and a template before issuing.
       </p>
     );
   }

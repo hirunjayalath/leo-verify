@@ -54,11 +54,10 @@ async function genericCard() {
               maxWidth: 900,
             }}
           >
-            Certificate verification
+            Certificate check
           </div>
           <div style={{ fontSize: 26, color: "#c8c8c8", maxWidth: 820 }}>
-            Open the full verify link to confirm authenticity live from the
-            database.
+            Open the full check link. The site is the record, not the PDF.
           </div>
         </div>
         <div style={{ fontSize: 22, color: "#38a3e3" }}>leoverify</div>
@@ -131,7 +130,7 @@ async function verifiedCard(input: {
           <div style={{ fontSize: 24, color: "#c8c8c8" }}>{input.role}</div>
         </div>
         <div style={{ fontSize: 20, color: accent }}>
-          Live database record · LeoVerify
+          Checked on LeoVerify
         </div>
       </div>
     ),

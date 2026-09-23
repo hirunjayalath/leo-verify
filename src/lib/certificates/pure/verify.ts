@@ -5,7 +5,7 @@ import {
   verifyVerificationToken,
 } from "@/lib/certificates/pure/token";
 
-const INVALID_MESSAGE = "Could not verify this certificate.";
+const INVALID_MESSAGE = "Could not check this certificate.";
 
 /** Public verification fields only (Rule 8). */
 export type PublicVerificationResult =

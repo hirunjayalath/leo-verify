@@ -206,7 +206,7 @@ export function IssueWizard({
             </p>
             <p className="mt-1">
               <span className="text-muted-foreground">Email:</span>{" "}
-              {draft.recipientEmail || "—"}
+              {draft.recipientEmail || "None"}
             </p>
             <p className="mt-1">
               <span className="text-muted-foreground">Role:</span> {draft.role}

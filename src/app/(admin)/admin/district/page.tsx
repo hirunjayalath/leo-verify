@@ -183,9 +183,8 @@ export default async function DistrictAdminPage() {
           District overview
         </h1>
         <p className="mt-1 text-muted-foreground">
-          {user.district?.name ?? "Your district"} — onboard clubs and review
-          public-organization templates. Leo club templates auto-approve on
-          create.
+          {user.district?.name ?? "Your district"}. Add clubs and review public
+          organization templates. Leo club templates are approved on create.
         </p>
       </div>
 
@@ -225,7 +224,7 @@ export default async function DistrictAdminPage() {
               <EmptyState
                 icon={Building2}
                 title="No clubs yet"
-                description="Onboard the first club in this district to begin."
+                description="Add the first club in this district to start."
               />
             ) : (
               <Table>
@@ -262,7 +261,7 @@ export default async function DistrictAdminPage() {
           <CardHeader>
             <CardTitle>Monthly activity</CardTitle>
             <CardDescription>
-              Issued vs revoked by issue month (last 12 months, UTC)
+              Issued and revoked by issue month (last 12 months, UTC)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -270,7 +269,7 @@ export default async function DistrictAdminPage() {
               <EmptyState
                 icon={CalendarDays}
                 title="No certificates in the last year"
-                description="Issuance activity across district clubs will show here."
+                description="Issue activity across district clubs will show here."
               />
             ) : (
               <Table>
@@ -303,8 +302,8 @@ export default async function DistrictAdminPage() {
           <CardHeader>
             <CardTitle>Public org template review</CardTitle>
             <CardDescription>
-              Draft and rejected templates from public organizations. Leo clubs
-              auto-approve and do not appear here.
+              Draft and rejected templates from public organizations. Leo club
+              templates are approved on create and do not appear here.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -312,7 +311,7 @@ export default async function DistrictAdminPage() {
               <EmptyState
                 icon={LayoutTemplate}
                 title="Nothing to review"
-                description="Public-organization drafts will appear here. Leo club templates skip this queue."
+                description="Public organization drafts will appear here. Leo club templates skip this list."
               />
             ) : (
               <ul className="space-y-4">
@@ -335,7 +334,7 @@ export default async function DistrictAdminPage() {
                     )}
                     {template.status === "rejected" && (
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Rejected — club admins can revert to draft and edit.
+                        Rejected. Club admins can revert to draft and edit.
                       </p>
                     )}
                   </li>
@@ -348,7 +347,7 @@ export default async function DistrictAdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Onboard club</CardTitle>
-            <CardDescription>Creates a club under this district</CardDescription>
+            <CardDescription>Creates a club in this district</CardDescription>
           </CardHeader>
           <CardContent>
             <CreateClubForm />
@@ -359,7 +358,7 @@ export default async function DistrictAdminPage() {
           <CardHeader>
             <CardTitle>Link club admin</CardTitle>
             <CardDescription>
-              Create the Auth user in Supabase first, then paste the UUID.
+              Create the Auth user in Supabase first, then paste the user id.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -141,11 +141,11 @@ export function CsvImportForm({
         const failed = result.failedRows ?? 0;
         const summary = `${issued} issued · ${skipped} skipped · ${failed} failed`;
         if (failed > 0 && issued === 0 && skipped === 0) {
-          toast.error(`Import finished with failures — ${summary}`);
+          toast.error(`Import finished with failures. ${summary}`);
         } else if (failed > 0) {
-          toast.message(`Import completed with some failures — ${summary}`);
+          toast.message(`Import completed with some failures. ${summary}`);
         } else {
-          toast.success(`Import completed — ${summary}`);
+          toast.success(`Import completed. ${summary}`);
         }
       }
       setPreview(null);
@@ -243,7 +243,7 @@ export function CsvImportForm({
                   value={preview.mapping[field.key] ?? ""}
                   onChange={(e) => setField(field.key, e.target.value)}
                 >
-                  <option value="">— skip —</option>
+                  <option value="">Skip</option>
                   {preview.headers.map((h) => (
                     <option key={h} value={h}>
                       {h}

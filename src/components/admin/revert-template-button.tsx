@@ -20,7 +20,7 @@ export function RevertTemplateButton({ templateId }: { templateId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Template reverted to draft — edit and resubmit");
+      toast.success("Template reverted to draft. Edit and resubmit.");
       router.refresh();
     });
   }

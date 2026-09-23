@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!club) notFound();
   return {
     title: club.name,
-    description: club.tagline ?? `${club.name} credentials on LeoVerify`,
+    description: club.tagline ?? `${club.name} certificates on LeoVerify`,
     robots: { index: true, follow: true },
   };
 }
@@ -94,14 +94,14 @@ export default async function OrgPortalPage({ params }: PageProps) {
             </div>
           </div>
           <p className="mt-6 text-sm text-white/75">
-            {`${issuedCount} ${issuedCount === 1 ? "credential" : "credentials"} issued · Verified live on LeoVerify`}
+            {`${issuedCount} ${issuedCount === 1 ? "certificate" : "certificates"} issued · Checked on LeoVerify`}
           </p>
         </div>
 
         <section className="mt-10 space-y-4" id="verify">
-          <h2 className="text-lg font-semibold">Verify a credential</h2>
+          <h2 className="text-lg font-semibold">Check a certificate</h2>
           <p className="text-sm text-muted-foreground">
-            Paste a verify link or scan a QR. The ID alone is not enough — use
+            Paste the check link or scan the QR. The ID alone is not enough. Use
             the full link from the certificate.
           </p>
           <VerifyForm compact />
@@ -109,7 +109,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
 
         <section className="mt-12">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 className="text-lg font-semibold">Public credentials</h2>
+            <h2 className="text-lg font-semibold">Public certificates</h2>
             <p className="text-sm text-muted-foreground">
               Opt-in listings only
             </p>
@@ -118,7 +118,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
             <EmptyState
               icon={FileBadge2}
               title="No public listings yet"
-              description="Recipients who opt into a public profile can appear here. Single-certificate verify stays open via QR."
+              description="People who turn on a public profile can appear here. Anyone can still check one certificate from the QR."
               action={
                 <Link href="/#verify">
                   <Button variant="outline">Verify elsewhere</Button>

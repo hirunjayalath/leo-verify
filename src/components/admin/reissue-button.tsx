@@ -22,7 +22,7 @@ export function ReissueButton({ certificateId }: { certificateId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Certificate reissued — old QR links no longer verify");
+      toast.success("Certificate reissued. Old QR links no longer check as valid.");
       setOpen(false);
       router.refresh();
     });

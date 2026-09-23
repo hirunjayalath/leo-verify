@@ -1,8 +1,8 @@
 # LeoVerify
 
-Credentialing platform for the Leo Club of University of Moratuwa — and, by design, for every Leo club in Sri Lanka later.
+Issue Leo Club certificates and let anyone check them. Leo Club of University of Moratuwa runs this site. Other Leo clubs in Sri Lanka can be added later.
 
-**The certificate PDF is a convenience copy. The database record is the only thing that is ever authoritative.**
+If the PDF and the site disagree, believe the site. The PDF is just a copy.
 
 ## Stack
 
@@ -26,7 +26,7 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 ```bash
 npm install
 cp .env.example .env
-# Contract: docs/architecture.md — every variable stays; empty is allowed locally
+# Contract: docs/architecture.md. Every variable stays. Empty is allowed locally.
 # Required locally: DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32)
 # Local UI without Auth: AUTH_DEV_BYPASS=true (forbidden in production)
 npx prisma generate
@@ -34,7 +34,7 @@ npx prisma migrate deploy   # or migrate dev locally
 npm run db:seed
 # Supabase SQL editor: apply supabase/rls-policies.sql
 # Optional: SEED_DISTRICT_ADMIN_* / SEED_RECIPIENT_* / SEED_CLUB_ADMIN_LOGIN_*
-# Set SEED_ADMIN_SUPABASE_ID to your Auth user UUID; disable AUTH_DEV_BYPASS
+# Set SEED_ADMIN_SUPABASE_ID to your Auth user id. Then turn AUTH_DEV_BYPASS off.
 npm run dev
 ```
 
@@ -44,31 +44,31 @@ npm run dev
 |---|---|
 | `DATABASE_URL` | App runtime. On Vercel use Supabase **transaction pooler** (`:6543`, `?pgbouncer=true`). |
 | `DIRECT_DATABASE_URL` | Prisma migrate / `db push` only (direct `:5432`). |
-| `PG_POOL_MAX` | `1` (default) or `2` per serverless isolate — never a large pool on Vercel. |
+| `PG_POOL_MAX` | `1` (default) or `2` per serverless isolate. Do not use a large pool on Vercel. |
 
-Without the pooler + singleton `Pool`, concurrent verify/issue exhausts Postgres connections first.
+Without the pooler and a singleton `Pool`, concurrent check or issue work runs out of Postgres connections first.
 
 ### UOM operator smoke checklist
 
 Manual path for Leo Club of University of Moratuwa as platform operator:
 
-1. Login as UOM club admin (`AUTH_DEV_BYPASS` off in any shared/staging env).
-2. Create an event → upload a template (auto-approved on create) → optionally edit layout.
-3. Issue one certificate with recipient email → confirm Resend send when configured.
-4. Open `/v/[id]?t=…` → status Valid → **Download PDF**.
-5. Revoke → public page shows only “This certificate has been revoked.”
-6. Reissue an issued cert → new QR/token; old link fails HMAC.
-7. CSV import a small roster; confirm no duplicates on re-run.
-8. Claim: recipient signs in with matching email → claim → toggle public profile.
-9. District (optional): seed district admin → create club → paste Supabase Auth UUID to link club admin.
+1. Login as UOM club admin (`AUTH_DEV_BYPASS` off in any shared or staging env).
+2. Create an event, upload a template (approved on create), then edit the layout if you want.
+3. Issue one certificate with a recipient email. Confirm Resend send when configured.
+4. Open `/v/[id]?t=…`. Status should be Valid. Use **Download PDF**.
+5. Revoke. The public page shows only “This certificate has been revoked.”
+6. Reissue an issued cert. The new QR and token work. The old link fails HMAC.
+7. CSV import a small roster. Confirm no duplicates on a re-run.
+8. Claim: recipient signs in with the matching email, claims, then can turn on a public profile.
+9. District (optional): seed a district admin, create a club, paste the Supabase Auth user id to link a club admin.
 10. Launch gate: `supabase/rls-policies.sql` applied after migrate.
 
 ### UOM production launch checklist
 
 1. Full production secret contract set on Vercel (see [`.env.example`](.env.example) / [`docs/architecture.md`](docs/architecture.md)): pooler `DATABASE_URL` (`leoverify_app`), `SERVICE_DATABASE_URL` (`leoverify_service`), `DIRECT_DATABASE_URL`, `CERT_HMAC_SECRET`, Supabase, `NEXT_PUBLIC_APP_URL`, R2, Resend, Inngest, **Upstash**. Boot throws if any required value is missing.
-2. Migrations applied (includes RLS + roles). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service`.
-3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (rejected when `NODE_ENV=production`).
-4. MFA (TOTP) required for club/district admins — enable Multi-Factor Authentication in the Supabase project, then complete enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
+2. Migrations applied (includes RLS and roles). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service`.
+3. Seed UOM club and admin. Auth user id linked. `AUTH_DEV_BYPASS` is **false** (rejected when `NODE_ENV=production`).
+4. MFA (TOTP) required for club and district admins. Enable Multi-Factor Authentication in the Supabase project, then finish enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
 5. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
 6. Optional: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` for error tracking.
 7. Run the operator smoke checklist above.
@@ -76,42 +76,42 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### Security launch gates
 
-1. Deploy migrations (RLS + `leoverify_app` / `leoverify_service`). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service` (no `BYPASSRLS`). Keep `DIRECT_DATABASE_URL` as the owner for migrate. App-layer `clubId` / session checks stay required; `withRlsContext` sets `app.current_supabase_id`.
+1. Deploy migrations (RLS + `leoverify_app` / `leoverify_service`). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service` (no `BYPASSRLS`). Keep `DIRECT_DATABASE_URL` as the owner for migrate. App-layer `clubId` / session checks stay required. `withRlsContext` sets `app.current_supabase_id`.
 2. Never set `AUTH_DEV_BYPASS` on Vercel (ignored when `VERCEL`/`VERCEL_ENV` is set, and outside `NODE_ENV=development`).
-3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads. Logos/templates upload with long `Cache-Control`; PDFs stay short/private.
-4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.
-5. Upstash must be set in production — missing credentials **fail closed** on `/v` and PDF rate limits (no silent memory fallback on Vercel).
+3. Prefer private R2 (no public bucket) and gated `/api/certificates/[id]/pdf?t=…` downloads. Logos and templates upload with long `Cache-Control`. PDFs stay short and private.
+4. Public signup requires a signed-in Supabase session. A district invite must not steal users from other districts.
+5. Upstash must be set in production. Missing secrets **fail closed** on `/v` and PDF rate limits (no silent memory fallback on Vercel).
 
 ### Capacity upgrade ladder
 
 | Signal | Upgrade |
 |---|---|
-| Connection errors / pool waits | Raise Supabase compute; keep pooler; **never** widen `PG_POOL_MAX` on serverless |
-| Import jobs > few minutes | Raise `IMPORT_ROW_CONCURRENCY` / Inngest concurrency; keep email as separate steps |
+| Connection errors / pool waits | Raise Supabase compute. Keep the pooler. **Never** widen `PG_POOL_MAX` on serverless. |
+| Import jobs > few minutes | Raise `IMPORT_ROW_CONCURRENCY` / Inngest concurrency. Keep email as separate steps. |
 | Email bounce / Resend rate limits | Move to SES + suppression list (~1–2k emails/day is still fine on Resend) |
-| Read-heavy org portals | Already short-TTL cached branding on `/o/[slug]`; add Edge HTML cache if needed |
-| Global audience | Vercel multi-region; R2 remains PDF origin |
+| Read-heavy club pages | Branding on `/o/[slug]` already uses a short TTL cache. Add Edge HTML cache if needed. |
+| Global audience | Vercel multi-region. R2 remains the PDF origin. |
 | Heavier PDF load | Dedicated queue worker reusing the same pdf-lib overlay code |
 
-Infrastructure stays **Vercel + Supabase + R2 + Upstash + Inngest** — upgrades are config and job shape, not a platform rewrite.
+Infrastructure stays **Vercel + Supabase + R2 + Upstash + Inngest**. Upgrades are config and job shape, not a platform rewrite.
 
-**Do not** long-cache live verify status without revoke invalidation. Branding/gallery CDN caches are safe; certificate truth stays live from Postgres.
+**Do not** long-cache live check status without revoke invalidation. Branding and gallery CDN caches are safe. Certificate status stays live from Postgres.
 
 ### Load-test checklist (before launch spikes)
 
 1. Point k6/Artillery at `/v/[id]?t=…` and `/api/health` with pooler `DATABASE_URL`.
-2. Confirm p95 verify under ~500ms excluding cold start; watch Supabase connection count.
-3. Run a 500-row CSV import via Inngest; confirm no Vercel timeout and emails enqueue separately.
-4. Revoke mid-test — public page must flip without depending on a status cache.
+2. Confirm p95 check under ~500ms excluding cold start. Watch Supabase connection count.
+3. Run a 500-row CSV import via Inngest. Confirm no Vercel timeout and emails enqueue separately.
+4. Revoke mid-test. The public page must flip without depending on a status cache.
 
 ### Admin MFA (Supabase AAL2)
 
 Club and district admin routes require authenticator assurance level **aal2**:
 
-1. In the Supabase dashboard: **Authentication → Providers / Multi-Factor** — enable TOTP.
+1. In the Supabase dashboard: **Authentication → Providers / Multi-Factor**. Enable TOTP.
 2. Sign in at `/login` with the admin account.
 3. You are redirected to `/admin/mfa` until a TOTP factor is enrolled and the session is verified.
-4. Subsequent visits need a fresh code when the session drops back to aal1 (e.g. after password-only re-login).
+4. Later visits need a fresh code when the session drops back to aal1 (for example after a password-only re-login).
 
 Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admins can operate without Supabase MFA.
 
@@ -119,13 +119,13 @@ Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admi
 
 1. Set `CERT_HMAC_SECRET_PREVIOUS` to the current secret.
 2. Set `CERT_HMAC_SECRET` to a new `openssl rand -hex 32` value.
-3. Redeploy. Existing QR links verify via the previous secret; new issues use the current secret.
+3. Redeploy. Existing QR links check via the previous secret. New issues use the current secret.
 4. After all outstanding PDFs are acceptable to re-issue (or enough time has passed), clear `CERT_HMAC_SECRET_PREVIOUS`.
 
 ## Scripts
 
 - `npm run dev` / `build` / `start`
-- `npm test` — golden-path verification + CSV + issue tests
+- `npm test`: golden-path verification, CSV, and issue tests
 - `npm run db:seed` / `db:migrate` / `db:generate`
 
 ## Architecture
@@ -141,12 +141,12 @@ UI components     →      orgs/                      auth / supabase
 
 **Rules of the house**
 
-- Server actions and route handlers are **adapters**: auth → validate → call `lib/*` → `revalidatePath`. Prefer zero Prisma in actions.
+- Server actions and route handlers are **adapters**: auth, then validate, then call `lib/*`, then `revalidatePath`. Prefer zero Prisma in actions.
 - `lib/certificates/pure/` (token, verify, id, layout, parse) must not import `db`, `r2`, or `email`. Stable import paths remain `@/lib/certificates/token` etc. via re-exports.
 - Issuance: `issue.ts` facade → `issue-core` (DB) + `issue-pdf` (render/upload).
 - Jobs: `inngest/client.ts` + `inngest/jobs/*`; `functions.ts` only registers handlers.
 - UI: `components/admin`, `components/public`, `components/verify`, `components/ui`.
-- Verification is always live DB + HMAC — never long-cache certificate status.
+- A check is always live DB + HMAC. Do not long-cache certificate status.
 
 **Environment contract**
 
@@ -166,11 +166,11 @@ UI components     →      orgs/                      auth / supabase
 **Product notes**
 
 - Multi-tenant schema (`clubId` / `districtId`) from day one.
-- Client-delivered product — no self-serve payments; quotas are operator-set (`Club.monthlyCertLimit`).
-- Verification: `/v/[id]?t=<token>` — live DB + HMAC; no login wall.
-- Template gallery + Fabric designer; layout JSON is data (Rule 5).
-- Bulk CSV validates all rows before any write; issue wizard at `/admin/issue`.
-- Open Badges 3.0 export: `GET /api/credentials/[uniqueId]/badge?t=<token>` (HMAC still primary).
+- Client-delivered product. No self-serve payments. Quotas are operator-set (`Club.monthlyCertLimit`).
+- Check page: `/v/[id]?t=<token>`. Live DB + HMAC. No login wall.
+- Template gallery + Fabric designer. Layout JSON is data (Rule 5).
+- Bulk CSV validates all rows before any write. Issue wizard at `/admin/issue`.
+- Open Badges 3.0 export: `GET /api/credentials/[uniqueId]/badge?t=<token>` (HMAC is still the primary check).
 
 ## Roadmap
 

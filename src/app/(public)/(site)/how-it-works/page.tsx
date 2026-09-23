@@ -2,47 +2,45 @@ import { ContentPage, contentMetadata } from "@/components/public/content-page";
 
 export const metadata = contentMetadata(
   "How it works",
-  "Issue a template-based certificate, share the QR, and verify against the live database.",
+  "Issue a certificate from a template, share the QR, and check it on this site.",
 );
 
 export default function HowItWorksPage() {
   return (
     <ContentPage
       title="How it works"
-      description="Three steps from club admin issuance to independent public verification."
+      description="Three steps from issue to a public check."
     >
       <ol className="list-decimal space-y-6 pl-5">
         <li>
           <p className="font-semibold">Issue</p>
           <p className="mt-1 text-muted-foreground">
-            Club admins create an event, upload a certificate background, place
-            fields in the designer, and issue one certificate or import a CSV
-            roster. Each record gets a human-readable ID and an unguessable
-            verification token.
+            Club admins create an event, upload a background, place fields, and
+            issue one certificate or import a CSV. Each record gets a readable
+            ID and a token you cannot guess.
           </p>
         </li>
         <li>
           <p className="font-semibold">Share the QR</p>
           <p className="mt-1 text-muted-foreground">
-            The PDF embeds a QR code that opens the verification URL. Recipients
-            can also receive an email with the verify link and a gated PDF
-            download when email is configured.
+            The PDF has a QR that opens the check page. Recipients can also get
+            an email with the link and a PDF download.
           </p>
         </li>
         <li>
-          <p className="font-semibold">Verify live</p>
+          <p className="font-semibold">Check it live</p>
           <p className="mt-1 text-muted-foreground">
-            Anyone opens the link and sees the live database status — valid,
-            revoked, or invalid. No login is required. Revoked certificates show
-            only that they have been revoked.
+            Anyone opens the link and sees the current status. Valid, revoked,
+            or invalid. No login. A revoked certificate only says it has been
+            revoked.
           </p>
         </li>
       </ol>
-      <h2 className="text-lg font-semibold tracking-tight">Why this model</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Why we do it this way</h2>
       <p>
-        Clubs change leadership often. Keeping the source of truth in a shared
-        database means certificates outlive any single laptop or email inbox, and
-        mistakes can be revoked without pretending the PDF never existed.
+        Club boards change often. The record lives in the database, not on one
+        laptop. If someone issued the wrong name, you revoke it. The old PDF
+        does not disappear, and that is the point.
       </p>
     </ContentPage>
   );

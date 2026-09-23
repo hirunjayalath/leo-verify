@@ -44,9 +44,9 @@ export function buildCertificateEmailHtml(input: {
         <p>Hi ${name},</p>
         <p>Your certificate for <strong>${eventName}</strong> is ready.</p>
         <p>Certificate ID: <code>${uniqueId}</code></p>
-        <p><a href="${safeVerify}" style="color:${accent}">Verify your certificate</a></p>
+        <p><a href="${safeVerify}" style="color:${accent}">Check your certificate</a></p>
         ${safePdf ? `<p><a href="${safePdf}" style="color:${accent}">Download PDF</a></p>` : ""}
-        <p style="margin-top:24px;font-size:13px;color:#646464">— ${clubName} via LeoVerify</p>
+        <p style="margin-top:24px;font-size:13px;color:#646464">From ${clubName} on LeoVerify</p>
         </div>
       `;
 }

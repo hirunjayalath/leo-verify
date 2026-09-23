@@ -11,7 +11,7 @@ export default async function ClaimPage() {
   return (
     <AuthShell
       title="Claim your certificates"
-      description="Sign in with the email used on your certificates, then link them to a private profile you can opt into publishing."
+      description="Sign in with the email on your certificates. They stay on a private profile unless you publish it."
     >
       <ClaimForm
         authEmail={auth?.email ?? null}
@@ -33,7 +33,7 @@ export default async function ClaimPage() {
       </p>
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
-          Back to public site
+          Back to home
         </Link>
       </p>
     </AuthShell>

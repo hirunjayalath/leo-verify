@@ -64,7 +64,7 @@ export async function inviteClubAdmin(input: {
   if (bySupabase && bySupabase.email.toLowerCase() !== email) {
     return {
       ok: false,
-      error: "That Auth UUID is already linked to a different user.",
+      error: "That Auth user id is already linked to a different user.",
     };
   }
 
@@ -73,7 +73,7 @@ export async function inviteClubAdmin(input: {
     if (existing.role === UserRole.district_admin) {
       return {
         ok: false,
-        error: "Cannot reassign a district admin via invite.",
+        error: "Cannot reassign a district admin this way.",
       };
     }
     if (existing.districtId && existing.districtId !== input.districtId) {
@@ -85,7 +85,7 @@ export async function inviteClubAdmin(input: {
     if (existing.supabaseId && existing.supabaseId !== supabaseId) {
       return {
         ok: false,
-        error: "That email is already linked to a different Auth user.",
+        error: "That email is already linked to a different Auth account.",
       };
     }
 
@@ -288,7 +288,7 @@ export async function signupPublicOrg(input: {
   if (existingBySupabase) {
     return {
       ok: false,
-      error: "This Auth user is already linked to an organization.",
+      error: "This account is already linked to an organization.",
     };
   }
 

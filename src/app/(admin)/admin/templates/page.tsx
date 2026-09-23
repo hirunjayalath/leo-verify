@@ -180,8 +180,7 @@ export default async function AdminTemplatesPage() {
             <CardHeader>
               <CardTitle>Starter gallery</CardTitle>
               <CardDescription>
-                Pick a professional background and layout, then refine in the
-                designer.
+                Pick a background and layout, then adjust it in the designer.
               </CardDescription>
             </CardHeader>
             <CardContent>

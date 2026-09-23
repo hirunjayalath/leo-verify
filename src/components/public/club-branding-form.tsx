@@ -39,7 +39,7 @@ export function ClubBrandingForm({
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="publicSlug">Public portal slug</Label>
+        <Label htmlFor="publicSlug">Public page slug</Label>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">/o/</span>
           <Input
@@ -53,7 +53,7 @@ export function ClubBrandingForm({
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Your branded org page will be at /o/{slug || "…"}
+          Your club page will be at /o/{slug || "…"}
         </p>
       </div>
 
@@ -64,7 +64,7 @@ export function ClubBrandingForm({
           name="tagline"
           defaultValue={initial.tagline ?? ""}
           maxLength={160}
-          placeholder="Credentials that prove achievement"
+          placeholder="Certificates from Leo Club of University of Moratuwa"
         />
       </div>
 

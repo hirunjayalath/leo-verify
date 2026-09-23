@@ -57,7 +57,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Audit log</h1>
         <p className="mt-1 text-muted-foreground">
-          Append-only history of issue, revoke, reissue, and template edits.
+          History of issue, revoke, reissue, and template edits. Rows are not deleted.
         </p>
       </div>
       <Card>
@@ -74,7 +74,7 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
             <EmptyState
               icon={ScrollText}
               title="No activity yet"
-              description="Creates and updates will appear here."
+              description="Creates and updates show up here."
             />
           ) : (
             <>

@@ -11,8 +11,7 @@ export default function NotFound() {
           Page not found
         </h1>
         <p className="mt-2 max-w-md text-center text-muted-foreground">
-          That URL does not match a LeoVerify page. You can verify a certificate or
-          return home.
+          That URL is not a LeoVerify page. You can check a certificate or go home.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link

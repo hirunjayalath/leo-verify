@@ -191,8 +191,8 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Certificates</h1>
         <p className="mt-1 text-muted-foreground">
-          Issue, reissue, revoke, and bulk-import — every write is attributed in
-          the audit log. Filter by event, year, and status for the club archive.
+          Issue, reissue, revoke, and import a roster. Each change is written to
+          the audit log. Filter by event, year, and status.
         </p>
       </div>
 
@@ -304,7 +304,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
             <CardHeader>
               <CardTitle>Recent imports</CardTitle>
               <CardDescription>
-                Status of roster uploads. Expand a row to see per-row failures.
+                Status of roster uploads. Open a row to see which lines failed.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -326,7 +326,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
             <CardHeader>
               <CardTitle>Issue one</CardTitle>
               <CardDescription>
-                Uses the event’s latest approved template.
+                Uses the event's latest approved template.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -339,8 +339,8 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
               <CardTitle>Bulk roster import</CardTitle>
               <CardDescription>
                 CSV or Excel (.xlsx). Needs an approved template. Map columns if
-                headers differ. All rows validate before any write; re-runs skip
-                duplicates.
+                the headers differ. All rows are checked before anything is
+                written. A re-run skips rows that already succeeded.
               </CardDescription>
             </CardHeader>
             <CardContent>

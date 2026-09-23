@@ -121,7 +121,7 @@ export function AdminMfaSetup({
   if (level === "aal2") {
     return (
       <p className="text-sm text-muted-foreground">
-        MFA is active. Redirecting to the dashboard…
+        Authenticator is on. Sending you to the dashboard.
       </p>
     );
   }
@@ -135,9 +135,8 @@ export function AdminMfaSetup({
           Enable authenticator
         </h1>
         <p className="text-sm text-muted-foreground">
-          Club and district admin sessions require a TOTP second factor
-          (Supabase AAL2). Use an authenticator app such as Google Authenticator
-          or 1Password.
+          Club and district admins need a second factor. Use an authenticator
+          app such as Google Authenticator or 1Password.
         </p>
       </div>
 
@@ -193,8 +192,8 @@ export function AdminMfaSetup({
 
       {hasVerifiedFactor && !qr && (
         <p className="text-xs text-muted-foreground">
-          An authenticator is already enrolled on this account. Enter a fresh
-          code to raise this session to AAL2.
+          An authenticator is already on this account. Enter a fresh code to
+          finish this sign-in.
         </p>
       )}
     </div>

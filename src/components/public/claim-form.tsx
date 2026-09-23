@@ -66,7 +66,7 @@ export function ClaimForm({
         <p className="font-medium text-foreground">Sign in required</p>
         <p className="text-muted-foreground">
           Claim uses your signed-in email so only you can link certificates
-          issued to that address.
+          sent to that address.
         </p>
         <Link href="/login?next=/claim">
           <Button type="button" variant="brand" size="lg" className="w-full">
@@ -121,13 +121,13 @@ export function ClaimForm({
         <div className="space-y-4 rounded-xl border border-success/30 bg-success-muted/40 px-4 py-5">
           <p className="text-sm font-medium text-foreground">
             {claimed != null
-              ? `Claimed ${claimed} certificate(s). Next steps below.`
-              : "Your claim profile is ready."}
+              ? `Claimed ${claimed} certificate(s). Next steps are below.`
+              : "Your profile is ready."}
           </p>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>Toggle public profile if you want a shareable listing.</li>
-            <li>Mark certificates unlisted if they should stay private.</li>
-            <li>Copy or open your profile URL when you are ready to share.</li>
+            <li>Turn on public profile if you want a shareable list.</li>
+            <li>Hide a certificate if it should stay private.</li>
+            <li>Copy or open your profile URL when you want to share it.</li>
           </ol>
           {publicProfile ? (
             <div className="flex flex-wrap gap-2">
@@ -155,8 +155,8 @@ export function ClaimForm({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Your profile is private — enable public profile below to share a
-              public URL.
+              Your profile is private. Turn on public profile below if you want
+              a public URL.
             </p>
           )}
         </div>

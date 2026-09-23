@@ -24,16 +24,15 @@ export default async function AdminIssuePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Issue</h1>
         <p className="mt-1 text-muted-foreground">
-          Guided flow: pick an event, add recipients, send verifiable
-          credentials.
+          Pick an event, add recipients, and send certificates.
         </p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Issue wizard</CardTitle>
           <CardDescription>
-            One certificate or bulk CSV/Excel — same validation rules as the
-            certificates hub.
+            One certificate or a CSV/Excel roster. Same checks as the
+            certificates page.
           </CardDescription>
         </CardHeader>
         <CardContent>

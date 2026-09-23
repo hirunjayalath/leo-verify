@@ -27,7 +27,7 @@ export function CreateTemplateForm({
         toast.error(result.error);
         return;
       }
-      toast.success("Template created — opening designer");
+      toast.success("Template created. Opening designer.");
       router.push(`/admin/templates/${result.id}/edit`);
       router.refresh();
     });

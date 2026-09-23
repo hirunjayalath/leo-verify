@@ -136,7 +136,7 @@ function LoginForm() {
           setLoading(false);
           return;
         }
-        toast.success("Password updated — you are signed in");
+        toast.success("Password updated. You are signed in.");
         router.push(safeInternalPath(searchParams.get("next"), "/claim"));
         router.refresh();
         return;
@@ -164,7 +164,7 @@ function LoginForm() {
           setLoading(false);
           return;
         }
-        toast.success("Account created — check your email if confirmation is required");
+        toast.success("Account created. Check your email if you need to confirm it.");
         router.push(safeInternalPath(searchParams.get("next"), "/claim"));
         router.refresh();
         return;
@@ -183,7 +183,7 @@ function LoginForm() {
       router.push(next);
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign-in failed.");
+      toast.error(err instanceof Error ? err.message : "Sign-in failed");
       setLoading(false);
     }
   }
@@ -331,7 +331,7 @@ function LoginForm() {
       )}
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
-          Back to public site
+          Back to home
         </Link>
       </p>
       {/* Keep title in sync for screen readers via visually tied copy */}
@@ -354,7 +354,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Sign in"
-      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates. Club admins: use the account your district linked for you."
+      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates. Club admins should use the account their district linked."
     >
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />

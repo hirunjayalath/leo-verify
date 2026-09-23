@@ -126,15 +126,15 @@ describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
   it("uses a uniform invalid message (no existence oracle)", () => {
     expect(evaluateVerification(null, "deadbeef")).toEqual({
       status: "invalid",
-      message: "Could not verify this certificate.",
+      message: "Could not check this certificate.",
     });
     expect(evaluateVerification(row, null)).toEqual({
       status: "invalid",
-      message: "Could not verify this certificate.",
+      message: "Could not check this certificate.",
     });
     expect(evaluateVerification(row, "deadbeef")).toEqual({
       status: "invalid",
-      message: "Could not verify this certificate.",
+      message: "Could not check this certificate.",
     });
   });
 });

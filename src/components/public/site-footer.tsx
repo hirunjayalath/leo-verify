@@ -11,7 +11,7 @@ export function SiteFooter() {
         <div className="lg:col-span-2">
           <BrandLockup size={32} />
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-            A scan checks the live record, not a file someone emailed you.
+            Scan the QR. The site is the record, not the PDF.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Operated by Leo Club of University of Moratuwa · District 306 A2
@@ -46,7 +46,7 @@ export function SiteFooter() {
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Trust &amp; club
+            Club
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>

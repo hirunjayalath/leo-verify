@@ -126,14 +126,14 @@ export default async function AdminDashboardPage() {
     {
       n: "1",
       title: "Create an event",
-      body: "Scope templates and certificate batches.",
+      body: "Group templates and certificate batches.",
       href: "/admin/events",
       done: events > 0,
     },
     {
       n: "2",
       title: "Approve a template",
-      body: "Upload a background — club templates auto-approve on create.",
+      body: "Upload a background. Club templates are approved on create.",
       href: "/admin/templates",
       done: templates > 0,
     },
@@ -147,7 +147,7 @@ export default async function AdminDashboardPage() {
     {
       n: "4",
       title: "Open the verify link",
-      body: "After issue, copy the verify link from the success toast and open /v.",
+      body: "After issue, copy the check link from the toast and open it.",
       href: "/admin/certificates",
       done: certificatesIssued > 0,
     },
@@ -157,7 +157,7 @@ export default async function AdminDashboardPage() {
     {
       label: "Events",
       value: events,
-      hint: events === 0 ? "Create your first event" : "Active event records",
+      hint: events === 0 ? "Create your first event" : "Events in your club",
       icon: CalendarDays,
       tint: "bg-info-muted text-info",
       href: "/admin/events",
@@ -202,7 +202,7 @@ export default async function AdminDashboardPage() {
     {
       n: "1",
       title: "Create an event",
-      body: "Scope templates and certificate batches.",
+      body: "Group templates and certificate batches.",
       href: "/admin/events",
     },
     {
@@ -236,7 +236,7 @@ export default async function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>Get started in three steps</CardTitle>
             <CardDescription>
-              Your club is ready — walk through the golden path once.
+              Your club is ready. Do these three steps once.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -267,8 +267,8 @@ export default async function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>First-issue checklist</CardTitle>
             <CardDescription>
-              Finish the path: event → template → issue → open the public verify
-              page.
+              Finish this path: event, template, issue, then open the public
+              check page.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -338,7 +338,7 @@ export default async function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>This month</CardTitle>
             <CardDescription>
-              Issuance volume this calendar month
+              Certificates issued this calendar month
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -359,7 +359,7 @@ export default async function AdminDashboardPage() {
               {club.publicSlug ? (
                 <>
                   {" "}
-                  · Portal{" "}
+                  · Club page{" "}
                   <Link
                     href={`/o/${club.publicSlug}`}
                     className="underline-offset-4 hover:underline"
@@ -408,7 +408,7 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent activity</CardTitle>
-            <CardDescription>Latest attributed writes for this club</CardDescription>
+            <CardDescription>Latest issue, revoke, and template edits for this club</CardDescription>
           </CardHeader>
           <CardContent>
             {recentAudit.length === 0 ? (
@@ -450,7 +450,7 @@ export default async function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Quick actions</CardTitle>
-            <CardDescription>Jump into the next step</CardDescription>
+            <CardDescription>Common next steps</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {actions.map((action) => {

@@ -55,7 +55,7 @@ export function CertificatesTable({
       <EmptyState
         icon={FileBadge2}
         title="No certificates yet"
-        description="Issue one certificate or import a CSV roster to populate this list."
+        description="Issue one certificate or import a CSV roster."
         action={
           <Link
             href="#issue"
