@@ -21,7 +21,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { inviteClubAdmin } from "@/lib/orgs/service";
+import { inviteClubAdmin, switchActingClub } from "@/lib/orgs/service";
 
 describe("orgs service invite isolation", () => {
   beforeEach(() => {
@@ -101,5 +101,96 @@ describe("orgs service invite isolation", () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/not found/i);
+  });
+});
+
+describe("switchActingClub isolation", () => {
+  beforeEach(() => {
+    vi.mocked(prisma.club.findFirst).mockReset();
+    vi.mocked(prisma.user.findUnique).mockReset();
+    vi.mocked(prisma.user.update).mockReset();
+  });
+
+  it("switches a district admin to a club in their district", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "dist-admin-1",
+      role: UserRole.district_admin,
+      districtId: "district-a",
+      clubId: null,
+    } as never);
+    vi.mocked(prisma.club.findFirst).mockResolvedValue({
+      id: "club-a",
+      districtId: "district-a",
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({ id: "dist-admin-1" } as never);
+
+    const result = await switchActingClub({
+      districtId: "district-a",
+      actorUserId: "dist-admin-1",
+      clubId: "club-a",
+    });
+    expect(result.ok).toBe(true);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "dist-admin-1" },
+      data: { clubId: "club-a" },
+    });
+  });
+
+  it("refuses a club in another district", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "dist-admin-1",
+      role: UserRole.district_admin,
+      districtId: "district-a",
+      clubId: null,
+    } as never);
+    vi.mocked(prisma.club.findFirst).mockResolvedValue(null);
+
+    const result = await switchActingClub({
+      districtId: "district-a",
+      actorUserId: "dist-admin-1",
+      clubId: "club-elsewhere",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/not found/i);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses a club admin", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "club-admin-1",
+      role: UserRole.club_admin,
+      districtId: "district-a",
+      clubId: "club-a",
+    } as never);
+
+    const result = await switchActingClub({
+      districtId: "district-a",
+      actorUserId: "club-admin-1",
+      clubId: "club-b",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/district admin/i);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("clears the acting club", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "dist-admin-1",
+      role: UserRole.district_admin,
+      districtId: "district-a",
+      clubId: "club-a",
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({ id: "dist-admin-1" } as never);
+
+    const result = await switchActingClub({
+      districtId: "district-a",
+      actorUserId: "dist-admin-1",
+      clubId: null,
+    });
+    expect(result.ok).toBe(true);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: "dist-admin-1" },
+      data: { clubId: null },
+    });
   });
 });

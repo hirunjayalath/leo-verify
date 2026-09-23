@@ -108,3 +108,60 @@ export function requireEmailSent(result: {
 }
 
 export const resendCertificateEmail = sendCertificateEmail;
+
+export function buildClubAdminAssignedEmailHtml(input: {
+  name: string;
+  clubName: string;
+  appBaseUrl?: string;
+}): string {
+  const base = (
+    input.appBaseUrl ??
+    getPublicEnv().NEXT_PUBLIC_APP_URL
+  ).replace(/\/$/, "");
+  const loginUrl = `${base}/login`;
+  const name = escapeHtml(input.name);
+  const clubName = escapeHtml(input.clubName);
+  const safeLogin = escapeHtml(loginUrl);
+
+  return `
+        <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:#323232">
+        <p>Hi ${name},</p>
+        <p>You are a club admin for <strong>${clubName}</strong> on LeoVerify.</p>
+        <p><a href="${safeLogin}" style="color:#38a3e3">Sign in</a> with this email to issue and manage certificates.</p>
+        <p style="margin-top:24px;font-size:13px;color:#646464">From LeoVerify</p>
+        </div>
+      `;
+}
+
+export async function sendClubAdminAssignedEmail(input: {
+  to: string;
+  name: string;
+  clubName: string;
+}): Promise<{ sent: boolean; skipped?: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { sent: false, skipped: true, error: "RESEND_API_KEY not configured" };
+  }
+
+  const from =
+    process.env.EMAIL_FROM || "LeoVerify <certificates@leoverify.org>";
+
+  try {
+    const resend = new Resend(apiKey);
+    await resend.emails.send({
+      from,
+      to: input.to,
+      subject: `You are a club admin for ${input.clubName.replace(/[\r\n]/g, "")}`,
+      html: buildClubAdminAssignedEmailHtml({
+        name: input.name,
+        clubName: input.clubName,
+      }),
+    });
+    return { sent: true };
+  } catch (error) {
+    return {
+      sent: false,
+      error: error instanceof Error ? error.message : "Email send failed",
+    };
+  }
+}

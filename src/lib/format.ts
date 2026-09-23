@@ -27,7 +27,8 @@ const ACTION_LABELS: Record<string, string> = {
   "import.start": "Started CSV import",
   "club.create": "Onboarded club",
   "club.branding.update": "Updated club branding",
-  "user.invite": "Linked club admin",
+  "club.switch": "Switched acting club",
+  "user.invite": "Invited club admin",
   // Legacy underscore keys (if any old rows exist)
   create_event: "Created event",
   update_event: "Updated event",

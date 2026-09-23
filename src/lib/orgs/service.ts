@@ -23,6 +23,7 @@ type OrgResult = ActionResult<{
   id?: string;
   slug?: string;
   previousSlug?: string | null;
+  clubName?: string;
 }>;
 
 export async function createClub(input: {
@@ -48,6 +49,56 @@ export async function createClub(input: {
   });
 
   return { ok: true, id: club.id };
+}
+
+export async function switchActingClub(input: {
+  districtId: string;
+  actorUserId: string;
+  clubId: string | null;
+}): Promise<OrgResult> {
+  const actor = await prisma.user.findUnique({
+    where: { id: input.actorUserId },
+    select: { id: true, role: true, districtId: true, clubId: true },
+  });
+  if (
+    !actor ||
+    actor.role !== UserRole.district_admin ||
+    actor.districtId !== input.districtId
+  ) {
+    return fail("Only district admins can switch clubs.");
+  }
+
+  let nextClubId: string | null = input.clubId;
+  if (!nextClubId) {
+    nextClubId = null;
+  } else {
+    const club = await prisma.club.findFirst({
+      where: { id: nextClubId, districtId: input.districtId },
+      select: { id: true },
+    });
+    if (!club) return fail("Club not found in your district");
+  }
+
+  const previousClubId = actor.clubId;
+  if (previousClubId === nextClubId) {
+    return ok({ id: nextClubId ?? undefined });
+  }
+
+  await prisma.user.update({
+    where: { id: actor.id },
+    data: { clubId: nextClubId },
+  });
+
+  await writeAuditLog({
+    actorUserId: input.actorUserId,
+    action: "club.switch",
+    targetType: "Club",
+    targetId: nextClubId ?? input.districtId,
+    clubId: nextClubId,
+    metadata: { previousClubId, clubId: nextClubId },
+  });
+
+  return ok({ id: nextClubId ?? undefined });
 }
 
 export async function inviteClubAdmin(input: {
@@ -115,7 +166,7 @@ export async function inviteClubAdmin(input: {
       metadata: { email: invited.email, mode: "update" },
     });
 
-    return { ok: true, id: invited.id };
+    return { ok: true, id: invited.id, clubName: club.name };
   }
 
   const invited = await prisma.user.create({
@@ -138,7 +189,7 @@ export async function inviteClubAdmin(input: {
     metadata: { email: invited.email, mode: "create" },
   });
 
-  return { ok: true, id: invited.id };
+  return { ok: true, id: invited.id, clubName: club.name };
 }
 
 export async function reviewTemplate(input: {

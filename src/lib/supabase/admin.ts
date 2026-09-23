@@ -1,6 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export type AuthAdmin = Pick<SupabaseClient["auth"]["admin"], "createUser" | "listUsers" | "updateUserById">;
+export type AuthAdmin = Pick<
+  SupabaseClient["auth"]["admin"],
+  "createUser" | "listUsers" | "updateUserById" | "inviteUserByEmail"
+>;
 
 export function createServiceRoleClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -65,4 +68,33 @@ export async function ensureAuthUser(
   });
   if (updateError) throw updateError;
   return { id: existingId, email };
+}
+
+/** Invite a new Auth user, or find one that already exists. */
+export async function inviteOrFindAuthUser(
+  email: string,
+  admin: AuthAdmin = createServiceRoleClient().auth.admin,
+): Promise<{ id: string; email: string; invited: boolean }> {
+  const normalized = email.trim().toLowerCase();
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ).replace(/\/$/, "");
+  const { data, error } = await admin.inviteUserByEmail(normalized, {
+    redirectTo: `${appUrl}/login`,
+  });
+  if (!error && data.user?.id) {
+    return {
+      id: data.user.id,
+      email: data.user.email ?? normalized,
+      invited: true,
+    };
+  }
+  if (error && isAlreadyRegistered(error.message)) {
+    const existingId = await findUserIdByEmail(admin, normalized);
+    if (!existingId) {
+      throw error;
+    }
+    return { id: existingId, email: normalized, invited: false };
+  }
+  throw error ?? new Error(`Could not invite Auth user for ${normalized}`);
 }

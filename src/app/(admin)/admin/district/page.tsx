@@ -5,6 +5,8 @@ import {
   FileBadge2,
   LayoutTemplate,
 } from "lucide-react";
+import { ClubSwitcher } from "@/components/admin/club-switcher";
+import { DistrictCharts } from "@/components/admin/district-charts";
 import {
   CreateClubForm,
   InviteAdminForm,
@@ -211,6 +213,28 @@ export default async function DistrictAdminPage() {
         })}
       </div>
 
+      {(monthlyRows.some((row) => row.issued > 0 || row.revoked > 0) ||
+        perClub.some((row) => row.issued > 0)) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Activity</CardTitle>
+            <CardDescription>
+              Issued and revoked certificates over the last 12 months
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DistrictCharts
+              monthlyRows={monthlyRows}
+              perClub={perClub.map(({ club, issued }) => ({
+                id: club.id,
+                name: club.name,
+                issued,
+              }))}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -346,6 +370,29 @@ export default async function DistrictAdminPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Work as a club</CardTitle>
+            <CardDescription>
+              Issue and manage certificates as one club in this district
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {clubs.length === 0 ? (
+              <EmptyState
+                icon={Building2}
+                title="No clubs yet"
+                description="Add a club first, then you can work as that club."
+              />
+            ) : (
+              <ClubSwitcher
+                clubs={clubs.map((c) => ({ id: c.id, name: c.name }))}
+                currentClubId={user.clubId}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Onboard club</CardTitle>
             <CardDescription>Creates a club in this district</CardDescription>
           </CardHeader>
@@ -356,9 +403,9 @@ export default async function DistrictAdminPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Link club admin</CardTitle>
+            <CardTitle>Invite club admin</CardTitle>
             <CardDescription>
-              Create the Auth user in Supabase first, then paste the user id.
+              Email an invite. They sign in and manage that club.
             </CardDescription>
           </CardHeader>
           <CardContent>

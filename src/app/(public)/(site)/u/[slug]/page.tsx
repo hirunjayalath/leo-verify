@@ -4,9 +4,11 @@ import Link from "next/link";
 import { FileBadge2 } from "lucide-react";
 import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { prismaService } from "@/lib/db";
+import { cn } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -16,13 +18,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const recipient = await prismaService.recipient.findUnique({ where: { slug } });
   if (!recipient?.publicProfile) notFound();
+  const title = `${recipient.name ?? "Recipient"} certificates`;
+  const description = "Certificates on LeoVerify";
+  const ogImagePath = `/api/og/profile/${encodeURIComponent(slug)}`;
   return {
     title: recipient.name ?? "Recipient",
-    description: "Public LeoVerify certificate profile",
+    description,
     robots: { index: false, follow: false },
     openGraph: {
-      title: `${recipient.name ?? "Recipient"} certificates`,
-      description: "Certificates on LeoVerify",
+      title,
+      description,
+      images: [{ url: ogImagePath, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImagePath],
     },
   };
 }
@@ -57,6 +69,10 @@ export default async function PublicProfilePage({ params }: PageProps) {
   }
 
   const name = recipient.name ?? "LeoVerify recipient";
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ).replace(/\/$/, "");
+  const shareUrl = `${appUrl}/u/${encodeURIComponent(slug)}`;
 
   return (
     <div className="surface-grid">
@@ -87,6 +103,14 @@ export default async function PublicProfilePage({ params }: PageProps) {
               This person chose to list certificates here. You can still check
               one certificate from the QR without a profile.
             </p>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-4")}
+            >
+              Share on LinkedIn
+            </a>
           </div>
         </div>
 

@@ -70,7 +70,7 @@ export function InviteAdminForm({
         toast.error(result.error);
         return;
       }
-      toast.success("Club admin linked");
+      toast.success("Invite sent");
       form.reset();
       router.refresh();
     });
@@ -79,9 +79,8 @@ export function InviteAdminForm({
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Create the Auth user in Supabase first. Copy their user id, then paste
-        it below to link them as club admin. Invite email is not sent
-        automatically yet.
+        We email them an invite to sign in as club admin. If they already have
+        an account, they can sign in with this email.
       </p>
       <div className="space-y-2">
         <Label htmlFor="invite-club">Club</Label>
@@ -101,22 +100,9 @@ export function InviteAdminForm({
         <Label htmlFor="invite-name">Name</Label>
         <Input id="invite-name" name="name" />
       </div>
-      <div className="space-y-2 rounded-lg border border-border px-3 py-3">
-        <Label htmlFor="invite-supabase">Supabase Auth user id</Label>
-        <Input
-          id="invite-supabase"
-          name="supabaseId"
-          required
-          placeholder="Paste the Auth user id from Supabase"
-        />
-        <p className="text-xs text-muted-foreground">
-          Required. Create the user in Supabase Authentication first, then paste
-          the user id here.
-        </p>
-      </div>
       <Button type="submit" disabled={pending}>
         {pending && <Spinner />}
-        {pending ? "Saving…" : "Link club admin"}
+        {pending ? "Sending…" : "Send invite"}
       </Button>
     </form>
   );

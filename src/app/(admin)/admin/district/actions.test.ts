@@ -13,6 +13,18 @@ vi.mock("@/lib/auth", () => ({
     fn(districtUser),
 }));
 
+vi.mock("@/lib/supabase/admin", () => ({
+  inviteOrFindAuthUser: vi.fn(async (email: string) => ({
+    id: "sid-from-invite",
+    email,
+    invited: true,
+  })),
+}));
+
+vi.mock("@/lib/email/resend", () => ({
+  sendClubAdminAssignedEmail: vi.fn(),
+}));
+
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -33,7 +45,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { UserRole } from "@/generated/prisma/client";
-import { inviteClubAdminAction } from "@/app/(admin)/admin/district/actions";
+import {
+  inviteClubAdminAction,
+  switchActingClubAction,
+} from "@/app/(admin)/admin/district/actions";
 import { prisma } from "@/lib/db";
 
 describe("inviteClubAdminAction tenancy", () => {
@@ -67,7 +82,6 @@ describe("inviteClubAdminAction tenancy", () => {
     const formData = new FormData();
     formData.set("clubId", "club-a");
     formData.set("email", "da@test.local");
-    formData.set("supabaseId", "sid-new");
     const result = await inviteClubAdminAction(formData);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/district admin/i);
@@ -93,9 +107,51 @@ describe("inviteClubAdminAction tenancy", () => {
     const formData = new FormData();
     formData.set("clubId", "club-a");
     formData.set("email", "other@test.local");
-    formData.set("supabaseId", "sid-2");
     const result = await inviteClubAdminAction(formData);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/another district/i);
+  });
+});
+
+describe("switchActingClubAction tenancy", () => {
+  beforeEach(() => {
+    vi.mocked(prisma.club.findFirst).mockReset();
+    vi.mocked(prisma.user.findUnique).mockReset();
+    vi.mocked(prisma.user.update).mockReset();
+  });
+
+  it("switches to a club in the district", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "dist-admin-1",
+      role: UserRole.district_admin,
+      districtId: "district-a",
+      clubId: null,
+    } as never);
+    vi.mocked(prisma.club.findFirst).mockResolvedValue({
+      id: "club-a",
+      districtId: "district-a",
+    } as never);
+    vi.mocked(prisma.user.update).mockResolvedValue({ id: "dist-admin-1" } as never);
+
+    const formData = new FormData();
+    formData.set("clubId", "club-a");
+    const result = await switchActingClubAction(formData);
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses a club outside the district", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "dist-admin-1",
+      role: UserRole.district_admin,
+      districtId: "district-a",
+      clubId: null,
+    } as never);
+    vi.mocked(prisma.club.findFirst).mockResolvedValue(null);
+
+    const formData = new FormData();
+    formData.set("clubId", "club-elsewhere");
+    const result = await switchActingClubAction(formData);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/not found/i);
   });
 });

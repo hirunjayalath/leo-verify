@@ -3,13 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { type ActionResult, fail } from "@/lib/action-result";
-import { asDistrictAdmin } from "@/lib/auth";
+import { asDistrictAdmin, requireDistrictAdmin } from "@/lib/auth";
+import { sendClubAdminAssignedEmail } from "@/lib/email/resend";
 import { captureException } from "@/lib/observability";
 import {
   createClub,
   inviteClubAdmin,
   reviewTemplate,
+  switchActingClub,
 } from "@/lib/orgs/service";
+import { inviteOrFindAuthUser } from "@/lib/supabase/admin";
 
 export async function createClubAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
   try {
@@ -48,38 +51,86 @@ export async function createClubAction(formData: FormData): Promise<ActionResult
   }
 }
 
-export async function inviteClubAdminAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
+export async function switchActingClubAction(
+  formData: FormData,
+): Promise<ActionResult<{ id?: string }>> {
   try {
     return await asDistrictAdmin(async (user) => {
       const parsed = z
         .object({
-          clubId: z.string().min(1),
-          email: z.string().email(),
-          name: z.string().trim().min(2).optional().or(z.literal("")),
-          supabaseId: z.string().min(1),
+          clubId: z.string().trim(),
         })
         .safeParse({
-          clubId: formData.get("clubId"),
-          email: formData.get("email"),
-          name: formData.get("name") || "",
-          supabaseId: formData.get("supabaseId"),
+          clubId: formData.get("clubId") ?? "",
         });
       if (!parsed.success) {
         return fail(parsed.error.issues[0]?.message ?? "Invalid input");
       }
 
-      const result = await inviteClubAdmin({
+      const result = await switchActingClub({
+        districtId: user.districtId,
+        actorUserId: user.id,
+        clubId: parsed.data.clubId || null,
+      });
+      if (!result.ok) return result;
+      revalidatePath("/admin");
+      revalidatePath("/admin/district");
+      return result;
+    });
+  } catch (error) {
+    await captureException(error, { phase: "club.switch" });
+    return fail("Could not switch club");
+  }
+}
+
+export async function inviteClubAdminAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
+  try {
+    const user = await requireDistrictAdmin();
+    const parsed = z
+      .object({
+        clubId: z.string().min(1),
+        email: z.string().email(),
+        name: z.string().trim().min(2).optional().or(z.literal("")),
+      })
+      .safeParse({
+        clubId: formData.get("clubId"),
+        email: formData.get("email"),
+        name: formData.get("name") || "",
+      });
+    if (!parsed.success) {
+      return fail(parsed.error.issues[0]?.message ?? "Invalid input");
+    }
+
+    let authUser: { id: string; email: string; invited: boolean };
+    try {
+      authUser = await inviteOrFindAuthUser(parsed.data.email);
+    } catch (error) {
+      await captureException(error, { phase: "user.invite.auth" });
+      return fail("Could not invite that email");
+    }
+
+    const result = await asDistrictAdmin(async () =>
+      inviteClubAdmin({
         districtId: user.districtId,
         actorUserId: user.id,
         clubId: parsed.data.clubId,
         email: parsed.data.email,
         name: parsed.data.name || undefined,
-        supabaseId: parsed.data.supabaseId,
+        supabaseId: authUser.id,
+      }),
+    );
+    if (!result.ok) return result;
+
+    if (!authUser.invited && result.clubName) {
+      await sendClubAdminAssignedEmail({
+        to: parsed.data.email,
+        name: parsed.data.name || parsed.data.email,
+        clubName: result.clubName,
       });
-      if (!result.ok) return result;
-      revalidatePath("/admin/district");
-      return result;
-    });
+    }
+
+    revalidatePath("/admin/district");
+    return result;
   } catch (error) {
     await captureException(error, { phase: "user.invite" });
     return fail("Could not invite admin");

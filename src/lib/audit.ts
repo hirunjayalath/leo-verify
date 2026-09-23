@@ -17,6 +17,7 @@ export type AuditAction =
   | "import.start"
   | "club.create"
   | "club.branding.update"
+  | "club.switch"
   | "user.invite";
 
 export async function writeAuditLog(input: {
