@@ -31,6 +31,7 @@ cp .env.example .env
 # Local UI without Auth: AUTH_DEV_BYPASS=true (forbidden in production)
 npx prisma generate
 npx prisma migrate deploy   # or migrate dev locally
+# Plain Postgres (no Supabase auth schema): npm run db:migrate-deploy
 npm run db:seed
 # Supabase SQL editor: apply supabase/rls-policies.sql
 # Optional: SEED_DISTRICT_ADMIN_* / SEED_RECIPIENT_* / SEED_CLUB_ADMIN_LOGIN_*

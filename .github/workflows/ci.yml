@@ -41,7 +41,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
-        run: npx prisma migrate deploy --config prisma7.config.ts
+        run: |
+          npx prisma db execute --file supabase/auth-uid-stub.sql --config prisma7.config.ts
+          npx prisma migrate deploy --config prisma7.config.ts
       - name: Set tenant role passwords
         env:
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres

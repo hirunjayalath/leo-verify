@@ -12,6 +12,7 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate-deploy": "prisma db execute --file supabase/auth-uid-stub.sql --config prisma7.config.ts && prisma migrate deploy --config prisma7.config.ts",
     "db:seed": "npx tsx prisma/seed.ts"
   },
   "prisma": {

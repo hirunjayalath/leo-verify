@@ -1,5 +1,6 @@
 -- LeoVerify Row-Level Security policies (Rule 3)
 -- Applied by Prisma migration (not only a SQL-editor step).
+-- Plain Postgres: apply supabase/auth-uid-stub.sql first so auth.uid() exists.
 -- App-level clubId checks stay required. These policies are the backstop for
 -- leoverify_app. Public verify / portals / signup use leoverify_service.
 
