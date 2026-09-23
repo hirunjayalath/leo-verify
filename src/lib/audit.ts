@@ -9,16 +9,19 @@ export type AuditAction =
   | "template.approve"
   | "template.reject"
   | "template.revert"
+  | "template.signature.upload"
+  | "template.duplicate"
   | "certificate.issue"
   | "certificate.revoke"
   | "certificate.reissue"
   | "import.start"
   | "club.create"
+  | "club.branding.update"
   | "user.invite";
 
 export async function writeAuditLog(input: {
   actorUserId?: string | null;
-  action: AuditAction | string;
+  action: AuditAction;
   targetType: string;
   targetId: string;
   clubId?: string | null;

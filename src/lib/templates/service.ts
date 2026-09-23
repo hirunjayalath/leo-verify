@@ -5,7 +5,7 @@ import {
   templateLayoutSchema,
 } from "@/lib/certificates/layout";
 import { sniffImageBytes } from "@/lib/certificates/image-sniff";
-import { prisma } from "@/lib/db";
+import { assertNotInRlsContext, prisma, withRlsContext } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 import { galleryById } from "@/lib/templates/gallery";
 
@@ -22,10 +22,12 @@ function approvalStatus(clubType: ClubType): TemplateStatus {
 export async function createTemplate(input: {
   clubId: string;
   actorUserId: string;
+  actorSupabaseId: string;
   eventId: string;
   name: string;
   background: File;
 }): Promise<TemplateServiceResult> {
+  assertNotInRlsContext("createTemplate");
   if (!input.eventId || input.name.length < 2) {
     return { ok: false, error: "Event and template name are required" };
   }
@@ -36,18 +38,21 @@ export async function createTemplate(input: {
     return { ok: false, error: "Image must be 5 MB or smaller" };
   }
 
-  const event = await prisma.event.findFirst({
-    where: { id: input.eventId, clubId: input.clubId },
-  });
-  if (!event) return { ok: false, error: "Event not found" };
-
-  const club = await prisma.club.findUniqueOrThrow({
-    where: { id: input.clubId },
-  });
-
   const bytes = Buffer.from(await input.background.arrayBuffer());
   const sniffed = sniffImageBytes(bytes);
   if (!sniffed.ok) return { ok: false, error: sniffed.error };
+
+  const scoped = await withRlsContext(input.actorSupabaseId, async (tx) => {
+    const event = await tx.event.findFirst({
+      where: { id: input.eventId, clubId: input.clubId },
+    });
+    if (!event) return { ok: false as const, error: "Event not found" };
+    const club = await tx.club.findUniqueOrThrow({
+      where: { id: input.clubId },
+    });
+    return { ok: true as const, club };
+  });
+  if (!scoped.ok) return scoped;
 
   const key = buildObjectKey("templates", input.clubId, sniffed.ext);
   const uploaded = await uploadObject({
@@ -56,41 +61,45 @@ export async function createTemplate(input: {
     contentType: sniffed.contentType,
   });
 
-  const status = approvalStatus(club.type);
-  const template = await prisma.certificateTemplate.create({
-    data: {
-      eventId: input.eventId,
-      clubId: input.clubId,
-      name: input.name,
-      backgroundUrl: uploaded.url,
-      layout: DEFAULT_LAYOUT,
-      status,
-      createdById: input.actorUserId,
-      lastEditedById: input.actorUserId,
-    },
-  });
+  const status = approvalStatus(scoped.club.type);
+  return withRlsContext(input.actorSupabaseId, async (tx) => {
+    const template = await tx.certificateTemplate.create({
+      data: {
+        eventId: input.eventId,
+        clubId: input.clubId,
+        name: input.name,
+        backgroundUrl: uploaded.url,
+        layout: DEFAULT_LAYOUT,
+        status,
+        createdById: input.actorUserId,
+        lastEditedById: input.actorUserId,
+      },
+    });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "template.create",
-    targetType: "CertificateTemplate",
-    targetId: template.id,
-    clubId: input.clubId,
-    metadata: { name: input.name, eventId: input.eventId, status },
-  });
-
-  if (status === TemplateStatus.approved) {
     await writeAuditLog({
       actorUserId: input.actorUserId,
-      action: "template.approve",
+      action: "template.create",
       targetType: "CertificateTemplate",
       targetId: template.id,
       clubId: input.clubId,
-      metadata: { auto: true },
+      metadata: { name: input.name, eventId: input.eventId, status },
+      client: tx,
     });
-  }
 
-  return { ok: true, id: template.id };
+    if (status === TemplateStatus.approved) {
+      await writeAuditLog({
+        actorUserId: input.actorUserId,
+        action: "template.approve",
+        targetType: "CertificateTemplate",
+        targetId: template.id,
+        clubId: input.clubId,
+        metadata: { auto: true },
+        client: tx,
+      });
+    }
+
+    return { ok: true, id: template.id };
+  });
 }
 
 export async function approveOwnTemplate(input: {
@@ -163,9 +172,11 @@ export async function saveTemplateLayout(input: {
 export async function uploadTemplateSignature(input: {
   clubId: string;
   actorUserId: string;
+  actorSupabaseId: string;
   templateId: string;
   signature: File;
 }): Promise<TemplateServiceResult> {
+  assertNotInRlsContext("uploadTemplateSignature");
   if (!input.templateId) return { ok: false, error: "Template id required" };
   if (!(input.signature instanceof File) || input.signature.size === 0) {
     return { ok: false, error: "Signature image is required" };
@@ -174,14 +185,16 @@ export async function uploadTemplateSignature(input: {
     return { ok: false, error: "Signature must be 2 MB or smaller" };
   }
 
-  const template = await prisma.certificateTemplate.findFirst({
-    where: { id: input.templateId, clubId: input.clubId },
-  });
-  if (!template) return { ok: false, error: "Template not found" };
-
   const bytes = Buffer.from(await input.signature.arrayBuffer());
   const sniffed = sniffImageBytes(bytes);
   if (!sniffed.ok) return { ok: false, error: sniffed.error };
+
+  const template = await withRlsContext(input.actorSupabaseId, (tx) =>
+    tx.certificateTemplate.findFirst({
+      where: { id: input.templateId, clubId: input.clubId },
+    }),
+  );
+  if (!template) return { ok: false, error: "Template not found" };
 
   const key = buildObjectKey("signatures", input.clubId, sniffed.ext);
   const uploaded = await uploadObject({
@@ -190,13 +203,16 @@ export async function uploadTemplateSignature(input: {
     contentType: sniffed.contentType,
   });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "template.signature.upload",
-    targetType: "CertificateTemplate",
-    targetId: template.id,
-    clubId: input.clubId,
-    metadata: { key },
+  await withRlsContext(input.actorSupabaseId, async (tx) => {
+    await writeAuditLog({
+      actorUserId: input.actorUserId,
+      action: "template.signature.upload",
+      targetType: "CertificateTemplate",
+      targetId: template.id,
+      clubId: input.clubId,
+      metadata: { key },
+      client: tx,
+    });
   });
 
   return { ok: true, id: template.id, url: uploaded.url };
@@ -263,22 +279,28 @@ export async function revertTemplateToDraft(input: {
 export async function createFromGallery(input: {
   clubId: string;
   actorUserId: string;
+  actorSupabaseId: string;
   eventId: string;
   galleryId: string;
   name: string;
 }): Promise<TemplateServiceResult> {
+  assertNotInRlsContext("createFromGallery");
   const preset = galleryById(input.galleryId);
   if (!preset) return { ok: false, error: "Gallery template not found" };
   if (!input.eventId) return { ok: false, error: "Event is required" };
 
-  const event = await prisma.event.findFirst({
-    where: { id: input.eventId, clubId: input.clubId },
+  const scoped = await withRlsContext(input.actorSupabaseId, async (tx) => {
+    const event = await tx.event.findFirst({
+      where: { id: input.eventId, clubId: input.clubId },
+    });
+    if (!event) return { ok: false as const, error: "Event not found" };
+    const club = await tx.club.findUniqueOrThrow({
+      where: { id: input.clubId },
+    });
+    return { ok: true as const, club };
   });
-  if (!event) return { ok: false, error: "Event not found" };
+  if (!scoped.ok) return scoped;
 
-  const club = await prisma.club.findUniqueOrThrow({
-    where: { id: input.clubId },
-  });
   const { readFile } = await import("node:fs/promises");
   const { join } = await import("node:path");
   const rel = preset.backgroundPath.replace(/^\//, "");
@@ -293,36 +315,39 @@ export async function createFromGallery(input: {
     contentType: sniffed.contentType,
   });
 
-  const status = approvalStatus(club.type);
-  const template = await prisma.certificateTemplate.create({
-    data: {
-      eventId: input.eventId,
+  const status = approvalStatus(scoped.club.type);
+  return withRlsContext(input.actorSupabaseId, async (tx) => {
+    const template = await tx.certificateTemplate.create({
+      data: {
+        eventId: input.eventId,
+        clubId: input.clubId,
+        name: input.name || preset.name,
+        backgroundUrl: uploaded.url,
+        layout: preset.layout,
+        pageSize: "a4_landscape",
+        status,
+        createdById: input.actorUserId,
+        lastEditedById: input.actorUserId,
+      },
+    });
+
+    await writeAuditLog({
+      actorUserId: input.actorUserId,
+      action: "template.create",
+      targetType: "CertificateTemplate",
+      targetId: template.id,
       clubId: input.clubId,
-      name: input.name || preset.name,
-      backgroundUrl: uploaded.url,
-      layout: preset.layout,
-      pageSize: "a4_landscape",
-      status,
-      createdById: input.actorUserId,
-      lastEditedById: input.actorUserId,
-    },
-  });
+      metadata: {
+        galleryId: input.galleryId,
+        eventId: input.eventId,
+        status,
+        name: template.name,
+      },
+      client: tx,
+    });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "template.create",
-    targetType: "CertificateTemplate",
-    targetId: template.id,
-    clubId: input.clubId,
-    metadata: {
-      galleryId: input.galleryId,
-      eventId: input.eventId,
-      status,
-      name: template.name,
-    },
+    return { ok: true, id: template.id };
   });
-
-  return { ok: true, id: template.id };
 }
 
 export async function duplicateTemplate(input: {

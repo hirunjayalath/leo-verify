@@ -3,6 +3,7 @@ export type {
   CreatedCertificateRow,
   IssueCertificateInput,
   IssueCertificateResult,
+  IssueRecordCreatedOutcome,
 } from "@/lib/certificates/records";
 export {
   attachCertificatePdf,

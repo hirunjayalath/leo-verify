@@ -7,11 +7,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verify/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { buildVerificationPath } from "@/lib/certificates/token";
-import { lookupCertificateForVerify } from "@/lib/certificates/verify-lookup";
-import {
-  clientIpFromHeaders,
-  rateLimitVerification,
-} from "@/lib/rate-limit";
+import { loadPublicVerification } from "@/lib/certificates/verify-lookup";
+import { clientIpFromHeaders } from "@/lib/rate-limit";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -26,17 +23,19 @@ export async function generateMetadata({
   const { t } = await searchParams;
   const uniqueId = decodeURIComponent(id);
   const robots = { index: false, follow: false } as const;
-  let row;
-  try {
-    row = await lookupCertificateForVerify(uniqueId);
-  } catch {
+  const headerList = await headers();
+  const load = await loadPublicVerification(
+    uniqueId,
+    clientIpFromHeaders(headerList),
+  );
+  if (load.kind !== "ready") {
     return {
       title: "Certificate check",
       description: "Certificate check on LeoVerify.",
       robots,
     };
   }
-  const result = evaluateVerification(row, t);
+  const result = evaluateVerification(load.row, t);
 
   const ogImagePath = t
     ? `/api/og/verify/${encodeURIComponent(uniqueId)}?t=${encodeURIComponent(t)}`
@@ -81,8 +80,14 @@ export default async function VerificationPage({
   searchParams,
 }: PageProps) {
   const headerList = await headers();
-  const limit = await rateLimitVerification(clientIpFromHeaders(headerList));
-  if (!limit.success) {
+  const { id } = await params;
+  const { t } = await searchParams;
+  const uniqueId = decodeURIComponent(id);
+  const load = await loadPublicVerification(
+    uniqueId,
+    clientIpFromHeaders(headerList),
+  );
+  if (load.kind === "limited") {
     return (
       <div className="surface-grid">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
@@ -100,14 +105,7 @@ export default async function VerificationPage({
       </div>
     );
   }
-
-  const { id } = await params;
-  const { t } = await searchParams;
-  const uniqueId = decodeURIComponent(id);
-  let row;
-  try {
-    row = await lookupCertificateForVerify(uniqueId);
-  } catch {
+  if (load.kind === "unavailable") {
     return (
       <div className="surface-grid">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
@@ -125,7 +123,7 @@ export default async function VerificationPage({
       </div>
     );
   }
-  const result = evaluateVerification(row, t);
+  const result = evaluateVerification(load.row, t);
   const checkedAt = new Date().toISOString();
   const isRevoked = result.status === "revoked";
   const appUrl = (

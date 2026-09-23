@@ -34,7 +34,6 @@ export type PublicVerificationResult =
 
 export type CertificateLookupRow = {
   uniqueId: string;
-  verificationToken: string;
   recipientName: string;
   role: string;
   achievement: string | null;

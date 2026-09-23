@@ -8,10 +8,16 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  rateLimitVerification: vi.fn(),
+}));
+
 import { CertificateStatus } from "@/generated/prisma/client";
 import { prismaService } from "@/lib/db";
+import { rateLimitVerification } from "@/lib/rate-limit";
 import {
   getVerifiedShareCard,
+  loadPublicVerificationQuery,
   lookupCertificateForVerifyQuery,
 } from "@/lib/certificates/verify-lookup";
 import { computeVerificationToken } from "@/lib/certificates/token";
@@ -19,9 +25,23 @@ import { computeVerificationToken } from "@/lib/certificates/token";
 describe("getVerifiedShareCard", () => {
   beforeEach(() => {
     vi.mocked(prismaService.certificate.findUnique).mockReset();
+    vi.mocked(rateLimitVerification).mockReset();
     process.env.CERT_HMAC_SECRET =
       process.env.CERT_HMAC_SECRET ||
       "test-secret-at-least-32-characters-long!!";
+  });
+
+  it("does not look up a certificate when the limiter denies", async () => {
+    vi.mocked(rateLimitVerification).mockResolvedValue({
+      success: false,
+      remaining: 0,
+    });
+    const load = await loadPublicVerificationQuery(
+      "LEO-UOM-2026-000001",
+      "203.0.113.10",
+    );
+    expect(load).toEqual({ kind: "limited" });
+    expect(prismaService.certificate.findUnique).not.toHaveBeenCalled();
   });
 
   it("returns null without a token", async () => {

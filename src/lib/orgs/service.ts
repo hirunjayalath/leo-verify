@@ -12,7 +12,12 @@ import {
   slugifyPublic,
 } from "@/lib/branding";
 import { invalidateClubBranding } from "@/lib/cache/safe-cache";
-import { prisma, prismaService } from "@/lib/db";
+import {
+  assertNotInRlsContext,
+  prisma,
+  prismaService,
+  withRlsContext,
+} from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 
 export type OrgServiceResult =
@@ -178,6 +183,7 @@ export async function reviewTemplate(input: {
 export async function updateClubBranding(input: {
   clubId: string;
   actorUserId: string;
+  actorSupabaseId: string;
   orgNameFallback: string;
   tagline: string;
   publicSlug: string;
@@ -185,6 +191,7 @@ export async function updateClubBranding(input: {
   accentColor: string;
   logo?: File | null;
 }): Promise<OrgServiceResult> {
+  assertNotInRlsContext("updateClubBranding");
   const slug = slugifyPublic(input.publicSlug || input.orgNameFallback);
   if (slug.length < 2 || slug.length > 48 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     return {
@@ -197,13 +204,15 @@ export async function updateClubBranding(input: {
     return { ok: false, error: "Colors must be valid hex values (#RGB or #RRGGBB)." };
   }
 
-  const taken = await prisma.club.findFirst({
-    where: {
-      publicSlug: slug,
-      NOT: { id: input.clubId },
-    },
-    select: { id: true },
-  });
+  const taken = await withRlsContext(input.actorSupabaseId, (tx) =>
+    tx.club.findFirst({
+      where: {
+        publicSlug: slug,
+        NOT: { id: input.clubId },
+      },
+      select: { id: true },
+    }),
+  );
   if (taken) return { ok: false, error: "That public slug is already taken." };
 
   let logoUrl: string | undefined;
@@ -223,29 +232,34 @@ export async function updateClubBranding(input: {
     logoUrl = uploaded.url;
   }
 
-  const previous = await prisma.club.findUnique({
-    where: { id: input.clubId },
-    select: { publicSlug: true, name: true },
-  });
+  const previous = await withRlsContext(input.actorSupabaseId, async (tx) => {
+    const current = await tx.club.findUnique({
+      where: { id: input.clubId },
+      select: { publicSlug: true, name: true },
+    });
 
-  await prisma.club.update({
-    where: { id: input.clubId },
-    data: {
-      publicSlug: slug,
-      primaryColor: normalizeHexColor(input.primaryColor, "#323232"),
-      accentColor: normalizeHexColor(input.accentColor, "#38a3e3"),
-      tagline: input.tagline ? input.tagline.slice(0, 160) : null,
-      ...(logoUrl ? { logoUrl } : {}),
-    },
-  });
+    await tx.club.update({
+      where: { id: input.clubId },
+      data: {
+        publicSlug: slug,
+        primaryColor: normalizeHexColor(input.primaryColor, "#323232"),
+        accentColor: normalizeHexColor(input.accentColor, "#38a3e3"),
+        tagline: input.tagline ? input.tagline.slice(0, 160) : null,
+        ...(logoUrl ? { logoUrl } : {}),
+      },
+    });
 
-  await writeAuditLog({
-    actorUserId: input.actorUserId,
-    action: "club.branding.update",
-    targetType: "Club",
-    targetId: input.clubId,
-    clubId: input.clubId,
-    metadata: { slug, name: previous?.name ?? input.orgNameFallback },
+    await writeAuditLog({
+      actorUserId: input.actorUserId,
+      action: "club.branding.update",
+      targetType: "Club",
+      targetId: input.clubId,
+      clubId: input.clubId,
+      metadata: { slug, name: current?.name ?? input.orgNameFallback },
+      client: tx,
+    });
+
+    return current;
   });
 
   invalidateClubBranding({

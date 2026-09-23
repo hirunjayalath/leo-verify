@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { asClubAdmin } from "@/lib/auth";
+import { requireClubAdmin } from "@/lib/auth";
 import { updateClubBranding } from "@/lib/orgs/service";
 
 export type BrandingActionResult =
@@ -11,11 +11,12 @@ export type BrandingActionResult =
 export async function updateClubBrandingAction(
   formData: FormData,
 ): Promise<BrandingActionResult> {
-  return asClubAdmin(async (user) => {
+  const user = await requireClubAdmin();
   const logo = formData.get("logo");
   const result = await updateClubBranding({
-    clubId: user.clubId!,
+    clubId: user.clubId,
     actorUserId: user.id,
+    actorSupabaseId: user.supabaseId,
     orgNameFallback: user.club?.name || "org",
     tagline: String(formData.get("tagline") || "").trim(),
     publicSlug: String(formData.get("publicSlug") || "").trim(),
@@ -32,5 +33,4 @@ export async function updateClubBrandingAction(
   }
   revalidatePath("/admin");
   return { ok: true };
-  });
 }

@@ -48,6 +48,22 @@ describe("claim + profile auth gates", () => {
     vi.mocked(prisma.certificate.findMany).mockReset();
   });
 
+  it("rejects claim with an invalid email without throwing", async () => {
+    getSupabaseAuthUser.mockResolvedValue({
+      id: "auth-1",
+      email: "signed-in@test.local",
+    });
+    const formData = new FormData();
+    formData.set("email", "not-an-email");
+    formData.set("name", "Person");
+
+    const result = await claimCertificatesAction(formData);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatch(/valid email/i);
+    }
+  });
+
   it("rejects claim without a Supabase session", async () => {
     getSupabaseAuthUser.mockResolvedValue(null);
     const formData = new FormData();

@@ -80,7 +80,6 @@ describe("HMAC verification token (Rule 2 / Rule 11)", () => {
 describe("evaluateVerification (Rule 1 / Rule 8 / revoked display)", () => {
   const row = {
     uniqueId: fields.uniqueId,
-    verificationToken: "",
     recipientName: fields.recipientName,
     role: fields.role,
     achievement: "Community Service",

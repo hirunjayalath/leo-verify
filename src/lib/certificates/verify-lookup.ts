@@ -2,8 +2,10 @@ import { cache } from "react";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { parseCertificateId } from "@/lib/certificates/id";
 import { evaluateVerification } from "@/lib/certificates/verify";
+import type { CertificateLookupRow } from "@/lib/certificates/pure/verify";
 import { prismaService } from "@/lib/db";
 import { logOps } from "@/lib/observability";
+import { rateLimitVerification } from "@/lib/rate-limit";
 
 /** Uncached query — used by tests and wrapped in cache() for one read per request. */
 export async function lookupCertificateForVerifyQuery(uniqueId: string) {
@@ -54,7 +56,6 @@ export async function lookupCertificateForVerifyQuery(uniqueId: string) {
 
   return {
     uniqueId: row.uniqueId,
-    verificationToken: "",
     recipientName: row.recipientName,
     role: row.role,
     achievement: row.achievement,
@@ -76,6 +77,28 @@ export async function lookupCertificateForVerifyQuery(uniqueId: string) {
 
 /** Request-scoped memo — metadata + page share one live DB read. */
 export const lookupCertificateForVerify = cache(lookupCertificateForVerifyQuery);
+
+export type PublicVerificationLoad =
+  | { kind: "limited" }
+  | { kind: "unavailable" }
+  | { kind: "ready"; row: CertificateLookupRow | null };
+
+/** Rate-limit then look up once. Metadata and the page share this via cache(). */
+export async function loadPublicVerificationQuery(
+  uniqueId: string,
+  ip: string,
+): Promise<PublicVerificationLoad> {
+  const limit = await rateLimitVerification(ip);
+  if (!limit.success) return { kind: "limited" };
+  try {
+    const row = await lookupCertificateForVerifyQuery(uniqueId);
+    return { kind: "ready", row };
+  } catch {
+    return { kind: "unavailable" };
+  }
+}
+
+export const loadPublicVerification = cache(loadPublicVerificationQuery);
 
 export async function getVerifiedShareCard(
   uniqueId: string,

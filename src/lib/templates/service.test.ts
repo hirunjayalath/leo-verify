@@ -21,13 +21,21 @@ vi.mock("@/lib/storage/r2", () => ({
   }),
 }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     event: { findFirst: vi.fn() },
     club: { findUniqueOrThrow: vi.fn() },
     certificateTemplate: { create: vi.fn(), findFirst: vi.fn() },
-  },
-}));
+  };
+  return {
+    prisma,
+    assertNotInRlsContext: vi.fn(),
+    withRlsContext: async (
+      _id: string,
+      fn: (tx: typeof prisma) => Promise<unknown>,
+    ) => fn(prisma),
+  };
+});
 
 import { prisma } from "@/lib/db";
 import { createTemplate } from "@/lib/templates/service";
@@ -49,6 +57,7 @@ describe("templates service", () => {
     const result = await createTemplate({
       clubId: "club-a",
       actorUserId: "user-1",
+      actorSupabaseId: "auth-1",
       eventId: "event-other",
       name: "Volunteer cert",
       background: pngFile(),
@@ -74,6 +83,7 @@ describe("templates service", () => {
     const result = await createTemplate({
       clubId: "club-a",
       actorUserId: "user-1",
+      actorSupabaseId: "auth-1",
       eventId: "event-1",
       name: "Volunteer cert",
       background: pngFile(),
@@ -107,6 +117,7 @@ describe("templates service", () => {
     const result = await createTemplate({
       clubId: "club-leo",
       actorUserId: "user-1",
+      actorSupabaseId: "auth-1",
       eventId: "event-1",
       name: "Leo cert",
       background: pngFile(),

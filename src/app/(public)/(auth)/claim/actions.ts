@@ -25,11 +25,14 @@ export async function claimCertificatesAction(formData: FormData) {
   const session = await requireRecipientSession();
   if (!session.ok) return session;
 
-  const email = z.string().email().parse(String(formData.get("email") || ""));
+  const parsed = z.string().email().safeParse(String(formData.get("email") || ""));
+  if (!parsed.success) {
+    return { ok: false as const, error: "Enter a valid email address." };
+  }
   const name = String(formData.get("name") || "").trim();
   const result = await claimCertificates({
     auth: session.auth,
-    email,
+    email: parsed.data,
     name,
   });
   if (!result.ok) return result;

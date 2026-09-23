@@ -11,6 +11,11 @@ import { allocateSequence } from "@/lib/certificates/sequence";
 import { prisma } from "@/lib/db";
 import { logOps } from "@/lib/observability";
 
+export type IssueRecordCreatedOutcome = {
+  kind: "issued" | "skipped";
+  certificateId: string;
+};
+
 export type IssueCertificateInput = {
   eventId: string;
   clubId: string;
@@ -23,6 +28,10 @@ export type IssueCertificateInput = {
   issueDate?: Date;
   sendEmail?: boolean;
   backgroundBytes?: Uint8Array;
+  onRecordCreated?: (
+    tx: PrismaClient,
+    outcome: IssueRecordCreatedOutcome,
+  ) => Promise<void>;
 };
 
 export type IssueCertificateResult = {
@@ -32,6 +41,7 @@ export type IssueCertificateResult = {
   pdfUrl: string | null;
   skipped?: boolean;
   emailSent?: boolean;
+  pdfAttachFailed?: boolean;
 };
 
 export type CreatedCertificateRow = {

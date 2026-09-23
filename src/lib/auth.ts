@@ -14,6 +14,8 @@ export type SessionUser = AppUser & {
   district: { id: string; code: string; name: string } | null;
 };
 
+export type ClubAdminUser = SessionUser & { clubId: string };
+
 /** Local-only. Never honor on Vercel even if NODE_ENV is wrongly development. */
 export function isAuthDevBypassEnabled(
   env: NodeJS.ProcessEnv = process.env,
@@ -174,7 +176,7 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-export async function requireClubAdmin(): Promise<SessionUser> {
+export async function requireClubAdmin(): Promise<ClubAdminUser> {
   const user = await requireUser();
   if (user.role !== "club_admin" && user.role !== "district_admin") {
     redirect("/claim");
@@ -186,7 +188,7 @@ export async function requireClubAdmin(): Promise<SessionUser> {
   if (!user.clubId) {
     throw new Error("Club admin is missing clubId");
   }
-  return user;
+  return user as ClubAdminUser;
 }
 
 export async function requireDistrictAdmin(): Promise<SessionUser> {
@@ -206,7 +208,7 @@ export function isDistrictAdmin(role: UserRole): boolean {
 }
 
 export async function asClubAdmin<T>(
-  fn: (user: SessionUser, tx: PrismaClient) => Promise<T>,
+  fn: (user: ClubAdminUser, tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   const user = await requireClubAdmin();
   return withSessionRls(user, (tx) => fn(user, tx));

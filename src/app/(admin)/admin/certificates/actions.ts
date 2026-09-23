@@ -6,9 +6,11 @@ import { requireClubAdmin } from "@/lib/auth";
 import type { ActionResult } from "@/lib/action-result";
 import {
   issueCertificate,
+  PDF_ATTACH_FAILED_MESSAGE,
   reissueCertificate,
   revokeCertificate,
 } from "@/lib/certificates/issue";
+import { captureException } from "@/lib/observability";
 
 export type { ActionResult };
 
@@ -40,7 +42,7 @@ export async function issueOneCertificateAction(
   try {
     const result = await issueCertificate({
       eventId: parsed.data.eventId,
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
       recipientName: parsed.data.recipientName,
@@ -55,6 +57,9 @@ export async function issueOneCertificateAction(
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
     revalidatePath("/admin/audit");
+    if (result.pdfAttachFailed) {
+      return { ok: false, error: PDF_ATTACH_FAILED_MESSAGE };
+    }
     return {
       ok: true,
       uniqueId: result.uniqueId,
@@ -63,10 +68,8 @@ export async function issueOneCertificateAction(
       skipped: result.skipped,
     };
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Issuance failed",
-    };
+    await captureException(error, { phase: "issue" });
+    return { ok: false, error: "Issuance failed" };
   }
 }
 
@@ -83,7 +86,7 @@ export async function revokeCertificateAction(
   try {
     await revokeCertificate({
       certificateId: id,
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
       reason,
@@ -93,10 +96,8 @@ export async function revokeCertificateAction(
     revalidatePath("/admin/audit");
     return { ok: true };
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Revoke failed",
-    };
+    await captureException(error, { phase: "revoke" });
+    return { ok: false, error: "Revoke failed" };
   }
 }
 
@@ -110,7 +111,7 @@ export async function reissueCertificateAction(
   try {
     const result = await reissueCertificate({
       certificateId: id,
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
     });
@@ -124,9 +125,7 @@ export async function reissueCertificateAction(
       pdfUrl: result.pdfUrl,
     };
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Reissue failed",
-    };
+    await captureException(error, { phase: "reissue" });
+    return { ok: false, error: "Reissue failed" };
   }
 }

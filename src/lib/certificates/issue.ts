@@ -19,6 +19,9 @@ import { logOps } from "@/lib/observability";
 
 export type { IssueCertificateInput, IssueCertificateResult };
 
+export const PDF_ATTACH_FAILED_MESSAGE =
+  "Certificate was saved but the PDF could not be created. Reissue it to try again.";
+
 export async function issueCertificate(
   input: IssueCertificateInput,
 ): Promise<IssueCertificateResult> {
@@ -26,7 +29,13 @@ export async function issueCertificate(
 
   const created = await withRlsContext(input.actorSupabaseId, async (tx) => {
     const record = await createCertificateRecord(input, tx);
-    if (record.skipped) return record;
+    if (record.skipped) {
+      await input.onRecordCreated?.(tx, {
+        kind: "skipped",
+        certificateId: record.result.id,
+      });
+      return record;
+    }
     await auditCertificateIssue(
       {
         actorUserId: input.actorUserId,
@@ -38,6 +47,10 @@ export async function issueCertificate(
       },
       tx,
     );
+    await input.onRecordCreated?.(tx, {
+      kind: "issued",
+      certificateId: record.certificate.id,
+    });
     return record;
   });
 
@@ -83,6 +96,14 @@ export async function issueCertificate(
       uniqueId,
       message: error instanceof Error ? error.message : "unknown",
     });
+    return {
+      id: certificate.id,
+      uniqueId,
+      verificationToken,
+      pdfUrl: null,
+      emailSent: false,
+      pdfAttachFailed: true,
+    };
   }
 
   let emailSent = false;

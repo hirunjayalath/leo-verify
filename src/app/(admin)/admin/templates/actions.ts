@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
-import { asClubAdmin } from "@/lib/auth";
+import { asClubAdmin, requireClubAdmin } from "@/lib/auth";
 import {
   approveOwnTemplate,
   createFromGallery,
@@ -18,25 +18,25 @@ import {
 export type { ActionResult };
 
 export async function createTemplateAction(formData: FormData): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
-    const file = formData.get("background");
-    if (!(file instanceof File)) {
-      return { ok: false, error: "Background image is required" };
-    }
-    const result = await createTemplate({
-      clubId: user.clubId!,
-      actorUserId: user.id,
-      eventId: String(formData.get("eventId") || ""),
-      name: String(formData.get("name") || "").trim(),
-      background: file,
-    });
-    if (!result.ok) return result;
-    revalidatePath("/admin/templates");
-    revalidatePath("/admin");
-    revalidatePath("/admin/audit");
-    revalidatePath("/admin/district");
-    return result;
+  const user = await requireClubAdmin();
+  const file = formData.get("background");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "Background image is required" };
+  }
+  const result = await createTemplate({
+    clubId: user.clubId,
+    actorUserId: user.id,
+    actorSupabaseId: user.supabaseId,
+    eventId: String(formData.get("eventId") || ""),
+    name: String(formData.get("name") || "").trim(),
+    background: file,
   });
+  if (!result.ok) return result;
+  revalidatePath("/admin/templates");
+  revalidatePath("/admin");
+  revalidatePath("/admin/audit");
+  revalidatePath("/admin/district");
+  return result;
 }
 
 export async function approveOwnTemplateAction(
@@ -44,7 +44,7 @@ export async function approveOwnTemplateAction(
 ): Promise<ActionResult> {
   return asClubAdmin(async (user) => {
     const result = await approveOwnTemplate({
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       templateId: String(formData.get("id") || ""),
     });
@@ -62,7 +62,7 @@ export async function saveTemplateLayoutAction(input: {
 }): Promise<ActionResult> {
   return asClubAdmin(async (user) => {
     const result = await saveTemplateLayout({
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       templateId: input.templateId,
       layout: input.layout,
@@ -78,17 +78,17 @@ export async function saveTemplateLayoutAction(input: {
 export async function uploadTemplateSignatureAction(
   formData: FormData,
 ): Promise<ActionResult & { url?: string }> {
-  return asClubAdmin(async (user) => {
-    const file = formData.get("signature");
-    if (!(file instanceof File)) {
-      return { ok: false, error: "Signature image is required" };
-    }
-    return uploadTemplateSignature({
-      clubId: user.clubId!,
-      actorUserId: user.id,
-      templateId: String(formData.get("templateId") || ""),
-      signature: file,
-    });
+  const user = await requireClubAdmin();
+  const file = formData.get("signature");
+  if (!(file instanceof File)) {
+    return { ok: false, error: "Signature image is required" };
+  }
+  return uploadTemplateSignature({
+    clubId: user.clubId,
+    actorUserId: user.id,
+    actorSupabaseId: user.supabaseId,
+    templateId: String(formData.get("templateId") || ""),
+    signature: file,
   });
 }
 
@@ -97,7 +97,7 @@ export async function renameTemplateAction(formData: FormData): Promise<ActionRe
     const name = z.string().trim().min(2).safeParse(formData.get("name"));
     if (!name.success) return { ok: false, error: "Invalid name" };
     const result = await renameTemplate({
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       templateId: String(formData.get("id") || ""),
       name: name.data,
@@ -113,7 +113,7 @@ export async function revertTemplateToDraftAction(
 ): Promise<ActionResult> {
   return asClubAdmin(async (user) => {
     const result = await revertTemplateToDraft({
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       templateId: String(formData.get("id") || ""),
     });
@@ -128,19 +128,19 @@ export async function revertTemplateToDraftAction(
 export async function createFromGalleryAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
-    const result = await createFromGallery({
-      clubId: user.clubId!,
-      actorUserId: user.id,
-      eventId: String(formData.get("eventId") || ""),
-      galleryId: String(formData.get("galleryId") || ""),
-      name: String(formData.get("name") || "").trim(),
-    });
-    if (!result.ok) return result;
-    revalidatePath("/admin/templates");
-    revalidatePath("/admin");
-    return result;
+  const user = await requireClubAdmin();
+  const result = await createFromGallery({
+    clubId: user.clubId,
+    actorUserId: user.id,
+    actorSupabaseId: user.supabaseId,
+    eventId: String(formData.get("eventId") || ""),
+    galleryId: String(formData.get("galleryId") || ""),
+    name: String(formData.get("name") || "").trim(),
   });
+  if (!result.ok) return result;
+  revalidatePath("/admin/templates");
+  revalidatePath("/admin");
+  return result;
 }
 
 export async function duplicateTemplateAction(
@@ -148,7 +148,7 @@ export async function duplicateTemplateAction(
 ): Promise<ActionResult> {
   return asClubAdmin(async (user) => {
     const result = await duplicateTemplate({
-      clubId: user.clubId!,
+      clubId: user.clubId,
       actorUserId: user.id,
       templateId: String(formData.get("id") || ""),
     });

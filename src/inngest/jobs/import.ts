@@ -206,10 +206,22 @@ export async function processImportBatch(
           achievement: row.achievement,
           sendEmail: false,
           backgroundBytes,
+          onRecordCreated: async (tx, outcome) => {
+            await tx.importJobRow.update({
+              where: { id: row.id },
+              data: {
+                status:
+                  outcome.kind === "skipped"
+                    ? ImportRowStatus.skipped
+                    : ImportRowStatus.issued,
+                certificateId: outcome.certificateId,
+              },
+            });
+          },
         });
 
         const email: CertificateEmailPayload | undefined =
-          !issued.skipped && row.recipientEmail
+          !issued.skipped && !issued.pdfAttachFailed && row.recipientEmail
             ? {
                 to: row.recipientEmail,
                 recipientName: row.recipientName,
@@ -262,18 +274,7 @@ export async function processImportBatch(
             error: outcome.error,
           },
         });
-        continue;
       }
-      await tx.importJobRow.update({
-        where: { id: outcome.rowId },
-        data: {
-          status:
-            outcome.kind === "skipped"
-              ? ImportRowStatus.skipped
-              : ImportRowStatus.issued,
-          certificateId: outcome.certificateId,
-        },
-      });
     }
 
     const remaining = await tx.importJobRow.count({

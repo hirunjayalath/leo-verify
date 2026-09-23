@@ -152,7 +152,6 @@ describe.skipIf(!dbReady)(
     const result = evaluateVerification(
       {
         uniqueId: row.uniqueId,
-        verificationToken: "",
         recipientName: row.recipientName,
         role: row.role,
         achievement: row.achievement,
@@ -199,7 +198,6 @@ describe.skipIf(!dbReady)(
     const result = evaluateVerification(
       {
         uniqueId: row.uniqueId,
-        verificationToken: "",
         recipientName: row.recipientName,
         role: row.role,
         achievement: row.achievement,
