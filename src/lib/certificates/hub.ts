@@ -6,42 +6,66 @@ import {
 import { prisma } from "@/lib/db";
 import { getPublicEnv } from "@/lib/env";
 import { resendCertificateEmail } from "@/lib/email/resend";
-import { getShortLivedObjectUrl } from "@/lib/storage/r2";
+
+export const VERIFY_URL_CSV_PAGE_SIZE = 500;
+export const VERIFY_URL_CSV_MAX_ROWS = 5000;
+export const PDF_ZIP_MANIFEST_MAX = 500;
 
 export async function exportVerifyUrlsCsv(input: {
   clubId: string;
   eventId?: string;
 }) {
-  const certs = await prisma.certificate.findMany({
-    where: {
-      clubId: input.clubId,
-      status: CertificateStatus.issued,
-      ...(input.eventId ? { eventId: input.eventId } : {}),
-    },
-    orderBy: { createdAt: "desc" },
-    take: 2000,
-    select: {
-      uniqueId: true,
-      recipientName: true,
-      recipientEmail: true,
-      verificationToken: true,
-    },
-  });
   const base = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const lines = [
-    "uniqueId,recipientName,recipientEmail,verifyUrl",
-    ...certs.map((c) => {
+  const lines = ["uniqueId,recipientName,recipientEmail,verifyUrl"];
+  let cursor: { createdAt: Date; id: string } | undefined;
+  let count = 0;
+
+  while (count < VERIFY_URL_CSV_MAX_ROWS) {
+    const take = Math.min(VERIFY_URL_CSV_PAGE_SIZE, VERIFY_URL_CSV_MAX_ROWS - count);
+    const certs = await prisma.certificate.findMany({
+      where: {
+        clubId: input.clubId,
+        status: CertificateStatus.issued,
+        ...(input.eventId ? { eventId: input.eventId } : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      ...(cursor
+        ? {
+            cursor: { id: cursor.id },
+            skip: 1,
+          }
+        : {}),
+      select: {
+        id: true,
+        uniqueId: true,
+        recipientName: true,
+        recipientEmail: true,
+        verificationToken: true,
+        createdAt: true,
+      },
+    });
+    if (certs.length === 0) break;
+
+    for (const c of certs) {
       const path = buildVerificationPath(c.uniqueId, c.verificationToken);
       const url = `${base}${path}`;
-      return [
-        c.uniqueId,
-        JSON.stringify(c.recipientName),
-        c.recipientEmail ?? "",
-        url,
-      ].join(",");
-    }),
-  ];
-  return { ok: true as const, csv: lines.join("\n"), count: certs.length };
+      lines.push(
+        [
+          c.uniqueId,
+          JSON.stringify(c.recipientName),
+          c.recipientEmail ?? "",
+          url,
+        ].join(","),
+      );
+    }
+    count += certs.length;
+    const last = certs[certs.length - 1]!;
+    cursor = { createdAt: last.createdAt, id: last.id };
+    if (certs.length < take) break;
+  }
+
+  return { ok: true as const, csv: lines.join("\n"), count };
 }
 
 export async function resendIssuedCertificateEmail(input: {
@@ -82,6 +106,7 @@ export async function buildPdfZipManifest(input: {
   clubId: string;
   eventId?: string;
 }) {
+  const base = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const certs = await prisma.certificate.findMany({
     where: {
       clubId: input.clubId,
@@ -89,27 +114,16 @@ export async function buildPdfZipManifest(input: {
       ...(input.eventId ? { eventId: input.eventId } : {}),
       OR: [{ pdfKey: { not: null } }, { pdfUrl: { not: null } }],
     },
-    take: 500,
+    take: PDF_ZIP_MANIFEST_MAX,
     select: {
       uniqueId: true,
       verificationToken: true,
-      pdfKey: true,
-      pdfUrl: true,
     },
   });
 
-  const files: { name: string; url: string }[] = [];
-  for (const c of certs) {
-    let url: string | null = null;
-    if (c.pdfKey) {
-      url = await getShortLivedObjectUrl(c.pdfKey, 300);
-    }
-    if (!url) {
-      url = buildPdfDownloadPath(c.uniqueId, c.verificationToken);
-      const base = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-      url = `${base}${url}`;
-    }
-    files.push({ name: `${c.uniqueId}.pdf`, url });
-  }
+  const files = certs.map((c) => ({
+    name: `${c.uniqueId}.pdf`,
+    url: `${base}${buildPdfDownloadPath(c.uniqueId, c.verificationToken)}`,
+  }));
   return { ok: true as const, files, count: files.length };
 }

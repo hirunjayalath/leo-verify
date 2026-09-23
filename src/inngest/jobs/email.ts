@@ -8,7 +8,7 @@ export const sendCertificateEmailFn = inngest.createFunction(
   {
     id: "certificate-email-send",
     triggers: [{ event: "certificate/email.send" }],
-    concurrency: { limit: 10 },
+    concurrency: { limit: 2 },
     retries: 4,
   },
   async ({ event }) => {

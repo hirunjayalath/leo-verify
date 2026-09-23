@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { pingDatabase } from "@/lib/db";
+import { isDatabasePoolerUrl, pingDatabase } from "@/lib/db";
 import { pingR2 } from "@/lib/storage/r2";
 
 export const runtime = "nodejs";
@@ -14,6 +14,7 @@ export async function GET() {
     ok,
     db,
     r2,
+    dbPooler: isDatabasePoolerUrl(process.env.DATABASE_URL),
     upstashConfigured: Boolean(
       process.env.UPSTASH_REDIS_REST_URL &&
         process.env.UPSTASH_REDIS_REST_TOKEN,

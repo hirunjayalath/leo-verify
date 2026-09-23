@@ -10,7 +10,10 @@ vi.mock("@/lib/db", () => ({
 
 import { CertificateStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { getVerifiedShareCard } from "@/lib/certificates/verify-lookup";
+import {
+  getVerifiedShareCard,
+  lookupCertificateForVerifyQuery,
+} from "@/lib/certificates/verify-lookup";
 import { computeVerificationToken } from "@/lib/certificates/token";
 
 describe("getVerifiedShareCard", () => {
@@ -23,7 +26,7 @@ describe("getVerifiedShareCard", () => {
 
   it("returns null without a token", async () => {
     vi.mocked(prisma.certificate.findUnique).mockResolvedValue({
-      uniqueId: "LEO-UOM-2026-1",
+      uniqueId: "LEO-UOM-2026-000001",
       verificationToken: "x",
       recipientName: "Ada",
       role: "Volunteer",
@@ -38,12 +41,17 @@ describe("getVerifiedShareCard", () => {
       event: { name: "Event", club: { name: "Club" } },
     } as never);
 
-    expect(await getVerifiedShareCard("LEO-UOM-2026-1", null)).toBeNull();
+    expect(await getVerifiedShareCard("LEO-UOM-2026-000001", null)).toBeNull();
+  });
+
+  it("skips the database for a malformed certificate id", async () => {
+    await lookupCertificateForVerifyQuery("not-a-certificate-id");
+    expect(prisma.certificate.findUnique).not.toHaveBeenCalled();
   });
 
   it("returns share fields for a valid issued certificate", async () => {
     const fields = {
-      uniqueId: "LEO-UOM-2026-1",
+      uniqueId: "LEO-UOM-2026-000001",
       recipientName: "Ada Lovelace",
       eventId: "event",
       clubId: "club",
@@ -84,7 +92,7 @@ describe("getVerifiedShareCard", () => {
       clubName: "Leo UoM",
       role: "Volunteer",
       issueDate: "2026-01-01",
-      uniqueId: "LEO-UOM-2026-1",
+      uniqueId: "LEO-UOM-2026-000001",
       clubLogoUrl: null,
       primaryColor: "#323232",
       accentColor: "#38a3e3",

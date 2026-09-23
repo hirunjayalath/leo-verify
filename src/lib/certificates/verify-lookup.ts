@@ -1,8 +1,12 @@
+import { cache } from "react";
 import { CertificateStatus } from "@/generated/prisma/client";
+import { parseCertificateId } from "@/lib/certificates/id";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { prisma } from "@/lib/db";
 
-export async function lookupCertificateForVerify(uniqueId: string) {
+/** Uncached query — used by tests and wrapped in cache() for one read per request. */
+export async function lookupCertificateForVerifyQuery(uniqueId: string) {
+  if (!parseCertificateId(uniqueId)) return null;
   if (!process.env.DATABASE_URL) return null;
 
   try {
@@ -64,6 +68,9 @@ export async function lookupCertificateForVerify(uniqueId: string) {
     return null;
   }
 }
+
+/** Request-scoped memo — metadata + page share one live DB read. */
+export const lookupCertificateForVerify = cache(lookupCertificateForVerifyQuery);
 
 export async function getVerifiedShareCard(
   uniqueId: string,

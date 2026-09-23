@@ -44,6 +44,12 @@ export const prisma = new Proxy({} as PrismaClient, {
   },
 });
 
+/** True when DATABASE_URL is the Supabase transaction pooler (port 6543 or pgbouncer=true). */
+export function isDatabasePoolerUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /pgbouncer=true/i.test(url) || /:6543(?:[/?]|$)/.test(url);
+}
+
 export async function pingDatabase(): Promise<boolean> {
   try {
     await prisma.$queryRaw`SELECT 1`;
