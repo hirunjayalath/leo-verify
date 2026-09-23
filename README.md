@@ -33,6 +33,7 @@ npx prisma generate
 npx prisma migrate deploy   # or migrate dev locally
 npm run db:seed
 # Supabase SQL editor: apply supabase/rls-policies.sql
+# Optional: SEED_DISTRICT_ADMIN_* / SEED_RECIPIENT_* / SEED_CLUB_ADMIN_LOGIN_*
 # Set SEED_ADMIN_SUPABASE_ID to your Auth user UUID; disable AUTH_DEV_BYPASS
 npm run dev
 ```

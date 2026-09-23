@@ -83,7 +83,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>© {new Date().getFullYear()} LeoVerify</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} LeoVerify</p>
           <p>Built for Leo Clubs in Sri Lanka</p>
         </div>
       </div>

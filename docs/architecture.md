@@ -118,6 +118,9 @@ Empty DSNs disable Sentry.
 
 | Variable | Notes |
 |---|---|
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_SUPABASE_ID` / `SEED_ADMIN_NAME` | Optional. First-club seed. |
-| `SEED_DISTRICT_ADMIN_*` / `SEED_PROMOTE_UOM_DISTRICT_ADMIN` | Optional. |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_SUPABASE_ID` / `SEED_ADMIN_NAME` | Optional. First-club seed (bypass lookup). |
+| `SEED_CLUB_ADMIN_LOGIN_EMAIL` / `SEED_CLUB_ADMIN_PASSWORD` | Optional. Extra UOM club admin Auth user (local). |
+| `SEED_DISTRICT_ADMIN_EMAIL` / `SEED_DISTRICT_ADMIN_PASSWORD` / `SEED_DISTRICT_ADMIN_NAME` | Optional. District admin Auth + Prisma row. `SEED_DISTRICT_ADMIN_SUPABASE_ID` optional when service role can create/link. |
+| `SEED_RECIPIENT_EMAIL` / `SEED_RECIPIENT_PASSWORD` | Optional. Auth-only recipient; seed issues one cert for `/claim`. |
+| `SEED_PROMOTE_UOM_DISTRICT_ADMIN` | Optional. Do not use for role QA — keeps the bypass admin as club admin. |
 | `AUTH_DEV_BYPASS` | Local only. Must not be `true` when `NODE_ENV=production`. Ignored on Vercel. |
