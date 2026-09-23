@@ -65,8 +65,8 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### UOM production launch checklist
 
-1. Full production secret contract set on Vercel (see [`.env.example`](.env.example) / [`docs/architecture.md`](docs/architecture.md)): pooler `DATABASE_URL`, `DIRECT_DATABASE_URL`, `CERT_HMAC_SECRET`, Supabase, `NEXT_PUBLIC_APP_URL`, R2, Resend, Inngest, **Upstash**. Boot throws if any required value is missing.
-2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`) + **app role** (`supabase/app-role.sql`).
+1. Full production secret contract set on Vercel (see [`.env.example`](.env.example) / [`docs/architecture.md`](docs/architecture.md)): pooler `DATABASE_URL` (`leoverify_app`), `SERVICE_DATABASE_URL` (`leoverify_service`), `DIRECT_DATABASE_URL`, `CERT_HMAC_SECRET`, Supabase, `NEXT_PUBLIC_APP_URL`, R2, Resend, Inngest, **Upstash**. Boot throws if any required value is missing.
+2. Migrations applied (includes RLS + roles). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service`.
 3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (rejected when `NODE_ENV=production`).
 4. MFA (TOTP) required for club/district admins — enable Multi-Factor Authentication in the Supabase project, then complete enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
 5. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
@@ -76,7 +76,7 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### Security launch gates
 
-1. Apply `supabase/rls-policies.sql` after migrate (PostgREST/anon path), then `supabase/app-role.sql`. Point `DATABASE_URL` at role `leoverify_app` (no `BYPASSRLS`). Keep `DIRECT_DATABASE_URL` as the owner for migrate. App-layer `clubId` / session checks stay required; `withRlsContext` sets `app.current_supabase_id` for the SQL helper.
+1. Deploy migrations (RLS + `leoverify_app` / `leoverify_service`). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service` (no `BYPASSRLS`). Keep `DIRECT_DATABASE_URL` as the owner for migrate. App-layer `clubId` / session checks stay required; `withRlsContext` sets `app.current_supabase_id`.
 2. Never set `AUTH_DEV_BYPASS` on Vercel (ignored when `VERCEL`/`VERCEL_ENV` is set, and outside `NODE_ENV=development`).
 3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads. Logos/templates upload with long `Cache-Control`; PDFs stay short/private.
 4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.

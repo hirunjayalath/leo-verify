@@ -6,7 +6,7 @@ import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const recipient = await prisma.recipient.findUnique({ where: { slug } });
+  const recipient = await prismaService.recipient.findUnique({ where: { slug } });
   if (!recipient?.publicProfile) notFound();
   return {
     title: recipient.name ?? "Recipient",
@@ -36,7 +36,7 @@ function initials(name: string | null | undefined) {
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { slug } = await params;
-  const recipient = await prisma.recipient.findUnique({
+  const recipient = await prismaService.recipient.findUnique({
     where: { slug },
     include: {
       certificates: {

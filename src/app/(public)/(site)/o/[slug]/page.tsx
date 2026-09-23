@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { getCachedClubBrandingBySlug } from "@/lib/cache/safe-cache";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -32,10 +32,10 @@ export default async function OrgPortalPage({ params }: PageProps) {
   if (!club) notFound();
 
   const [issuedCount, publicCerts] = await Promise.all([
-    prisma.certificate.count({
+    prismaService.certificate.count({
       where: { clubId: club.id, status: CertificateStatus.issued },
     }),
-    prisma.certificate.findMany({
+    prismaService.certificate.findMany({
       where: {
         clubId: club.id,
         status: CertificateStatus.issued,
@@ -94,16 +94,15 @@ export default async function OrgPortalPage({ params }: PageProps) {
             </div>
           </div>
           <p className="mt-6 text-sm text-white/75">
-            {issuedCount} credential{issuedCount === 1 ? "" : "s"} issued ·
-            Verified live on LeoVerify
+            {`${issuedCount} ${issuedCount === 1 ? "credential" : "credentials"} issued · Verified live on LeoVerify`}
           </p>
         </div>
 
         <section className="mt-10 space-y-4" id="verify">
           <h2 className="text-lg font-semibold">Verify a credential</h2>
           <p className="text-sm text-muted-foreground">
-            Paste a verify link or scan a QR. Lookups require the HMAC token —
-            IDs alone are not enough.
+            Paste a verify link or scan a QR. The ID alone is not enough — use
+            the full link from the certificate.
           </p>
           <VerifyForm compact />
         </section>
@@ -160,7 +159,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
             LeoVerify
           </Link>
           <Badge variant="muted" className="ml-2">
-            Live DB verify
+            Live check
           </Badge>
         </p>
       </div>

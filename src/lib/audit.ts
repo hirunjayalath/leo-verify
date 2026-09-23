@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 
 export type AuditAction =
@@ -23,8 +23,10 @@ export async function writeAuditLog(input: {
   targetId: string;
   clubId?: string | null;
   metadata?: Prisma.InputJsonValue;
+  client?: PrismaClient;
 }) {
-  return prisma.auditLog.create({
+  const db = input.client ?? prisma;
+  return db.auditLog.create({
     data: {
       actorUserId: input.actorUserId ?? null,
       action: input.action,

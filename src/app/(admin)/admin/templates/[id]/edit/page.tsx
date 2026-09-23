@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import {
   templateLayoutSchema,
   type TemplateLayout,
@@ -20,10 +20,12 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function EditTemplatePage({ params }: PageProps) {
   const { id } = await params;
   const user = await requireClubAdmin();
-  const template = await prisma.certificateTemplate.findFirst({
-    where: { id, clubId: user.clubId! },
-    include: { event: { select: { name: true } } },
-  });
+  const template = await withSessionRls(user, () =>
+    prisma.certificateTemplate.findFirst({
+      where: { id, clubId: user.clubId! },
+      include: { event: { select: { name: true } } },
+    }),
+  );
   if (!template) notFound();
 
   const parsed = templateLayoutSchema.safeParse(template.layout);

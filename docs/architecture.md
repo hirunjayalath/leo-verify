@@ -14,7 +14,8 @@ Authoritative certificate and club data. Prisma reads `DATABASE_URL` at runtime.
 
 | Variable | Production |
 |---|---|
-| `DATABASE_URL` | Required. Transaction pooler as role `leoverify_app` after [`supabase/app-role.sql`](../supabase/app-role.sql). |
+| `DATABASE_URL` | Required. Transaction pooler as role `leoverify_app` (RLS + `withRlsContext`). |
+| `SERVICE_DATABASE_URL` | Required. Transaction pooler as role `leoverify_service` (public verify, portals, signup). |
 | `DIRECT_DATABASE_URL` | Required. Owner session URL (`:5432`) for Prisma migrate only. |
 | `PG_POOL_MAX` | Optional. Default `1`. |
 

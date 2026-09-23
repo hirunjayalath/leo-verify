@@ -2,40 +2,53 @@ import { CertificateStatus } from "@/generated/prisma/client";
 import {
   buildPdfDownloadPath,
   buildVerificationPath,
+  tokenForCertificate,
 } from "@/lib/certificates/token";
 import { slugifyPublic } from "@/lib/branding";
-import { prisma } from "@/lib/db";
+import { prisma, withRlsContext } from "@/lib/db";
 
 function dashboardCertPaths(cert: {
   uniqueId: string;
-  verificationToken: string;
+  recipientName: string;
+  eventId: string;
+  clubId: string;
+  issueDate: Date;
+  role: string;
+  tokenVersion?: number | null;
   pdfKey: string | null;
   pdfUrl: string | null;
   status: CertificateStatus;
 }) {
-  const verifyPath = buildVerificationPath(
-    cert.uniqueId,
-    cert.verificationToken,
-  );
+  const token = tokenForCertificate(cert);
+  const verifyPath = buildVerificationPath(cert.uniqueId, token);
   const pdfPath =
     cert.status === CertificateStatus.issued && (cert.pdfKey || cert.pdfUrl)
-      ? buildPdfDownloadPath(cert.uniqueId, cert.verificationToken)
+      ? buildPdfDownloadPath(cert.uniqueId, token)
       : null;
   return { verifyPath, pdfPath };
 }
 
+function withRecipient<T>(
+  auth: { id: string; email: string },
+  fn: () => Promise<T>,
+) {
+  return withRlsContext(auth.id, fn, { recipientEmail: auth.email });
+}
+
 /** Prefer supabaseId; fall back to unbound email match only. */
 export async function findRecipientForAuth(auth: { id: string; email: string }) {
-  const byId = await prisma.recipient.findFirst({
-    where: { supabaseId: auth.id },
-  });
-  if (byId) return byId;
+  return withRecipient(auth, async () => {
+    const byId = await prisma.recipient.findFirst({
+      where: { supabaseId: auth.id },
+    });
+    if (byId) return byId;
 
-  return prisma.recipient.findFirst({
-    where: {
-      email: { equals: auth.email, mode: "insensitive" },
-      OR: [{ supabaseId: null }, { supabaseId: "" }],
-    },
+    return prisma.recipient.findFirst({
+      where: {
+        email: { equals: auth.email, mode: "insensitive" },
+        OR: [{ supabaseId: null }, { supabaseId: "" }],
+      },
+    });
   });
 }
 
@@ -53,6 +66,7 @@ export async function claimCertificates(input: {
 
   const supabaseId = input.auth.id;
   const email = input.email.toLowerCase();
+  return withRecipient(input.auth, async () => {
   const existing = await prisma.recipient.findUnique({
     where: { email },
   });
@@ -132,6 +146,7 @@ export async function claimCertificates(input: {
       ...dashboardCertPaths(c),
     })),
   };
+  });
 }
 
 export async function updateProfileVisibility(input: {
@@ -144,10 +159,12 @@ export async function updateProfileVisibility(input: {
     return { ok: false as const, error: "Not authorized" };
   }
 
-  await prisma.recipient.update({
-    where: { id: recipient.id },
-    data: { publicProfile: input.publicProfile },
-  });
+  await withRecipient(input.auth, () =>
+    prisma.recipient.update({
+      where: { id: recipient.id },
+      data: { publicProfile: input.publicProfile },
+    }),
+  );
 
   return {
     ok: true as const,
@@ -167,23 +184,26 @@ export async function setCertificateUnlisted(input: {
     return { ok: false as const, error: "Not authorized" };
   }
 
-  const cert = await prisma.certificate.findFirst({
-    where: { id: input.certificateId, recipientId: recipient.id },
-  });
-  if (!cert) return { ok: false as const, error: "Certificate not found" };
+  return withRecipient(input.auth, async () => {
+    const cert = await prisma.certificate.findFirst({
+      where: { id: input.certificateId, recipientId: recipient.id },
+    });
+    if (!cert) return { ok: false as const, error: "Certificate not found" };
 
-  await prisma.certificate.update({
-    where: { id: cert.id },
-    data: { unlisted: input.unlisted },
-  });
+    await prisma.certificate.update({
+      where: { id: cert.id },
+      data: { unlisted: input.unlisted },
+    });
 
-  return { ok: true as const, slug: recipient.slug };
+    return { ok: true as const, slug: recipient.slug };
+  });
 }
 
 export async function getRecipientDashboardData(auth: {
   id: string;
   email: string;
 }) {
+  return withRecipient(auth, async () => {
   const byId = await prisma.recipient.findFirst({
     where: { supabaseId: auth.id },
     include: {
@@ -233,4 +253,5 @@ export async function getRecipientDashboardData(auth: {
       })),
     },
   };
+  });
 }

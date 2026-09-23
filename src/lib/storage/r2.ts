@@ -145,24 +145,18 @@ export async function getShortLivedObjectUrl(
   }
 }
 
-/** Local disk only. Private dir first, then leftover public/uploads copies. */
+/** Local disk only. Private .data/ — not leftover public/uploads copies. */
 export async function readLocalCertificatePdf(
   key: string,
 ): Promise<Buffer | null> {
   if (!isCertificateKey(key)) return null;
   const filename = localObjectFilename(key);
   const { readFile } = await import("node:fs/promises");
-  for (const filePath of [
-    path.join(privateCertificateDir(), filename),
-    path.join(process.cwd(), "public", "uploads", filename),
-  ]) {
-    try {
-      return await readFile(filePath);
-    } catch {
-      /* try next location */
-    }
+  try {
+    return await readFile(path.join(privateCertificateDir(), filename));
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export async function deleteObject(key: string): Promise<void> {

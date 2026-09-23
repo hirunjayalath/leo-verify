@@ -25,6 +25,7 @@ const required = z.string().min(1);
 const productionEnvSchema = z.object({
   DATABASE_URL: required,
   DIRECT_DATABASE_URL: required,
+  SERVICE_DATABASE_URL: required,
   CERT_HMAC_SECRET: hmacSecret,
   CERT_HMAC_SECRET_PREVIOUS: optionalString,
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -98,6 +99,7 @@ function readProductionEnv(env: NodeJS.ProcessEnv) {
   return {
     DATABASE_URL: nonempty(env.DATABASE_URL),
     DIRECT_DATABASE_URL: nonempty(env.DIRECT_DATABASE_URL),
+    SERVICE_DATABASE_URL: nonempty(env.SERVICE_DATABASE_URL),
     CERT_HMAC_SECRET: env.CERT_HMAC_SECRET,
     CERT_HMAC_SECRET_PREVIOUS: nonempty(env.CERT_HMAC_SECRET_PREVIOUS),
     NEXT_PUBLIC_SUPABASE_URL: nonempty(env.NEXT_PUBLIC_SUPABASE_URL),

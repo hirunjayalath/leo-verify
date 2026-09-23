@@ -152,7 +152,7 @@ export function VerificationResult({
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Open the QR or share link from the certificate — verification needs
-                  both the ID and its unguessable token.
+                  both the ID and the code in that link.
                 </p>
               </div>
             )}
@@ -171,9 +171,8 @@ export function VerificationResult({
         <div>
           <p className="font-medium text-foreground">What this check means</p>
           <p className="mt-1">
-            This page reads live from the LeoVerify database. If a downloaded PDF
-            disagrees with these details, trust this page — the PDF is only a
-            convenience copy.
+            This page checks the live LeoVerify record. If a downloaded PDF
+            disagrees with these details, trust this page.
           </p>
         </div>
         <div>

@@ -6,16 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export default async function AdminIssuePage() {
   const user = await requireClubAdmin();
-  const events = await prisma.event.findMany({
-    where: { clubId: user.clubId! },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true },
-  });
+  const events = await withSessionRls(user, () =>
+    prisma.event.findMany({
+      where: { clubId: user.clubId! },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true },
+    }),
+  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 animate-fade-up">

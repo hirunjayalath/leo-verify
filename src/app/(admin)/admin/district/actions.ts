@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireDistrictAdmin } from "@/lib/auth";
+import { asDistrictAdmin } from "@/lib/auth";
 import {
   createClub,
   inviteClubAdmin,
@@ -12,7 +12,7 @@ import {
 export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
 export async function createClubAction(formData: FormData): Promise<ActionResult> {
-  const user = await requireDistrictAdmin();
+  return asDistrictAdmin(async (user) => {
   const parsed = z
     .object({
       name: z.string().trim().min(2).max(200),
@@ -40,10 +40,11 @@ export async function createClubAction(formData: FormData): Promise<ActionResult
   if (!result.ok) return result;
   revalidatePath("/admin/district");
   return result;
+  });
 }
 
 export async function inviteClubAdminAction(formData: FormData): Promise<ActionResult> {
-  const user = await requireDistrictAdmin();
+  return asDistrictAdmin(async (user) => {
   const parsed = z
     .object({
       clubId: z.string().min(1),
@@ -72,10 +73,11 @@ export async function inviteClubAdminAction(formData: FormData): Promise<ActionR
   if (!result.ok) return result;
   revalidatePath("/admin/district");
   return result;
+  });
 }
 
 export async function reviewTemplateAction(formData: FormData): Promise<ActionResult> {
-  const user = await requireDistrictAdmin();
+  return asDistrictAdmin(async (user) => {
   const id = String(formData.get("id") || "");
   const decision = String(formData.get("decision") || "");
   const note = String(formData.get("note") || "").trim();
@@ -94,4 +96,5 @@ export async function reviewTemplateAction(formData: FormData): Promise<ActionRe
   revalidatePath("/admin/district");
   revalidatePath("/admin/templates");
   return result;
+  });
 }

@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const districtUser = {
+  id: "dist-admin-1",
+  districtId: "district-a",
+  role: "district_admin",
+  supabaseId: "dist-admin-supabase",
+};
+
 vi.mock("@/lib/auth", () => ({
-  requireDistrictAdmin: async () => ({
-    id: "dist-admin-1",
-    districtId: "district-a",
-    role: "district_admin",
-  }),
+  requireDistrictAdmin: async () => districtUser,
+  asDistrictAdmin: async (fn: (user: typeof districtUser) => Promise<unknown>) =>
+    fn(districtUser),
 }));
 
 vi.mock("next/cache", () => ({

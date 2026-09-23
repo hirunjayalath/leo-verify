@@ -2,50 +2,59 @@ import { cache } from "react";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { parseCertificateId } from "@/lib/certificates/id";
 import { evaluateVerification } from "@/lib/certificates/verify";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
+import { logOps } from "@/lib/observability";
 
 /** Uncached query — used by tests and wrapped in cache() for one read per request. */
 export async function lookupCertificateForVerifyQuery(uniqueId: string) {
   if (!parseCertificateId(uniqueId)) return null;
   if (!process.env.DATABASE_URL) return null;
 
-  const row = await prisma.certificate.findUnique({
-    where: { uniqueId },
-    select: {
-      uniqueId: true,
-      verificationToken: true,
-      recipientName: true,
-      role: true,
-      achievement: true,
-      issueDate: true,
-      status: true,
-      clubId: true,
-      eventId: true,
-      pdfUrl: true,
-      pdfKey: true,
-      tokenVersion: true,
-      event: {
-        select: {
-          name: true,
-          club: {
-            select: {
-              name: true,
-              logoUrl: true,
-              primaryColor: true,
-              accentColor: true,
-              publicSlug: true,
+  let row;
+  try {
+    row = await prismaService.certificate.findUnique({
+      where: { uniqueId },
+      select: {
+        uniqueId: true,
+        recipientName: true,
+        role: true,
+        achievement: true,
+        issueDate: true,
+        status: true,
+        clubId: true,
+        eventId: true,
+        pdfUrl: true,
+        pdfKey: true,
+        tokenVersion: true,
+        event: {
+          select: {
+            name: true,
+            club: {
+              select: {
+                name: true,
+                logoUrl: true,
+                primaryColor: true,
+                accentColor: true,
+                publicSlug: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
+  } catch (error) {
+    logOps("verify.lookup_failed", {
+      uniqueId,
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    throw error;
+  }
 
   if (!row) return null;
 
   return {
     uniqueId: row.uniqueId,
-    verificationToken: row.verificationToken,
+    verificationToken: "",
     recipientName: row.recipientName,
     role: row.role,
     achievement: row.achievement,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { verifyVerificationToken } from "@/lib/certificates/token";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 import {
   clientIpFromHeaders,
   rateLimitVerification,
@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const cert = await prisma.certificate.findUnique({ where: { uniqueId } });
+  const cert = await prismaService.certificate.findUnique({ where: { uniqueId } });
   if (!cert || cert.status !== CertificateStatus.issued) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

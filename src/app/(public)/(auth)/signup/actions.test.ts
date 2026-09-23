@@ -20,7 +20,7 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 
 vi.mock("@/lib/db", () => ({
-  prisma: {
+  prismaService: {
     user: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -39,17 +39,17 @@ vi.mock("@/lib/audit", () => ({
   writeAuditLog: vi.fn(),
 }));
 
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 import { signupPublicOrgAction } from "@/app/(public)/(auth)/signup/actions";
 
 describe("signupPublicOrgAction security", () => {
   beforeEach(() => {
     getSupabaseAuthUser.mockReset();
-    vi.mocked(prisma.user.findUnique).mockReset();
-    vi.mocked(prisma.user.create).mockReset();
-    vi.mocked(prisma.club.findUnique).mockReset();
-    vi.mocked(prisma.club.create).mockReset();
-    vi.mocked(prisma.district.upsert).mockReset();
+    vi.mocked(prismaService.user.findUnique).mockReset();
+    vi.mocked(prismaService.user.create).mockReset();
+    vi.mocked(prismaService.club.findUnique).mockReset();
+    vi.mocked(prismaService.club.create).mockReset();
+    vi.mocked(prismaService.district.upsert).mockReset();
   });
 
   it("rejects unauthenticated signup", async () => {
@@ -68,7 +68,7 @@ describe("signupPublicOrgAction security", () => {
       id: "auth-new",
       email: "admin@uom.leoverify.local",
     });
-    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
+    vi.mocked(prismaService.user.findUnique).mockImplementation((async (args: {
       where: { email?: string; supabaseId?: string };
     }) => {
       if (args.where.email) {
@@ -88,6 +88,6 @@ describe("signupPublicOrgAction security", () => {
     const result = await signupPublicOrgAction(formData);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/already exists/i);
-    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prismaService.user.create).not.toHaveBeenCalled();
   });
 });

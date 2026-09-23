@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/db", () => ({
+  withRlsContext: async (
+    _id: string,
+    fn: (tx: unknown) => Promise<unknown>,
+  ) => fn({}),
   prisma: {
     recipient: {
       findUnique: vi.fn(),

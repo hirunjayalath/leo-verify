@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireClubAdmin } from "@/lib/auth";
+import { asClubAdmin, requireClubAdmin } from "@/lib/auth";
 import { createEvent, updateEvent } from "@/lib/events/service";
 
 const eventSchema = z.object({
@@ -19,7 +19,7 @@ function clubIdFor(user: Awaited<ReturnType<typeof requireClubAdmin>>): string {
 }
 
 export async function createEventAction(formData: FormData): Promise<ActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const clubId = clubIdFor(user);
 
   const parsed = eventSchema.safeParse({
@@ -44,10 +44,11 @@ export async function createEventAction(formData: FormData): Promise<ActionResul
   revalidatePath("/admin/events");
   revalidatePath("/admin/audit");
   return { ok: true, id: result.id };
+  });
 }
 
 export async function updateEventAction(formData: FormData): Promise<ActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const clubId = clubIdFor(user);
   const id = String(formData.get("id") || "");
   if (!id) return { ok: false, error: "Missing event id" };
@@ -75,4 +76,5 @@ export async function updateEventAction(formData: FormData): Promise<ActionResul
   revalidatePath("/admin/events");
   revalidatePath("/admin/audit");
   return { ok: true, id: result.id };
+  });
 }

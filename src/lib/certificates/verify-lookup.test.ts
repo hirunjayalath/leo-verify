@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
-  prisma: {
+  prismaService: {
     certificate: {
       findUnique: vi.fn(),
     },
@@ -9,7 +9,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { CertificateStatus } from "@/generated/prisma/client";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 import {
   getVerifiedShareCard,
   lookupCertificateForVerifyQuery,
@@ -18,14 +18,14 @@ import { computeVerificationToken } from "@/lib/certificates/token";
 
 describe("getVerifiedShareCard", () => {
   beforeEach(() => {
-    vi.mocked(prisma.certificate.findUnique).mockReset();
+    vi.mocked(prismaService.certificate.findUnique).mockReset();
     process.env.CERT_HMAC_SECRET =
       process.env.CERT_HMAC_SECRET ||
       "test-secret-at-least-32-characters-long!!";
   });
 
   it("returns null without a token", async () => {
-    vi.mocked(prisma.certificate.findUnique).mockResolvedValue({
+    vi.mocked(prismaService.certificate.findUnique).mockResolvedValue({
       uniqueId: "LEO-UOM-2026-000001",
       verificationToken: "x",
       recipientName: "Ada",
@@ -46,11 +46,11 @@ describe("getVerifiedShareCard", () => {
 
   it("skips the database for a malformed certificate id", async () => {
     await lookupCertificateForVerifyQuery("not-a-certificate-id");
-    expect(prisma.certificate.findUnique).not.toHaveBeenCalled();
+    expect(prismaService.certificate.findUnique).not.toHaveBeenCalled();
   });
 
   it("does not map a database error to a missing certificate", async () => {
-    vi.mocked(prisma.certificate.findUnique).mockRejectedValue(
+    vi.mocked(prismaService.certificate.findUnique).mockRejectedValue(
       new Error("connection refused"),
     );
     await expect(
@@ -69,7 +69,7 @@ describe("getVerifiedShareCard", () => {
       tokenVersion: 1,
     };
     const token = computeVerificationToken(fields);
-    vi.mocked(prisma.certificate.findUnique).mockResolvedValue({
+    vi.mocked(prismaService.certificate.findUnique).mockResolvedValue({
       uniqueId: fields.uniqueId,
       verificationToken: token,
       recipientName: fields.recipientName,

@@ -28,11 +28,31 @@ describe("rate limit smoke", () => {
     else process.env.VERCEL_ENV = saved.vercelEnv;
   });
 
-  it("extracts client IP from forwarded headers", () => {
+  it("extracts client IP from forwarded headers outside production", () => {
+    delete process.env.VERCEL;
+    delete process.env.VERCEL_ENV;
+    process.env.NODE_ENV = "test";
     const headers = new Headers({
       "x-forwarded-for": "203.0.113.10, 10.0.0.1",
     });
     expect(clientIpFromHeaders(headers)).toBe("203.0.113.10");
+  });
+
+  it("prefers Vercel forwarded IP and ignores client X-Forwarded-For in production", () => {
+    process.env.VERCEL = "1";
+    const headers = new Headers({
+      "x-forwarded-for": "198.51.100.1, 10.0.0.1",
+      "x-vercel-forwarded-for": "203.0.113.20",
+    });
+    expect(clientIpFromHeaders(headers)).toBe("203.0.113.20");
+  });
+
+  it("does not trust X-Forwarded-For alone in production", () => {
+    process.env.VERCEL = "1";
+    const headers = new Headers({
+      "x-forwarded-for": "198.51.100.1",
+    });
+    expect(clientIpFromHeaders(headers)).toBe("unknown");
   });
 
   it("allows first verification requests via memory fallback outside production", async () => {

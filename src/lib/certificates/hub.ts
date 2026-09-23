@@ -2,6 +2,7 @@ import { CertificateStatus } from "@/generated/prisma/client";
 import {
   buildPdfDownloadPath,
   buildVerificationPath,
+  tokenForCertificate,
 } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 import { getPublicEnv } from "@/lib/env";
@@ -48,14 +49,18 @@ export async function exportVerifyUrlsCsv(input: {
         uniqueId: true,
         recipientName: true,
         recipientEmail: true,
-        verificationToken: true,
+        eventId: true,
+        clubId: true,
+        issueDate: true,
+        role: true,
+        tokenVersion: true,
         createdAt: true,
       },
     });
     if (certs.length === 0) break;
 
     for (const c of certs) {
-      const path = buildVerificationPath(c.uniqueId, c.verificationToken);
+      const path = buildVerificationPath(c.uniqueId, tokenForCertificate(c));
       const url = `${base}${path}`;
       lines.push(
         [
@@ -101,7 +106,7 @@ export async function resendIssuedCertificateEmail(input: {
     eventName: cert.event.name,
     clubName: club.name,
     uniqueId: cert.uniqueId,
-    verificationToken: cert.verificationToken,
+    verificationToken: tokenForCertificate(cert),
     clubLogoUrl: club.logoUrl,
     primaryColor: club.primaryColor,
     accentColor: club.accentColor,
@@ -130,13 +135,18 @@ export async function buildPdfZipManifest(input: {
     take: PDF_ZIP_MANIFEST_MAX,
     select: {
       uniqueId: true,
-      verificationToken: true,
+      recipientName: true,
+      eventId: true,
+      clubId: true,
+      issueDate: true,
+      role: true,
+      tokenVersion: true,
     },
   });
 
   const files = certs.map((c) => ({
     name: `${c.uniqueId}.pdf`,
-    url: `${base}${buildPdfDownloadPath(c.uniqueId, c.verificationToken)}`,
+    url: `${base}${buildPdfDownloadPath(c.uniqueId, tokenForCertificate(c))}`,
   }));
   return { ok: true as const, files, count: files.length };
 }

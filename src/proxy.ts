@@ -2,37 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { safeInternalPath } from "@/lib/safe-redirect";
 
-/** Rewrite unknown /o and /u slugs before the page streams a 200. */
-async function missingPublicSlugRewrite(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  const org = pathname.match(/^\/o\/([^/]+)$/);
-  const profile = pathname.match(/^\/u\/([^/]+)$/);
-  if (!org && !profile) return null;
-
-  const { prisma } = await import("@/lib/db");
-  if (org) {
-    const club = await prisma.club.findUnique({
-      where: { publicSlug: decodeURIComponent(org[1]) },
-      select: { id: true },
-    });
-    if (!club) return NextResponse.rewrite(new URL("/__missing__", request.url));
-  }
-  if (profile) {
-    const recipient = await prisma.recipient.findUnique({
-      where: { slug: decodeURIComponent(profile[1]) },
-      select: { publicProfile: true },
-    });
-    if (!recipient?.publicProfile) {
-      return NextResponse.rewrite(new URL("/__missing__", request.url));
-    }
-  }
-  return null;
-}
-
 export async function proxy(request: NextRequest) {
-  const missing = await missingPublicSlugRewrite(request);
-  if (missing) return missing;
-
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
@@ -129,5 +99,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login", "/o/:slug", "/u/:slug"],
+  matcher: ["/admin/:path*", "/login"],
 };

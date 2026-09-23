@@ -7,7 +7,7 @@ import { issueCertificate } from "@/lib/certificates/issue";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
-import { prisma } from "@/lib/db";
+import { prisma, prismaService, withRlsContext } from "@/lib/db";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
 import type { CertificateEmailPayload } from "@/inngest/jobs/types";
@@ -75,7 +75,32 @@ export type ImportBatchResult = {
   processed: number;
 };
 
+async function actorSupabaseIdForJob(jobId: string): Promise<string> {
+  const job = await prismaService.importJob.findUnique({
+    where: { id: jobId },
+    select: { createdById: true },
+  });
+  if (!job?.createdById) {
+    throw new Error("Import job is missing an actor");
+  }
+  const actor = await prismaService.user.findUnique({
+    where: { id: job.createdById },
+    select: { supabaseId: true },
+  });
+  if (!actor?.supabaseId) {
+    throw new Error("Import actor is missing a Supabase id");
+  }
+  return actor.supabaseId;
+}
+
 export async function processImportBatch(
+  jobId: string,
+): Promise<ImportBatchResult> {
+  const supabaseId = await actorSupabaseIdForJob(jobId);
+  return withRlsContext(supabaseId, () => processImportBatchAsActor(jobId));
+}
+
+async function processImportBatchAsActor(
   jobId: string,
 ): Promise<ImportBatchResult> {
   const job = await prisma.importJob.findUnique({
@@ -214,16 +239,14 @@ export async function processImportBatch(
     if (outcome.kind === "issued" && outcome.email) emails.push(outcome.email);
   }
 
-  const [remaining, groups] = await Promise.all([
-    prisma.importJobRow.count({
-      where: { jobId, status: ImportRowStatus.pending },
-    }),
-    prisma.importJobRow.groupBy({
-      by: ["status"],
-      where: { jobId },
-      _count: { _all: true },
-    }),
-  ]);
+  const remaining = await prisma.importJobRow.count({
+    where: { jobId, status: ImportRowStatus.pending },
+  });
+  const groups = await prisma.importJobRow.groupBy({
+    by: ["status"],
+    where: { jobId },
+    _count: { _all: true },
+  });
   const done = remaining === 0;
   const counters = countersFromRowGroups(groups);
 

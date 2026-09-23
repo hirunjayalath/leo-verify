@@ -26,7 +26,7 @@ const journey = [
   {
     icon: BadgeCheck,
     title: "Generate",
-    body: "Issue one or bulk-import a roster. Every credential gets a dynamic QR and HMAC token.",
+    body: "Issue one or bulk-import a roster. Every credential gets a unique verify link and QR code.",
   },
   {
     icon: Mail,
@@ -36,12 +36,12 @@ const journey = [
   {
     icon: Share2,
     title: "Share",
-    body: "Recipients share LinkedIn-ready verify URLs. Open Graph cards stay token-gated.",
+    body: "Recipients share LinkedIn-ready verify URLs. Preview cards stay private unless the link is valid.",
   },
   {
     icon: ShieldCheck,
     title: "Verify",
-    body: "Anyone checks authenticity live from the database. The PDF is only a convenience copy.",
+    body: "Anyone can confirm a certificate is authentic. A scan checks the live record.",
   },
 ];
 
@@ -74,9 +74,9 @@ function MockCertificate() {
           <div className="mt-8 flex items-end justify-between gap-4">
             <div>
               <p className="font-mono text-[11px] text-muted-foreground">
-                ORG-ACM-2026-000123
+                LEO-UOM-2026-000123
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">Live DB record</p>
+              <p className="mt-1 text-xs text-muted-foreground">Scan to confirm</p>
             </div>
             <div className="flex h-16 w-16 items-center justify-center rounded-md border-2 border-dashed border-accent/60 bg-accent/10">
               <QrCode className="h-8 w-8 text-brand" aria-hidden />
@@ -105,7 +105,7 @@ function JsonLd() {
         applicationCategory: "BusinessApplication",
         url: base,
         description:
-          "Issue and verify digital certificates for clubs and organizations. Live database verification with HMAC-secured QR links.",
+          "Issue and verify digital certificates for clubs and organizations. A scan checks the live record, not a file someone emailed you.",
       },
       {
         "@type": "WebSite",
@@ -145,8 +145,7 @@ export default function HomePage() {
             </div>
             <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               Design, issue, and verify digital credentials from one place.
-              Recipients share login-free verify links — the database record is
-              always authoritative.
+              Recipients share login-free verify links that anyone can check.
             </p>
             <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap gap-3">
               <Link
@@ -168,7 +167,7 @@ export default function HomePage() {
         <div className="relative mx-auto max-w-6xl px-4 pb-10 sm:px-6">
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border/60 pt-8 text-sm text-muted-foreground">
             {[
-              "Live DB verification",
+              "Live verification",
               "Drag-and-drop designer",
               "Bulk CSV / Excel import",
               "White-label org portals",
@@ -230,7 +229,7 @@ export default function HomePage() {
             <CardHeader>
               <CardTitle>Lookup</CardTitle>
               <CardDescription>
-                Requires the unguessable token from the QR or share link.
+                Requires the code from the QR or share link.
               </CardDescription>
             </CardHeader>
             <CardContent>

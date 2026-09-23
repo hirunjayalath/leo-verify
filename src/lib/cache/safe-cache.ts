@@ -1,5 +1,5 @@
 import { unstable_cache, revalidateTag } from "next/cache";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 import { TEMPLATE_GALLERY, type GalleryPreset } from "@/lib/templates/gallery";
 
 export type ClubBrandingCached = {
@@ -29,7 +29,7 @@ export function galleryTag(): string {
 export function getCachedClubBrandingBySlug(slug: string) {
   return unstable_cache(
     async (): Promise<ClubBrandingCached | null> => {
-      return prisma.club.findUnique({
+      return prismaService.club.findUnique({
         where: { publicSlug: slug },
         select: {
           id: true,
@@ -54,7 +54,7 @@ export function getCachedClubBrandingBySlug(slug: string) {
 export function getCachedClubBrandingById(clubId: string) {
   return unstable_cache(
     async (): Promise<ClubBrandingCached | null> => {
-      return prisma.club.findUnique({
+      return prismaService.club.findUnique({
         where: { id: clubId },
         select: {
           id: true,

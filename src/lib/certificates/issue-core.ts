@@ -5,8 +5,9 @@ import {
 } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import { formatCertificateId } from "@/lib/certificates/id";
-import { computeVerificationToken } from "@/lib/certificates/token";
+import { tokenForCertificate } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+import { logOps } from "@/lib/observability";
 
 export type IssueCertificateInput = {
   eventId: string;
@@ -49,17 +50,49 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
-async function nextSequence(clubId: string, year: number): Promise<number> {
-  const club = await prisma.club.findUniqueOrThrow({ where: { id: clubId } });
+async function existingMaxSequence(clubId: string, year: number): Promise<number> {
+  const club = await prisma.club.findUniqueOrThrow({
+    where: { id: clubId },
+    select: { code: true },
+  });
   const prefix = `LEO-${club.code.toUpperCase()}-${year}-`;
   const latest = await prisma.certificate.findFirst({
     where: { clubId, uniqueId: { startsWith: prefix } },
     orderBy: { uniqueId: "desc" },
     select: { uniqueId: true },
   });
-  if (!latest) return 1;
+  if (!latest) return 0;
   const seq = Number(latest.uniqueId.slice(-6));
-  return Number.isFinite(seq) ? seq + 1 : 1;
+  return Number.isFinite(seq) ? seq : 0;
+}
+
+async function allocateSequence(clubId: string, year: number): Promise<number> {
+  const floor = await existingMaxSequence(clubId, year);
+  const rows = await prisma.$queryRaw<Array<{ next: number }>>`
+    INSERT INTO "ClubCertSequence" ("clubId", "year", "next")
+    VALUES (${clubId}, ${year}, ${floor + 1})
+    ON CONFLICT ("clubId", "year")
+    DO UPDATE SET "next" = GREATEST(
+      "ClubCertSequence"."next" + 1,
+      ${floor + 1}
+    )
+    RETURNING "next"
+  `;
+  const next = rows[0]?.next;
+  if (!next) throw new Error("Could not allocate a certificate sequence");
+  return next;
+}
+
+function tokenFromRow(row: {
+  uniqueId: string;
+  recipientName: string;
+  eventId: string;
+  clubId: string;
+  issueDate: Date;
+  role: string;
+  tokenVersion?: number | null;
+}) {
+  return tokenForCertificate(row);
 }
 
 export async function requireApprovedTemplate(eventId: string, clubId: string) {
@@ -157,7 +190,7 @@ export async function createCertificateRecord(
       result: {
         id: existing.id,
         uniqueId: existing.uniqueId,
-        verificationToken: existing.verificationToken,
+        verificationToken: tokenFromRow(existing),
         pdfUrl: existing.pdfUrl,
         skipped: true,
       },
@@ -182,10 +215,10 @@ export async function createCertificateRecord(
   let uniqueId = "";
   let verificationToken = "";
 
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const sequence = await nextSequence(input.clubId, year);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const sequence = await allocateSequence(input.clubId, year);
     uniqueId = formatCertificateId(club.code, year, sequence);
-    verificationToken = computeVerificationToken({
+    verificationToken = tokenForCertificate({
       uniqueId,
       recipientName,
       eventId: input.eventId,
@@ -196,10 +229,9 @@ export async function createCertificateRecord(
     });
 
     try {
-      certificate = await prisma.certificate.create({
+      const created = await prisma.certificate.create({
         data: {
           uniqueId,
-          verificationToken,
           tokenVersion,
           clubId: input.clubId,
           eventId: input.eventId,
@@ -212,10 +244,18 @@ export async function createCertificateRecord(
           recipientId,
         },
       });
+      certificate = {
+        id: created.id,
+        uniqueId: created.uniqueId,
+        verificationToken,
+        recipientName: created.recipientName,
+        recipientEmail: created.recipientEmail,
+        role: created.role,
+        achievement: created.achievement,
+      };
       break;
     } catch (error) {
       if (isUniqueViolation(error)) {
-        // Concurrent issue may have claimed this uniqueId — re-check duplicate.
         const raced = await findIssuedDuplicate({
           eventId: input.eventId,
           recipientName,
@@ -227,19 +267,31 @@ export async function createCertificateRecord(
             result: {
               id: raced.id,
               uniqueId: raced.uniqueId,
-              verificationToken: raced.verificationToken,
+              verificationToken: tokenFromRow(raced),
               pdfUrl: raced.pdfUrl,
               skipped: true,
             },
           };
         }
-        continue;
+        const takenId = await prisma.certificate.findUnique({
+          where: { uniqueId },
+          select: { id: true },
+        });
+        if (takenId) {
+          logOps("certificate.sequence_collision", {
+            clubId: input.clubId,
+            attempt,
+          });
+          continue;
+        }
+        throw error;
       }
       throw error;
     }
   }
 
   if (!certificate) {
+    logOps("certificate.allocate_failed", { clubId: input.clubId });
     throw new Error("Could not allocate a unique certificate ID. Try again.");
   }
 
@@ -349,7 +401,7 @@ export async function prepareReissue(input: {
   const template = await requireApprovedTemplate(cert.eventId, input.clubId);
   const issueDateIso = cert.issueDate.toISOString().slice(0, 10);
   const tokenVersion = (cert.tokenVersion ?? 1) + 1;
-  const verificationToken = computeVerificationToken({
+  const verificationToken = tokenForCertificate({
     uniqueId: cert.uniqueId,
     recipientName: cert.recipientName,
     eventId: cert.eventId,
@@ -393,7 +445,6 @@ export async function commitReissue(input: {
       clubId: input.clubId,
     }),
     data: {
-      verificationToken: input.verificationToken,
       tokenVersion: input.tokenVersion,
       pdfUrl: input.pdfUrl,
       pdfKey: input.pdfKey,

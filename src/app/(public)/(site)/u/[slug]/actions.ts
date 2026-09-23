@@ -2,8 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { buildVerificationPath } from "@/lib/certificates/token";
-import { prisma } from "@/lib/db";
+import { buildVerificationPath, tokenForCertificate } from "@/lib/certificates/token";
+import { prismaService } from "@/lib/db";
 
 /** Tokenized verify redirect for public-profile listings — keeps HMAC out of crawlable HTML. */
 export async function openPublicVerifyAction(formData: FormData) {
@@ -12,7 +12,7 @@ export async function openPublicVerifyAction(formData: FormData) {
     redirect("/");
   }
 
-  const cert = await prisma.certificate.findUnique({
+  const cert = await prismaService.certificate.findUnique({
     where: { uniqueId },
     include: {
       recipient: { select: { publicProfile: true } },
@@ -28,5 +28,5 @@ export async function openPublicVerifyAction(formData: FormData) {
     redirect(`/v/${encodeURIComponent(uniqueId)}`);
   }
 
-  redirect(buildVerificationPath(cert.uniqueId, cert.verificationToken));
+  redirect(buildVerificationPath(cert.uniqueId, tokenForCertificate(cert)));
 }

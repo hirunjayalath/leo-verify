@@ -1,6 +1,6 @@
 "use server";
 
-import { requireClubAdmin } from "@/lib/auth";
+import { asClubAdmin } from "@/lib/auth";
 import {
   buildPdfZipManifest,
   exportVerifyUrlsCsv,
@@ -8,20 +8,23 @@ import {
 } from "@/lib/certificates/hub";
 
 export async function exportVerifyUrlsCsvAction(eventId?: string) {
-  const user = await requireClubAdmin();
-  return exportVerifyUrlsCsv({ clubId: user.clubId!, eventId });
+  return asClubAdmin((user) =>
+    exportVerifyUrlsCsv({ clubId: user.clubId!, eventId }),
+  );
 }
 
 export async function resendCertificateEmailAction(formData: FormData) {
-  const user = await requireClubAdmin();
-  const id = String(formData.get("certificateId") || "");
-  return resendIssuedCertificateEmail({
-    clubId: user.clubId!,
-    certificateId: id,
+  return asClubAdmin((user) => {
+    const id = String(formData.get("certificateId") || "");
+    return resendIssuedCertificateEmail({
+      clubId: user.clubId!,
+      certificateId: id,
+    });
   });
 }
 
 export async function buildPdfZipManifestAction(eventId?: string) {
-  const user = await requireClubAdmin();
-  return buildPdfZipManifest({ clubId: user.clubId!, eventId });
+  return asClubAdmin((user) =>
+    buildPdfZipManifest({ clubId: user.clubId!, eventId }),
+  );
 }

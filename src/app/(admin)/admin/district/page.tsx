@@ -28,32 +28,36 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CertificateStatus, TemplateStatus } from "@/generated/prisma/client";
-import { requireDistrictAdmin } from "@/lib/auth";
+import { requireDistrictAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export default async function DistrictAdminPage() {
   const user = await requireDistrictAdmin();
   const districtId = user.districtId!;
 
-  const clubs = await prisma.club.findMany({
-    where: { districtId },
-    orderBy: { name: "asc" },
-    include: {
-      _count: { select: { events: true, users: true } },
-    },
-  });
+  const clubs = await withSessionRls(user, () =>
+    prisma.club.findMany({
+      where: { districtId },
+      orderBy: { name: "asc" },
+      include: {
+        _count: { select: { events: true, users: true } },
+      },
+    }),
+  );
   const clubIds = clubs.map((c) => c.id);
 
   const [issued, revoked, events, pendingTemplates, byClubStatus, recentCerts] =
-    await Promise.all([
-      prisma.certificate.count({
+    await withSessionRls(user, async () => {
+      const issued = await prisma.certificate.count({
         where: { clubId: { in: clubIds }, status: CertificateStatus.issued },
-      }),
-      prisma.certificate.count({
+      });
+      const revoked = await prisma.certificate.count({
         where: { clubId: { in: clubIds }, status: CertificateStatus.revoked },
-      }),
-      prisma.event.count({ where: { clubId: { in: clubIds } } }),
-      prisma.certificateTemplate.findMany({
+      });
+      const events = await prisma.event.count({
+        where: { clubId: { in: clubIds } },
+      });
+      const pendingTemplates = await prisma.certificateTemplate.findMany({
         where: {
           clubId: { in: clubIds },
           status: { in: [TemplateStatus.draft, TemplateStatus.rejected] },
@@ -65,32 +69,42 @@ export default async function DistrictAdminPage() {
         },
         orderBy: { updatedAt: "desc" },
         take: 20,
-      }),
-      clubIds.length === 0
-        ? Promise.resolve([])
-        : prisma.certificate.groupBy({
-            by: ["clubId", "status"],
-            where: { clubId: { in: clubIds } },
-            _count: { _all: true },
-          }),
-      clubIds.length === 0
-        ? Promise.resolve([])
-        : prisma.certificate.findMany({
-            where: {
-              clubId: { in: clubIds },
-              issueDate: {
-                gte: new Date(
-                  Date.UTC(
-                    new Date().getUTCFullYear(),
-                    new Date().getUTCMonth() - 11,
-                    1,
+      });
+      const byClubStatus =
+        clubIds.length === 0
+          ? []
+          : await prisma.certificate.groupBy({
+              by: ["clubId", "status"],
+              where: { clubId: { in: clubIds } },
+              _count: { _all: true },
+            });
+      const recentCerts =
+        clubIds.length === 0
+          ? []
+          : await prisma.certificate.findMany({
+              where: {
+                clubId: { in: clubIds },
+                issueDate: {
+                  gte: new Date(
+                    Date.UTC(
+                      new Date().getUTCFullYear(),
+                      new Date().getUTCMonth() - 11,
+                      1,
+                    ),
                   ),
-                ),
+                },
               },
-            },
-            select: { issueDate: true, status: true },
-          }),
-    ]);
+              select: { issueDate: true, status: true },
+            });
+      return [
+        issued,
+        revoked,
+        events,
+        pendingTemplates,
+        byClubStatus,
+        recentCerts,
+      ] as const;
+    });
 
   const perClub = clubs.map((club) => {
     const issuedCount =

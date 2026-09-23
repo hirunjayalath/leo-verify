@@ -4,7 +4,9 @@ import { CertificateHubExports } from "@/components/admin/certificate-hub-export
 import { CsvImportForm } from "@/components/admin/csv-import-form";
 import { IssueCertificateForm } from "@/components/admin/issue-certificate-form";
 import { RecentImportsTable } from "@/components/admin/recent-imports-table";
+import { FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Card,
   CardContent,
@@ -18,10 +20,11 @@ import {
   ImportRowStatus,
   type Prisma,
 } from "@/generated/prisma/client";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import {
   buildPdfDownloadPath,
   buildVerificationPath,
+  tokenForCertificate,
 } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
 
@@ -84,42 +87,46 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
       : {}),
   };
 
-  const [certificates, total, events, jobs, earliest] = await Promise.all([
-    prisma.certificate.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: PAGE_SIZE,
-      include: { event: { select: { name: true } } },
-    }),
-    prisma.certificate.count({ where }),
-    prisma.event.findMany({
-      where: { clubId },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, name: true },
-    }),
-    prisma.importJob.findMany({
-      where: { clubId },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: {
-        rows: {
-          where: {
-            status: ImportRowStatus.failed,
-            error: { not: null },
+  const [certificates, total, events, jobs, earliest] = await withSessionRls(
+    user,
+    async () => {
+      const certificates = await prisma.certificate.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: PAGE_SIZE,
+        include: { event: { select: { name: true } } },
+      });
+      const total = await prisma.certificate.count({ where });
+      const events = await prisma.event.findMany({
+        where: { clubId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true },
+      });
+      const jobs = await prisma.importJob.findMany({
+        where: { clubId },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        include: {
+          rows: {
+            where: {
+              status: ImportRowStatus.failed,
+              error: { not: null },
+            },
+            select: { rowNumber: true, error: true },
+            orderBy: { rowNumber: "asc" },
+            take: 50,
           },
-          select: { rowNumber: true, error: true },
-          orderBy: { rowNumber: "asc" },
-          take: 50,
         },
-      },
-    }),
-    prisma.certificate.findFirst({
-      where: { clubId },
-      orderBy: { issueDate: "asc" },
-      select: { issueDate: true },
-    }),
-  ]);
+      });
+      const earliest = await prisma.certificate.findFirst({
+        where: { clubId },
+        orderBy: { issueDate: "asc" },
+        select: { issueDate: true },
+      });
+      return [certificates, total, events, jobs, earliest] as const;
+    },
+  );
 
   const currentYear = new Date().getUTCFullYear();
   const startYear = earliest?.issueDate.getUTCFullYear() ?? currentYear;
@@ -135,10 +142,10 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
     role: cert.role,
     status: cert.status as "issued" | "revoked",
     eventName: cert.event.name,
-    verifyPath: buildVerificationPath(cert.uniqueId, cert.verificationToken),
+    verifyPath: buildVerificationPath(cert.uniqueId, tokenForCertificate(cert)),
     pdfUrl:
       cert.status === "issued" && (cert.pdfKey || cert.pdfUrl)
-        ? buildPdfDownloadPath(cert.uniqueId, cert.verificationToken)
+        ? buildPdfDownloadPath(cert.uniqueId, tokenForCertificate(cert))
         : null,
     issueDate: cert.issueDate.toISOString().slice(0, 10),
   }));
@@ -293,19 +300,25 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
             </CardContent>
           </Card>
 
-          {importRows.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent imports</CardTitle>
-                <CardDescription>
-                  Expand a row to see per-row failure messages.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent imports</CardTitle>
+              <CardDescription>
+                Status of roster uploads. Expand a row to see per-row failures.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {importRows.length === 0 ? (
+                <EmptyState
+                  icon={FileUp}
+                  title="No imports yet"
+                  description="Upload a CSV or spreadsheet to issue a batch."
+                />
+              ) : (
                 <RecentImportsTable jobs={importRows} />
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">

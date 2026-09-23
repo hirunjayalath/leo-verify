@@ -70,8 +70,19 @@ model Club {
   users    User[]
   events   Event[]
   templates CertificateTemplate[]
+  sequences ClubCertSequence[]
 
   @@index([districtId])
+}
+
+/// Atomic per-club year counter for LEO-{CODE}-{YEAR}-{seq} allocation.
+model ClubCertSequence {
+  clubId String
+  year   Int
+  next   Int    @default(1)
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@id([clubId, year])
 }
 
 model User {
@@ -156,8 +167,6 @@ model Certificate {
   id                String            @id @default(cuid())
   /// Human-readable label, e.g. LEO-UOM-2026-000123 — never sole lookup key (Rule 2)
   uniqueId          String            @unique
-  /// HMAC-SHA256 token required for verification lookup (Rule 2 / §4)
-  verificationToken String
   clubId            String
   eventId           String
   recipientName     String

@@ -6,7 +6,7 @@ import {
   buildPdfDownloadPath,
   verifyVerificationToken,
 } from "@/lib/certificates/token";
-import { prisma } from "@/lib/db";
+import { prismaService } from "@/lib/db";
 import { getPublicEnv } from "@/lib/env";
 import {
   clientIpFromHeaders,
@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: Params) {
   const url = new URL(request.url);
   const token = url.searchParams.get("t");
 
-  const cert = await prisma.certificate.findUnique({
+  const cert = await prismaService.certificate.findUnique({
     where: { uniqueId },
     include: {
       event: { include: { club: true } },

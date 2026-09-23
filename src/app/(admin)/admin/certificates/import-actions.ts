@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireClubAdmin } from "@/lib/auth";
+import { asClubAdmin } from "@/lib/auth";
 import {
   type ImportServiceResult,
   parseColumnMapping,
@@ -13,7 +13,7 @@ export type ImportActionResult = ImportServiceResult;
 export async function startCsvImportAction(
   formData: FormData,
 ): Promise<ImportActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const clubId = user.clubId!;
   const eventId = String(formData.get("eventId") || "");
   const file = formData.get("csv");
@@ -40,4 +40,5 @@ export async function startCsvImportAction(
   }
 
   return result;
+  });
 }

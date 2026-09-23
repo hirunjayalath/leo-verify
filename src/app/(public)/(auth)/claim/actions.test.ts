@@ -11,6 +11,10 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/db", () => ({
+  withRlsContext: async (
+    _id: string,
+    fn: (tx: unknown) => Promise<unknown>,
+  ) => fn({}),
   prisma: {
     recipient: {
       findUnique: vi.fn(),

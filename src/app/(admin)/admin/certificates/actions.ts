@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireClubAdmin } from "@/lib/auth";
+import { asClubAdmin } from "@/lib/auth";
 import {
   issueCertificate,
   reissueCertificate,
@@ -31,7 +31,7 @@ const issueSchema = z.object({
 export async function issueOneCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const parsed = issueSchema.safeParse({
     eventId: formData.get("eventId"),
     recipientName: formData.get("recipientName"),
@@ -74,12 +74,13 @@ export async function issueOneCertificateAction(
       error: error instanceof Error ? error.message : "Issuance failed",
     };
   }
+  });
 }
 
 export async function revokeCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const id = String(formData.get("id") || "");
   const reason = String(formData.get("reason") || "").trim();
   if (!id || reason.length < 3) {
@@ -103,12 +104,13 @@ export async function revokeCertificateAction(
       error: error instanceof Error ? error.message : "Revoke failed",
     };
   }
+  });
 }
 
 export async function reissueCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  const user = await requireClubAdmin();
+  return asClubAdmin(async (user) => {
   const id = String(formData.get("id") || "");
   if (!id) return { ok: false, error: "Certificate id required" };
 
@@ -133,4 +135,5 @@ export async function reissueCertificateAction(
       error: error instanceof Error ? error.message : "Reissue failed",
     };
   }
+  });
 }

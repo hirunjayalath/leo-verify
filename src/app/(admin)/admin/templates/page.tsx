@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { getCachedGalleryPresets } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
 import { DuplicateTemplateButton } from "@/components/admin/duplicate-template-button";
@@ -30,23 +30,24 @@ export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
 
-  const [templates, events, club, gallery] = await Promise.all([
-    prisma.certificateTemplate.findMany({
+  const gallery = await getCachedGalleryPresets();
+  const [templates, events, club] = await withSessionRls(user, async () => {
+    const rows = await prisma.certificateTemplate.findMany({
       where: { clubId },
       orderBy: { updatedAt: "desc" },
       include: { event: { select: { name: true } } },
-    }),
-    prisma.event.findMany({
+    });
+    const eventRows = await prisma.event.findMany({
       where: { clubId },
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true },
-    }),
-    prisma.club.findUniqueOrThrow({
+    });
+    const clubRow = await prisma.club.findUniqueOrThrow({
       where: { id: clubId },
       select: { type: true },
-    }),
-    getCachedGalleryPresets(),
-  ]);
+    });
+    return [rows, eventRows, clubRow] as const;
+  });
 
   const isPublicOrg = club.type === "public";
 
@@ -55,7 +56,7 @@ export default async function AdminTemplatesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
         <p className="mt-1 text-muted-foreground">
-          Background image plus field-position JSON — never hardcoded layouts.
+          Upload a background and place the name, role, and other fields on it.
           {isPublicOrg
             ? " Public-organization templates start as drafts until district approval."
             : " Leo club templates are approved on create so you can issue immediately."}

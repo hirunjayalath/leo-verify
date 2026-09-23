@@ -11,6 +11,8 @@ function completeProductionEnv(
     DATABASE_URL: "postgresql://postgres:pass@db.example.com:6543/postgres",
     DIRECT_DATABASE_URL:
       "postgresql://postgres:pass@db.example.com:5432/postgres",
+    SERVICE_DATABASE_URL:
+      "postgresql://leoverify_service:pass@db.example.com:6543/postgres",
     CERT_HMAC_SECRET: HMAC,
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon-key",

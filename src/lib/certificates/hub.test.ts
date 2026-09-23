@@ -10,6 +10,9 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/env", () => ({
   getPublicEnv: () => ({ NEXT_PUBLIC_APP_URL: "https://app.example" }),
+  getServerEnv: () => ({
+    CERT_HMAC_SECRET: "test-hmac-secret-at-least-32-characters-long",
+  }),
 }));
 
 vi.mock("@/lib/email/resend", () => ({
@@ -24,6 +27,9 @@ import {
 } from "@/lib/certificates/hub";
 
 describe("exportVerifyUrlsCsv", () => {
+  process.env.CERT_HMAC_SECRET =
+    process.env.CERT_HMAC_SECRET ||
+    "test-hmac-secret-at-least-32-characters-long";
   beforeEach(() => {
     vi.mocked(prisma.certificate.findMany).mockReset();
   });
@@ -36,7 +42,11 @@ describe("exportVerifyUrlsCsv", () => {
           uniqueId: `LEO-UOM-2026-${String(i + 1).padStart(6, "0")}`,
           recipientName: "Ada",
           recipientEmail: null,
-          verificationToken: "tok",
+          eventId: "event-1",
+          clubId: "club-1",
+          issueDate: new Date("2026-01-01"),
+          role: "Volunteer",
+          tokenVersion: 1,
           createdAt: new Date(),
         })) as never,
       )
@@ -73,7 +83,12 @@ describe("buildPdfZipManifest", () => {
     vi.mocked(prisma.certificate.findMany).mockResolvedValue([
       {
         uniqueId: "LEO-UOM-2026-000001",
-        verificationToken: "tok",
+        recipientName: "Ada",
+        eventId: "event-1",
+        clubId: "club-1",
+        issueDate: new Date("2026-01-01"),
+        role: "Volunteer",
+        tokenVersion: 1,
       },
     ] as never);
 

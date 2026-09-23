@@ -15,8 +15,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   formatAuditAction,
@@ -45,58 +46,73 @@ export default async function AdminDashboardPage() {
     emailsSent,
     topEvents,
     club,
-  ] = await Promise.all([
-    prisma.event.count({ where: { clubId } }),
-    prisma.certificate.count({
+  ] = await withSessionRls(user, async () => {
+    const events = await prisma.event.count({ where: { clubId } });
+    const certificatesIssued = await prisma.certificate.count({
       where: { clubId, status: CertificateStatus.issued },
-    }),
-    prisma.certificateTemplate.count({ where: { clubId } }),
-    prisma.certificate.count({
+    });
+    const templates = await prisma.certificateTemplate.count({
+      where: { clubId },
+    });
+    const revocations = await prisma.certificate.count({
       where: { clubId, status: CertificateStatus.revoked },
-    }),
-    prisma.auditLog.findMany({
+    });
+    const recentAudit = await prisma.auditLog.findMany({
       where: { clubId },
       orderBy: { createdAt: "desc" },
       take: 6,
       include: { actor: { select: { email: true, name: true } } },
-    }),
-    prisma.certificate.count({
+    });
+    const issuedThisMonth = await prisma.certificate.count({
       where: {
         clubId,
         status: CertificateStatus.issued,
         createdAt: { gte: monthStart },
       },
-    }),
-    prisma.auditLog.count({
+    });
+    const emailsSent = await prisma.auditLog.count({
       where: {
         clubId,
         action: "certificate.issue",
         createdAt: { gte: monthStart },
       },
-    }),
-    prisma.certificate.groupBy({
+    });
+    const topEvents = await prisma.certificate.groupBy({
       by: ["eventId"],
       where: { clubId, status: CertificateStatus.issued },
       _count: { _all: true },
       orderBy: { _count: { eventId: "desc" } },
       take: 5,
-    }),
-    prisma.club.findUniqueOrThrow({
+    });
+    const club = await prisma.club.findUniqueOrThrow({
       where: { id: clubId },
       select: {
         monthlyCertLimit: true,
         publicSlug: true,
         name: true,
       },
-    }),
-  ]);
+    });
+    return [
+      events,
+      certificatesIssued,
+      templates,
+      revocations,
+      recentAudit,
+      issuedThisMonth,
+      emailsSent,
+      topEvents,
+      club,
+    ] as const;
+  });
 
   const topEventIds = topEvents.map((t) => t.eventId);
   const eventNames = topEventIds.length
-    ? await prisma.event.findMany({
-        where: { id: { in: topEventIds } },
-        select: { id: true, name: true },
-      })
+    ? await withSessionRls(user, () =>
+        prisma.event.findMany({
+          where: { id: { in: topEventIds } },
+          select: { id: true, name: true },
+        }),
+      )
     : [];
   const topEventRows = topEvents.map((t) => ({
     name: eventNames.find((e) => e.id === t.eventId)?.name ?? t.eventId,
@@ -168,7 +184,7 @@ export default async function AdminDashboardPage() {
     {
       label: "Revocations",
       value: revocations,
-      hint: "Status flag only — never deleted",
+      hint: "Revoked stays on file",
       icon: Ban,
       tint: "bg-danger-muted text-danger",
       href: "/admin/certificates",
@@ -210,7 +226,8 @@ export default async function AdminDashboardPage() {
           Dashboard
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Issue and manage certificates for {user.club?.name ?? "your club"}.
+          Issue and manage certificates for{" "}
+          {(user.club?.name ?? "your club").trim()}.
         </p>
       </div>
 
@@ -395,9 +412,11 @@ export default async function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {recentAudit.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No activity yet — create an event to get started.
-              </p>
+              <EmptyState
+                icon={ClipboardList}
+                title="No activity yet"
+                description="Create an event, then issue a certificate. Actions show up here."
+              />
             ) : (
               <ul className="divide-y divide-border">
                 {recentAudit.map((log) => (

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { computeVerificationToken } from "@/lib/certificates/token";
 import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
 import { prisma } from "@/lib/db";
@@ -22,10 +22,12 @@ export async function GET(request: Request, { params }: Params) {
 
   const user = await requireClubAdmin();
   const { id } = await params;
-  const template = await prisma.certificateTemplate.findFirst({
-    where: { id, clubId: user.clubId! },
-    include: { event: true },
-  });
+  const template = await withSessionRls(user, () =>
+    prisma.certificateTemplate.findFirst({
+      where: { id, clubId: user.clubId! },
+      include: { event: true },
+    }),
+  );
   if (!template) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -42,10 +44,12 @@ export async function GET(request: Request, { params }: Params) {
   };
   const token = computeVerificationToken(fields);
 
-  const clubRow = await prisma.club.findUniqueOrThrow({
-    where: { id: template.clubId },
-    select: { name: true },
-  });
+  const clubRow = await withSessionRls(user, () =>
+    prisma.club.findUniqueOrThrow({
+      where: { id: template.clubId },
+      select: { name: true },
+    }),
+  );
   const pdf = await renderCertificatePdf({
     backgroundUrl: template.backgroundUrl,
     layout: template.layout,

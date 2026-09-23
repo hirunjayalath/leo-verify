@@ -17,20 +17,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export default async function AdminEventsPage() {
   const user = await requireClubAdmin();
   const clubId = user.clubId!;
 
-  const events = await prisma.event.findMany({
+  const events = await withSessionRls(user, () => prisma.event.findMany({
     where: { clubId },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { certificates: true, templates: true } },
     },
-  });
+  }));
 
   return (
     <div className="space-y-8 animate-fade-up">
@@ -112,8 +112,12 @@ export default async function AdminEventsPage() {
                         {event.eventDate
                           ? event.eventDate.toISOString().slice(0, 10)
                           : "No date"}{" "}
-                        · {event._count.templates} templates ·{" "}
-                        {event._count.certificates} certificates
+                        · {event._count.templates}{" "}
+                        {event._count.templates === 1 ? "template" : "templates"}{" "}
+                        · {event._count.certificates}{" "}
+                        {event._count.certificates === 1
+                          ? "certificate"
+                          : "certificates"}
                       </p>
                       <EditEventForm
                         event={{

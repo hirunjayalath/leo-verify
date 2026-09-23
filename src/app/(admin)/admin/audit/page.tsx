@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { requireClubAdmin } from "@/lib/auth";
+import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   formatAuditAction,
@@ -38,16 +38,17 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
   const page = Math.max(1, Number(params.page) || 1);
   const skip = (page - 1) * PAGE_SIZE;
 
-  const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({
+  const [logs, total] = await withSessionRls(user, async () => {
+    const logs = await prisma.auditLog.findMany({
       where: { clubId },
       orderBy: { createdAt: "desc" },
       skip,
       take: PAGE_SIZE,
       include: { actor: { select: { name: true, email: true } } },
-    }),
-    prisma.auditLog.count({ where: { clubId } }),
-  ]);
+    });
+    const total = await prisma.auditLog.count({ where: { clubId } });
+    return [logs, total] as const;
+  });
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

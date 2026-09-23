@@ -34,6 +34,31 @@ export function computeVerificationToken(
   return createHmac("sha256", key).update(canonicalize(fields)).digest("hex");
 }
 
+/** Recompute HMAC from live certificate fields — never a stored token. */
+export function tokenForCertificate(row: {
+  uniqueId: string;
+  recipientName: string;
+  eventId: string;
+  clubId: string;
+  issueDate: Date | string;
+  role: string;
+  tokenVersion?: number | null;
+}): string {
+  const issueDate =
+    typeof row.issueDate === "string"
+      ? row.issueDate.slice(0, 10)
+      : row.issueDate.toISOString().slice(0, 10);
+  return computeVerificationToken({
+    uniqueId: row.uniqueId,
+    recipientName: row.recipientName,
+    eventId: row.eventId,
+    clubId: row.clubId,
+    issueDate,
+    role: row.role,
+    tokenVersion: row.tokenVersion ?? 1,
+  });
+}
+
 function safeEqualHex(a: string, b: string): boolean {
   try {
     const bufA = Buffer.from(a, "hex");

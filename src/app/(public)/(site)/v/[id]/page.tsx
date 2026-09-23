@@ -147,7 +147,7 @@ export default async function VerificationPage({
               Certificate check
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Result is read live from the database — not from any PDF copy.
+              This result is checked against the live record, not a downloaded file.
             </p>
           </>
         )}

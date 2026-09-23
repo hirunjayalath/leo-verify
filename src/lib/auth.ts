@@ -1,6 +1,8 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User as AppUser, UserRole } from "@/generated/prisma/client";
-import { prisma } from "@/lib/db";
+import { prismaService, withRlsContext } from "@/lib/db";
+import { logOps } from "@/lib/observability";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type SessionUser = AppUser & {
@@ -77,22 +79,57 @@ export async function requireAdminAal2(): Promise<void> {
   redirect("/admin/mfa");
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  if (isAuthDevBypassEnabled()) {
-    const email = process.env.SEED_ADMIN_EMAIL ?? "admin@uom.leoverify.local";
+const sessionInclude = {
+  club: {
+    select: { id: true, code: true, name: true, districtId: true },
+  },
+  district: { select: { id: true, code: true, name: true } },
+} as const;
+
+async function loadSessionUser(where: {
+  supabaseId?: string;
+  email?: string;
+}): Promise<SessionUser | null> {
+  if (where.supabaseId) {
     try {
-      return await prisma.user.findUnique({
-        where: { email },
-        include: {
-          club: {
-            select: { id: true, code: true, name: true, districtId: true },
-          },
-          district: { select: { id: true, code: true, name: true } },
-        },
+      const scoped = await withRlsContext(where.supabaseId, (tx) =>
+        tx.user.findUnique({
+          where: { supabaseId: where.supabaseId },
+          include: sessionInclude,
+        }),
+      );
+      if (scoped) return scoped;
+    } catch (error) {
+      logOps("auth.session_rls_failed", {
+        message: error instanceof Error ? error.message : "unknown",
       });
-    } catch {
-      return null;
     }
+  }
+
+  try {
+    return await prismaService.user.findUnique({
+      where: where.supabaseId
+        ? { supabaseId: where.supabaseId }
+        : { email: where.email! },
+      include: sessionInclude,
+    });
+  } catch (error) {
+    logOps("auth.session_lookup_failed", {
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    return null;
+  }
+}
+
+export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
+  if (isAuthDevBypassEnabled()) {
+    const supabaseId = process.env.SEED_ADMIN_SUPABASE_ID;
+    if (supabaseId) {
+      return loadSessionUser({ supabaseId });
+    }
+    return loadSessionUser({
+      email: process.env.SEED_ADMIN_EMAIL ?? "admin@uom.leoverify.local",
+    });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -106,20 +143,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const appUser = await prisma.user.findUnique({
-      where: { supabaseId: user.id },
-      include: {
-        club: {
-          select: { id: true, code: true, name: true, districtId: true },
-        },
-        district: { select: { id: true, code: true, name: true } },
-      },
-    });
-
-    return appUser;
+    return loadSessionUser({ supabaseId: user.id });
   } catch {
     return null;
   }
+});
+
+/** Run work with RLS GUC for this app user. */
+export function withSessionRls<T>(
+  user: SessionUser,
+  fn: () => Promise<T>,
+): Promise<T> {
+  return withRlsContext(user.supabaseId, fn);
 }
 
 /** Recipient claim/profile — never uses admin bypass. */
@@ -183,4 +218,18 @@ export async function requireDistrictAdmin(): Promise<SessionUser> {
 
 export function isDistrictAdmin(role: UserRole): boolean {
   return role === "district_admin";
+}
+
+export async function asClubAdmin<T>(
+  fn: (user: SessionUser) => Promise<T>,
+): Promise<T> {
+  const user = await requireClubAdmin();
+  return withSessionRls(user, () => fn(user));
+}
+
+export async function asDistrictAdmin<T>(
+  fn: (user: SessionUser) => Promise<T>,
+): Promise<T> {
+  const user = await requireDistrictAdmin();
+  return withSessionRls(user, () => fn(user));
 }

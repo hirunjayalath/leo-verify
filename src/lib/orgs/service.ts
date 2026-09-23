@@ -12,7 +12,7 @@ import {
   slugifyPublic,
 } from "@/lib/branding";
 import { invalidateClubBranding } from "@/lib/cache/safe-cache";
-import { prisma } from "@/lib/db";
+import { prisma, prismaService } from "@/lib/db";
 import { buildObjectKey, uploadObject } from "@/lib/storage/r2";
 
 export type OrgServiceResult =
@@ -271,7 +271,7 @@ export async function signupPublicOrg(input: {
 }): Promise<SignupOrgResult> {
   const adminEmail = input.adminEmail.toLowerCase();
 
-  const existingByEmail = await prisma.user.findUnique({
+  const existingByEmail = await prismaService.user.findUnique({
     where: { email: adminEmail },
   });
   if (existingByEmail) {
@@ -282,7 +282,7 @@ export async function signupPublicOrg(input: {
     };
   }
 
-  const existingBySupabase = await prisma.user.findUnique({
+  const existingBySupabase = await prismaService.user.findUnique({
     where: { supabaseId: input.supabaseId },
   });
   if (existingBySupabase) {
@@ -292,13 +292,13 @@ export async function signupPublicOrg(input: {
     };
   }
 
-  const district = await prisma.district.upsert({
+  const district = await prismaService.district.upsert({
     where: { code: "PUBLIC" },
     update: {},
     create: { code: "PUBLIC", name: "Public organizations" },
   });
 
-  const existing = await prisma.club.findUnique({
+  const existing = await prismaService.club.findUnique({
     where: { code: input.orgCode.toUpperCase() },
   });
   if (existing) return { ok: false, error: "Organization code already taken" };
@@ -307,11 +307,11 @@ export async function signupPublicOrg(input: {
     slugifyPublic(input.orgName) || slugifyPublic(input.orgCode);
   let publicSlug = baseSlug;
   let n = 1;
-  while (await prisma.club.findUnique({ where: { publicSlug } })) {
+  while (await prismaService.club.findUnique({ where: { publicSlug } })) {
     publicSlug = `${baseSlug}-${n++}`.slice(0, 48);
   }
 
-  const club = await prisma.club.create({
+  const club = await prismaService.club.create({
     data: {
       name: input.orgName,
       code: input.orgCode.toUpperCase(),
@@ -326,7 +326,7 @@ export async function signupPublicOrg(input: {
     },
   });
 
-  await prisma.user.create({
+  await prismaService.user.create({
     data: {
       email: adminEmail,
       supabaseId: input.supabaseId,
@@ -343,6 +343,7 @@ export async function signupPublicOrg(input: {
     targetId: club.id,
     clubId: club.id,
     metadata: { type: "public", monthlyCertLimit: 100 },
+    client: prismaService,
   });
 
   return { ok: true, clubId: club.id };

@@ -34,7 +34,7 @@ export async function issueCertificate(
     role: certificate.role,
     issueDateIso,
     uniqueId: certificate.uniqueId,
-    verificationToken: certificate.verificationToken,
+    verificationToken,
     achievement: certificate.achievement,
     eventName: event.name,
     clubName: club.name,
@@ -42,7 +42,7 @@ export async function issueCertificate(
 
   const gatedPdfUrl = buildPdfDownloadPath(
     certificate.uniqueId,
-    certificate.verificationToken,
+    verificationToken,
   );
   await attachCertificatePdf({
     certificateId: certificate.id,
@@ -65,12 +65,12 @@ export async function issueCertificate(
       to: certificate.recipientEmail,
       recipientName: certificate.recipientName,
       uniqueId: certificate.uniqueId,
-      verificationToken: certificate.verificationToken,
+      verificationToken,
       eventName: event.name,
       clubName: club.name,
       pdfUrl: buildPdfDownloadPath(
         certificate.uniqueId,
-        certificate.verificationToken,
+        verificationToken,
       ),
       clubLogoUrl: club.logoUrl,
       primaryColor: club.primaryColor,
@@ -148,7 +148,7 @@ export async function reissueCertificate(input: {
   return {
     id: updated.id,
     uniqueId: updated.uniqueId,
-    verificationToken: updated.verificationToken,
+    verificationToken,
     pdfUrl: gatedPdfUrl,
   };
 }
