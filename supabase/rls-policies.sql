@@ -27,7 +27,10 @@ SET search_path = public
 AS $$
   SELECT *
   FROM "User"
-  WHERE "supabaseId" = auth.uid()::text
+  WHERE "supabaseId" = COALESCE(
+    auth.uid()::text,
+    NULLIF(current_setting('app.current_supabase_id', true), '')
+  )
   LIMIT 1;
 $$;
 

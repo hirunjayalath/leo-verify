@@ -243,7 +243,6 @@ export function TemplateDesigner({
       canvas.dispose();
       fabricRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- syncSelection is stable for this mount
   }, [backgroundUrl, initialLayout]);
 
   function syncSelection(obj?: FabricObject) {

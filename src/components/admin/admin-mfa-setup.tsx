@@ -18,18 +18,19 @@ type Factor = {
 
 export function AdminMfaSetup({
   initialLevel,
+  initialFactors,
 }: {
   initialLevel: "aal1" | "aal2" | null;
+  initialFactors: Factor[];
 }) {
   const router = useRouter();
   const [level, setLevel] = useState(initialLevel);
-  const [factors, setFactors] = useState<Factor[]>([]);
+  const [factors, setFactors] = useState<Factor[]>(initialFactors);
   const [qr, setQr] = useState<string | null>(null);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [pending, startTransition] = useTransition();
-  const [loading, setLoading] = useState(true);
 
   async function refresh() {
     const supabase = createBrowserSupabaseClient();
@@ -49,12 +50,7 @@ export function AdminMfaSetup({
       ...(list?.phone ?? []),
     ] as Factor[];
     setFactors(totp.filter((f) => f.factor_type === "totp"));
-    setLoading(false);
   }
-
-  useEffect(() => {
-    void refresh();
-  }, []);
 
   useEffect(() => {
     if (level === "aal2") {
@@ -120,14 +116,6 @@ export function AdminMfaSetup({
       router.replace("/admin");
       router.refresh();
     });
-  }
-
-  if (loading) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Spinner /> Checking multi-factor status…
-      </p>
-    );
   }
 
   if (level === "aal2") {

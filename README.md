@@ -11,22 +11,24 @@ Credentialing platform for the Leo Club of University of Moratuwa — and, by de
 | App | Next.js 16 · React 19 · TypeScript · App Router |
 | Database | PostgreSQL via Supabase · Prisma 7 · transaction pooler on Vercel |
 | Auth | Supabase Auth (`src/proxy.ts`) |
-| Storage | Cloudflare R2 (local `/public/uploads` fallback) |
+| Storage | Cloudflare R2 (local `/public/uploads` in development only) |
 | PDF / QR | pdf-lib · qrcode · Fabric.js designer |
-| Jobs | Inngest (sync fallback when unset) |
-| Email | Resend |
-| Rate limit | Upstash (**required on Vercel**; in-memory only locally) |
+| Jobs | Inngest (in-process only in development when unset) |
+| Email | Resend (skipped in development when unset) |
+| Rate limit | Upstash (**required in production**; fail closed if missing) |
 | Observability | `/api/health` · optional Sentry |
-| Hosting | Vercel + Supabase + R2 |
+| Hosting | Vercel + Supabase + R2 + Resend + Inngest + Upstash |
 | Runtime | Node.js ≥ 24 |
+| Env contract | [`.env.example`](.env.example) · [`docs/architecture.md`](docs/architecture.md) |
 
 ## Getting started
 
 ```bash
 npm install
 cp .env.example .env
-# Fill DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32), Supabase, R2, Resend
-# Local UI without Auth: AUTH_DEV_BYPASS=true (never in production)
+# Contract: docs/architecture.md — every variable stays; empty is allowed locally
+# Required locally: DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32)
+# Local UI without Auth: AUTH_DEV_BYPASS=true (forbidden in production)
 npx prisma generate
 npx prisma migrate deploy   # or migrate dev locally
 npm run db:seed
@@ -62,9 +64,9 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### UOM production launch checklist
 
-1. Env vars set on Vercel (including `CERT_HMAC_SECRET`, Supabase **pooler** `DATABASE_URL`, R2, Resend, `NEXT_PUBLIC_APP_URL`, **Upstash**).
-2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`).
-3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (ignored outside development anyway).
+1. Full production secret contract set on Vercel (see [`.env.example`](.env.example) / [`docs/architecture.md`](docs/architecture.md)): pooler `DATABASE_URL`, `DIRECT_DATABASE_URL`, `CERT_HMAC_SECRET`, Supabase, `NEXT_PUBLIC_APP_URL`, R2, Resend, Inngest, **Upstash**. Boot throws if any required value is missing.
+2. Migrations applied + **RLS policies applied** (`supabase/rls-policies.sql`) + **app role** (`supabase/app-role.sql`).
+3. Seed UOM club/admin; Auth user UUID linked; `AUTH_DEV_BYPASS` **false** (rejected when `NODE_ENV=production`).
 4. MFA (TOTP) required for club/district admins — enable Multi-Factor Authentication in the Supabase project, then complete enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
 5. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
 6. Optional: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` for error tracking.
@@ -73,7 +75,7 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 
 ### Security launch gates
 
-1. Apply `supabase/rls-policies.sql` after migrate (PostgREST/anon path). **Prisma uses `DATABASE_URL` as a privileged role and bypasses RLS** — app-layer `clubId` / session checks are the real boundary for the Next.js app.
+1. Apply `supabase/rls-policies.sql` after migrate (PostgREST/anon path), then `supabase/app-role.sql`. Point `DATABASE_URL` at role `leoverify_app` (no `BYPASSRLS`). Keep `DIRECT_DATABASE_URL` as the owner for migrate. App-layer `clubId` / session checks stay required; `withRlsContext` sets `app.current_supabase_id` for the SQL helper.
 2. Never set `AUTH_DEV_BYPASS` on Vercel (ignored when `VERCEL`/`VERCEL_ENV` is set, and outside `NODE_ENV=development`).
 3. Prefer private R2 (no public bucket) + gated `/api/certificates/[id]/pdf?t=…` downloads. Logos/templates upload with long `Cache-Control`; PDFs stay short/private.
 4. Public signup requires a signed-in Supabase session; district invite must not steal users from other districts.
@@ -144,6 +146,13 @@ UI components     →      orgs/                      auth / supabase
 - Jobs: `inngest/client.ts` + `inngest/jobs/*`; `functions.ts` only registers handlers.
 - UI: `components/admin`, `components/public`, `components/verify`, `components/ui`.
 - Verification is always live DB + HMAC — never long-cache certificate status.
+
+**Environment contract**
+
+- [`.env.example`](.env.example) lists every variable. [`docs/architecture.md`](docs/architecture.md) says why each system exists.
+- Local `.env` may leave production secrets empty. `AUTH_DEV_BYPASS` is local only.
+- Production (`VERCEL` or `NODE_ENV=production`) calls `assertProductionEnv()` at boot in `src/instrumentation.ts`.
+- Upstash stays fail-closed in production. There is no in-memory limiter on the live host.
 
 **Vendor swaps (same function names)**
 

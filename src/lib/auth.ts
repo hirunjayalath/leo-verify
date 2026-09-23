@@ -38,6 +38,37 @@ export async function getAuthenticatorAssuranceLevel(): Promise<AuthenticatorAss
   }
 }
 
+export type TotpFactor = {
+  id: string;
+  friendly_name?: string | null;
+  factor_type: string;
+  status: string;
+};
+
+export async function listTotpFactors(): Promise<TotpFactor[]> {
+  if (isAuthDevBypassEnabled()) return [];
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return [];
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error || !data) return [];
+    return [...(data.totp ?? []), ...(data.phone ?? [])]
+      .filter((factor) => factor.factor_type === "totp")
+      .map((factor) => ({
+        id: factor.id,
+        friendly_name: factor.friendly_name,
+        factor_type: factor.factor_type,
+        status: factor.status,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /** Club/district admins must complete TOTP (AAL2). */
 export async function requireAdminAal2(): Promise<void> {
   if (isAuthDevBypassEnabled()) return;

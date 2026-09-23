@@ -1,6 +1,7 @@
 import { AdminMfaSetup } from "@/components/admin/admin-mfa-setup";
 import {
   getAuthenticatorAssuranceLevel,
+  listTotpFactors,
   requireUser,
 } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -11,14 +12,17 @@ export default async function AdminMfaPage() {
     redirect("/claim");
   }
 
-  const level = await getAuthenticatorAssuranceLevel();
+  const [level, factors] = await Promise.all([
+    getAuthenticatorAssuranceLevel(),
+    listTotpFactors(),
+  ]);
   if (level === "aal2") {
     redirect("/admin");
   }
 
   return (
     <div className="mx-auto max-w-lg">
-      <AdminMfaSetup initialLevel={level} />
+      <AdminMfaSetup initialLevel={level} initialFactors={factors} />
     </div>
   );
 }

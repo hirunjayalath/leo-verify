@@ -35,6 +35,7 @@ async function genericCard() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse/Satori requires <img> */}
           <img
             src={logoSrc}
             width={72}
@@ -103,6 +104,7 @@ async function verifiedCard(input: {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse/Satori requires <img> */}
           <img
             src={logoSrc}
             width={64}

@@ -44,15 +44,19 @@ export function QrScanner({
   const rafRef = useRef<number | null>(null);
   const handledRef = useRef(false);
 
-  const stop = useCallback(() => {
+  const releaseCamera = useCallback(() => {
     if (rafRef.current != null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-    setScanning(false);
   }, []);
+
+  const stop = useCallback(() => {
+    releaseCamera();
+    setScanning(false);
+  }, [releaseCamera]);
 
   const handleRaw = useCallback(
     (raw: string) => {
@@ -70,12 +74,10 @@ export function QrScanner({
 
   useEffect(() => {
     if (!open) {
-      stop();
       return;
     }
 
     handledRef.current = false;
-    setError(null);
     let cancelled = false;
 
     async function start() {
@@ -177,9 +179,9 @@ export function QrScanner({
     void start();
     return () => {
       cancelled = true;
-      stop();
+      releaseCamera();
     };
-  }, [open, handleRaw, stop]);
+  }, [open, handleRaw, releaseCamera]);
 
   if (!open) {
     return (
@@ -188,7 +190,10 @@ export function QrScanner({
           type="button"
           variant="outline"
           className="w-full sm:w-auto"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setError(null);
+            setOpen(true);
+          }}
         >
           <Camera className="size-4" />
           Scan QR code

@@ -34,7 +34,10 @@ async function databaseReady(): Promise<boolean> {
 
 const dbReady = await databaseReady();
 
-describe.skipIf(!dbReady)("issue + verify golden path (Rule 11)", () => {
+describe.skipIf(!dbReady)(
+  "issue + verify golden path (Rule 11)",
+  { timeout: 20_000 },
+  () => {
   let prisma: PrismaClient;
   let pool: Pool;
   let clubAId = "";

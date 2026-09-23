@@ -58,3 +58,18 @@ export async function pingDatabase(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Run work in a transaction with SET LOCAL app.current_supabase_id.
+ * current_app_user() in supabase/rls-policies.sql reads that GUC.
+ * Use after the app role is applied (supabase/app-role.sql).
+ */
+export async function withRlsContext<T>(
+  supabaseId: string,
+  fn: (tx: PrismaClient) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT set_config('app.current_supabase_id', ${supabaseId}, true)`;
+    return fn(tx as unknown as PrismaClient);
+  });
+}
