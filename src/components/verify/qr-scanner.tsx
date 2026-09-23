@@ -35,7 +35,6 @@ export function QrScanner({
   onDetected: (payload: { id: string; token: string }) => void;
   className?: string;
 }) {
-  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -72,10 +71,6 @@ export function QrScanner({
     },
     [onDetected, stop],
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -188,21 +183,17 @@ export function QrScanner({
     };
   }, [open, handleRaw, releaseCamera]);
 
-  if (!mounted || !open) {
+  if (!open) {
     return (
       <div className={cn(className)}>
         <Button
           type="button"
           variant="outline"
           className="w-full sm:w-auto"
-          onClick={
-            mounted
-              ? () => {
-                  setError(null);
-                  setOpen(true);
-                }
-              : undefined
-          }
+          onClick={() => {
+            setError(null);
+            setOpen(true);
+          }}
         >
           <Camera className="size-4" />
           Scan QR code

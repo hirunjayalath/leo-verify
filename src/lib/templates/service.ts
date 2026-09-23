@@ -1,5 +1,5 @@
 import { TemplateStatus, ClubType } from "@/generated/prisma/client";
-import { type ActionResult, fail, ok } from "@/lib/action-result";
+import { type ActionResult } from "@/lib/action-result";
 import { writeAuditLog } from "@/lib/audit";
 import {
   DEFAULT_LAYOUT,

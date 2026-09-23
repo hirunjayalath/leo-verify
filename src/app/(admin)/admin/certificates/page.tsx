@@ -326,7 +326,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
             <CardHeader>
               <CardTitle>Issue one</CardTitle>
               <CardDescription>
-                Uses the event's latest approved template.
+                Uses the latest approved template for the event.
               </CardDescription>
             </CardHeader>
             <CardContent>

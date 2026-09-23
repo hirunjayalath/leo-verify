@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   persistTheme,
   readStoredTheme,
@@ -10,24 +10,38 @@ import {
 } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
+const listeners = new Set<() => void>();
+
+function subscribeTheme(onStoreChange: () => void) {
+  listeners.add(onStoreChange);
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  media.addEventListener("change", onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    listeners.delete(onStoreChange);
+    media.removeEventListener("change", onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function emitThemeChange() {
+  for (const listener of listeners) listener();
+}
+
+function getThemeSnapshot(): ResolvedTheme {
+  return resolveTheme(readStoredTheme());
+}
+
 export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = useState<ResolvedTheme>("light");
-
-  useEffect(() => {
-    const stored = readStoredTheme();
-    setTheme(resolveTheme(stored));
-
-    if (stored !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setTheme(media.matches ? "dark" : "light");
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+    () => "light" as const,
+  );
 
   function toggle() {
-    const next: ResolvedTheme = theme === "dark" ? "light" : "dark";
-    persistTheme(next);
-    setTheme(next);
+    persistTheme(theme === "dark" ? "light" : "dark");
+    emitThemeChange();
   }
 
   const toLight = theme === "dark";
