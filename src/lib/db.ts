@@ -10,6 +10,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaService: PrismaClient | undefined;
   pgPool: Pool | undefined;
   pgServicePool: Pool | undefined;
+  roleAssert: Promise<void> | undefined;
 };
 
 function poolMax() {
@@ -19,39 +20,31 @@ function poolMax() {
   );
 }
 
-/** Interactive transactions cannot run concurrent queries on one connection. */
-function serializePrisma(tx: PrismaClient): PrismaClient {
-  let tail = Promise.resolve();
+export function databaseRoleFromUrl(url: string): string {
+  const username = decodeURIComponent(new URL(url).username);
+  return username.split(".")[0] ?? "";
+}
 
-  function enqueue<T>(work: () => Promise<T> | T): Promise<T> {
-    const run = tail.then(work, work);
-    tail = run.then(
-      () => undefined,
-      () => undefined,
+export function isOwnerDatabaseRole(role: string): boolean {
+  return role === "postgres" || role === "supabase_admin";
+}
+
+export function assertTenantDatabaseUrl(
+  url: string | undefined,
+  expected: "leoverify_app" | "leoverify_service",
+): string {
+  const label =
+    expected === "leoverify_app" ? "DATABASE_URL" : "SERVICE_DATABASE_URL";
+  if (!url?.trim()) {
+    throw new Error(`${label} is not set`);
+  }
+  const role = databaseRoleFromUrl(url);
+  if (isOwnerDatabaseRole(role) || role !== expected) {
+    throw new Error(
+      `${label} must use role ${expected} (got ${role || "unknown"}). The owner URL is not a supported runtime mode — use DIRECT_DATABASE_URL for migrate and seed.`,
     );
-    return run as Promise<T>;
   }
-
-  function wrap(value: unknown, owner: object): unknown {
-    if (typeof value === "function") {
-      return (...args: unknown[]) =>
-        enqueue(() => (value as (...inner: unknown[]) => unknown).apply(owner, args));
-    }
-    if (value && typeof value === "object") {
-      return new Proxy(value as object, {
-        get(model, prop, receiver) {
-          return wrap(Reflect.get(model, prop, receiver), model as object);
-        },
-      });
-    }
-    return value;
-  }
-
-  return new Proxy(tx, {
-    get(target, prop, receiver) {
-      return wrap(Reflect.get(target, prop, receiver), target);
-    },
-  }) as PrismaClient;
+  return url;
 }
 
 function createPrismaClient(connectionString: string, cacheKey: "app" | "service") {
@@ -68,31 +61,34 @@ function createPrismaClient(connectionString: string, cacheKey: "app" | "service
   return new PrismaClient({ adapter: new PrismaPg(pool) });
 }
 
-function requireDatabaseUrl(): string {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
-  }
-  return connectionString;
+function skipRuntimeRoleAssert(): boolean {
+  return Boolean(process.env.VITEST || process.env.NODE_ENV === "test");
+}
+
+function startRuntimeRoleAssert() {
+  if (skipRuntimeRoleAssert() || !process.env.DATABASE_URL) return;
+  if (globalForPrisma.roleAssert) return;
+  globalForPrisma.roleAssert = (async () => {
+    await assertConnectedRole(getAppClient(), "leoverify_app");
+    await assertConnectedRole(getServiceClient(), "leoverify_service");
+  })();
 }
 
 function getAppClient(): PrismaClient {
   if (!globalForPrisma.prisma) {
-    globalForPrisma.prisma = createPrismaClient(requireDatabaseUrl(), "app");
+    const url = assertTenantDatabaseUrl(process.env.DATABASE_URL, "leoverify_app");
+    globalForPrisma.prisma = createPrismaClient(url, "app");
+    startRuntimeRoleAssert();
   }
   return globalForPrisma.prisma;
 }
 
 function getServiceClient(): PrismaClient {
   if (globalForPrisma.prismaService) return globalForPrisma.prismaService;
-  const url =
-    process.env.SERVICE_DATABASE_URL?.trim() ||
-    (process.env.NODE_ENV === "production" || process.env.VERCEL
-      ? ""
-      : process.env.DATABASE_URL);
-  if (!url) {
-    throw new Error("SERVICE_DATABASE_URL is not set");
-  }
+  const url = assertTenantDatabaseUrl(
+    process.env.SERVICE_DATABASE_URL,
+    "leoverify_service",
+  );
   globalForPrisma.prismaService = createPrismaClient(url, "service");
   return globalForPrisma.prismaService;
 }
@@ -119,6 +115,34 @@ export const prismaService = new Proxy({} as PrismaClient, {
 export function isDatabasePoolerUrl(url: string | undefined): boolean {
   if (!url) return false;
   return /pgbouncer=true/i.test(url) || /:6543(?:[/?]|$)/.test(url);
+}
+
+export function ownerDatabaseUrl(): string | undefined {
+  return process.env.DIRECT_DATABASE_URL?.trim() || undefined;
+}
+
+async function assertConnectedRole(
+  client: PrismaClient,
+  expected: "leoverify_app" | "leoverify_service",
+): Promise<void> {
+  const rows = await client.$queryRaw<
+    { current_user: string; rolbypassrls: boolean }[]
+  >`SELECT current_user, r.rolbypassrls
+    FROM pg_roles r
+    WHERE r.rolname = current_user`;
+  const row = rows[0];
+  const role = row?.current_user?.split(".")[0] ?? "";
+  if (!row || isOwnerDatabaseRole(role) || row.rolbypassrls || role !== expected) {
+    throw new Error(
+      `Runtime database role must be ${expected} without BYPASSRLS (got ${row?.current_user ?? "unknown"}).`,
+    );
+  }
+}
+
+/** Connects and rejects owner / BYPASSRLS roles. Safe to call at boot. */
+export async function assertRuntimeDatabaseRoles(): Promise<void> {
+  startRuntimeRoleAssert();
+  await globalForPrisma.roleAssert;
 }
 
 export async function pingDatabase(): Promise<boolean> {
@@ -158,7 +182,7 @@ export async function withRlsContext<T>(
       if (options.recipientEmail) {
         await tx.$executeRaw`SELECT set_config('app.current_recipient_email', ${options.recipientEmail.toLowerCase()}, true)`;
       }
-      const client = serializePrisma(tx as unknown as PrismaClient);
+      const client = tx as unknown as PrismaClient;
       return rlsStore.run(client, () => fn(client));
     },
     { maxWait: 8_000, timeout: 20_000 },

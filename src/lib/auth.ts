@@ -1,7 +1,11 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { User as AppUser, UserRole } from "@/generated/prisma/client";
-import { prismaService, withRlsContext } from "@/lib/db";
+import type {
+  PrismaClient,
+  User as AppUser,
+  UserRole,
+} from "@/generated/prisma/client";
+import { withRlsContext } from "@/lib/db";
 import { logOps } from "@/lib/observability";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -86,35 +90,20 @@ const sessionInclude = {
   district: { select: { id: true, code: true, name: true } },
 } as const;
 
-async function loadSessionUser(where: {
-  supabaseId?: string;
-  email?: string;
-}): Promise<SessionUser | null> {
-  if (where.supabaseId) {
-    try {
-      const scoped = await withRlsContext(where.supabaseId, (tx) =>
-        tx.user.findUnique({
-          where: { supabaseId: where.supabaseId },
-          include: sessionInclude,
-        }),
-      );
-      if (scoped) return scoped;
-    } catch (error) {
-      logOps("auth.session_rls_failed", {
-        message: error instanceof Error ? error.message : "unknown",
-      });
-    }
-  }
-
+async function loadSessionUser(supabaseId: string): Promise<SessionUser | null> {
   try {
-    return await prismaService.user.findUnique({
-      where: where.supabaseId
-        ? { supabaseId: where.supabaseId }
-        : { email: where.email! },
-      include: sessionInclude,
-    });
+    const scoped = await withRlsContext(supabaseId, (tx) =>
+      tx.user.findUnique({
+        where: { supabaseId },
+        include: sessionInclude,
+      }),
+    );
+    if (!scoped) {
+      logOps("auth.session_missing", {});
+    }
+    return scoped;
   } catch (error) {
-    logOps("auth.session_lookup_failed", {
+    logOps("auth.session_rls_failed", {
       message: error instanceof Error ? error.message : "unknown",
     });
     return null;
@@ -124,12 +113,8 @@ async function loadSessionUser(where: {
 export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
   if (isAuthDevBypassEnabled()) {
     const supabaseId = process.env.SEED_ADMIN_SUPABASE_ID;
-    if (supabaseId) {
-      return loadSessionUser({ supabaseId });
-    }
-    return loadSessionUser({
-      email: process.env.SEED_ADMIN_EMAIL ?? "admin@uom.leoverify.local",
-    });
+    if (!supabaseId) return null;
+    return loadSessionUser(supabaseId);
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -143,7 +128,7 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<Ses
     } = await supabase.auth.getUser();
     if (!user) return null;
 
-    return loadSessionUser({ supabaseId: user.id });
+    return loadSessionUser(user.id);
   } catch {
     return null;
   }
@@ -152,7 +137,7 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<Ses
 /** Run work with RLS GUC for this app user. */
 export function withSessionRls<T>(
   user: SessionUser,
-  fn: () => Promise<T>,
+  fn: (tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   return withRlsContext(user.supabaseId, fn);
 }
@@ -221,15 +206,15 @@ export function isDistrictAdmin(role: UserRole): boolean {
 }
 
 export async function asClubAdmin<T>(
-  fn: (user: SessionUser) => Promise<T>,
+  fn: (user: SessionUser, tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   const user = await requireClubAdmin();
-  return withSessionRls(user, () => fn(user));
+  return withSessionRls(user, (tx) => fn(user, tx));
 }
 
 export async function asDistrictAdmin<T>(
-  fn: (user: SessionUser) => Promise<T>,
+  fn: (user: SessionUser, tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   const user = await requireDistrictAdmin();
-  return withSessionRls(user, () => fn(user));
+  return withSessionRls(user, (tx) => fn(user, tx));
 }

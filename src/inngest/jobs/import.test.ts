@@ -11,7 +11,7 @@ import {
 describe("import batch helpers", () => {
   it("keeps cheap batch and PDF concurrency caps", () => {
     expect(IMPORT_BATCH_SIZE).toBe(20);
-    expect(IMPORT_PDF_CONCURRENCY).toBe(2);
+    expect(IMPORT_PDF_CONCURRENCY).toBe(1);
     expect(EMAIL_EVENT_CHUNK).toBe(25);
   });
 

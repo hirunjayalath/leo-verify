@@ -31,7 +31,7 @@ const issueSchema = z.object({
 export async function issueOneCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
+  return asClubAdmin(async (user, tx) => {
   const parsed = issueSchema.safeParse({
     eventId: formData.get("eventId"),
     recipientName: formData.get("recipientName"),
@@ -45,18 +45,21 @@ export async function issueOneCertificateAction(
   }
 
   try {
-    const result = await issueCertificate({
-      eventId: parsed.data.eventId,
-      clubId: user.clubId!,
-      actorUserId: user.id,
-      recipientName: parsed.data.recipientName,
-      recipientEmail: parsed.data.recipientEmail || null,
-      role: parsed.data.role,
-      achievement: parsed.data.achievement || null,
-      issueDate: parsed.data.issueDate
-        ? new Date(parsed.data.issueDate)
-        : new Date(),
-    });
+    const result = await issueCertificate(
+      {
+        eventId: parsed.data.eventId,
+        clubId: user.clubId!,
+        actorUserId: user.id,
+        recipientName: parsed.data.recipientName,
+        recipientEmail: parsed.data.recipientEmail || null,
+        role: parsed.data.role,
+        achievement: parsed.data.achievement || null,
+        issueDate: parsed.data.issueDate
+          ? new Date(parsed.data.issueDate)
+          : new Date(),
+      },
+      tx,
+    );
 
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
@@ -80,7 +83,7 @@ export async function issueOneCertificateAction(
 export async function revokeCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
+  return asClubAdmin(async (user, tx) => {
   const id = String(formData.get("id") || "");
   const reason = String(formData.get("reason") || "").trim();
   if (!id || reason.length < 3) {
@@ -88,12 +91,15 @@ export async function revokeCertificateAction(
   }
 
   try {
-    await revokeCertificate({
-      certificateId: id,
-      clubId: user.clubId!,
-      actorUserId: user.id,
-      reason,
-    });
+    await revokeCertificate(
+      {
+        certificateId: id,
+        clubId: user.clubId!,
+        actorUserId: user.id,
+        reason,
+      },
+      tx,
+    );
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
     revalidatePath("/admin/audit");
@@ -110,16 +116,19 @@ export async function revokeCertificateAction(
 export async function reissueCertificateAction(
   formData: FormData,
 ): Promise<ActionResult> {
-  return asClubAdmin(async (user) => {
+  return asClubAdmin(async (user, tx) => {
   const id = String(formData.get("id") || "");
   if (!id) return { ok: false, error: "Certificate id required" };
 
   try {
-    const result = await reissueCertificate({
-      certificateId: id,
-      clubId: user.clubId!,
-      actorUserId: user.id,
-    });
+    const result = await reissueCertificate(
+      {
+        certificateId: id,
+        clubId: user.clubId!,
+        actorUserId: user.id,
+      },
+      tx,
+    );
     revalidatePath("/admin/certificates");
     revalidatePath("/admin");
     revalidatePath("/admin/audit");

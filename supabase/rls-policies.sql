@@ -31,8 +31,8 @@ AS $$
   SELECT *
   FROM "User"
   WHERE "supabaseId" = COALESCE(
-    auth.uid()::text,
-    NULLIF(current_setting('app.current_supabase_id', true), '')
+    NULLIF(current_setting('app.current_supabase_id', true), ''),
+    auth.uid()::text
   )
   LIMIT 1;
 $$;
@@ -71,11 +71,12 @@ CREATE OR REPLACE FUNCTION public.current_supabase_id()
 RETURNS text
 LANGUAGE sql
 STABLE
+SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT COALESCE(
-    auth.uid()::text,
-    NULLIF(current_setting('app.current_supabase_id', true), '')
+    NULLIF(current_setting('app.current_supabase_id', true), ''),
+    auth.uid()::text
   );
 $$;
 

@@ -68,11 +68,10 @@ export function ClaimForm({
           Claim uses your signed-in email so only you can link certificates
           issued to that address.
         </p>
-        <Link
-          href="/login?next=/claim"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground"
-        >
-          Sign in to claim
+        <Link href="/login?next=/claim">
+          <Button type="button" variant="brand" size="lg" className="w-full">
+            Sign in to claim
+          </Button>
         </Link>
         <p className="text-muted-foreground">
           New here?{" "}
@@ -112,7 +111,7 @@ export function ClaimForm({
           <Label htmlFor="name">Display name</Label>
           <Input id="name" name="name" placeholder="Optional" autoFocus />
         </div>
-        <Button type="submit" className="w-full" disabled={pending}>
+        <Button type="submit" variant="brand" size="lg" className="w-full" disabled={pending}>
           {pending && <Spinner />}
           {pending ? "Claiming…" : "Claim certificates"}
         </Button>

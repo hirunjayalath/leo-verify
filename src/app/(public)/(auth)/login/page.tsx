@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState, useSyncExternalStore } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell } from "@/components/public/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -22,6 +29,59 @@ function subscribeHash(onStoreChange: () => void) {
 function getHashType(): string | null {
   const hash = window.location.hash.replace(/^#/, "");
   return new URLSearchParams(hash).get("type");
+}
+
+function PasswordField({
+  id,
+  label,
+  autoComplete,
+  value,
+  onChange,
+  autoFocus,
+  extra,
+}: {
+  id: string;
+  label: string;
+  autoComplete: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoFocus?: boolean;
+  extra?: ReactNode;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        {extra}
+      </div>
+      <div className="relative">
+        <Input
+          id={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          placeholder="Password"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required
+          autoFocus={autoFocus}
+          className="pr-11"
+        />
+        <button
+          type="button"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+          onClick={() => setVisible((open) => !open)}
+          aria-label={visible ? "Hide password" : "Show password"}
+        >
+          {visible ? (
+            <EyeOff className="h-4 w-4" aria-hidden />
+          ) : (
+            <Eye className="h-4 w-4" aria-hidden />
+          )}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function LoginForm() {
@@ -180,54 +240,51 @@ function LoginForm() {
               type="email"
               autoComplete="email"
               autoFocus
+              placeholder="you@club.org"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
         )}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="password">
-              {mode === "recovery" ? "New password" : "Password"}
-            </Label>
-            {mode === "signin" && (
+        <PasswordField
+          id="password"
+          label={mode === "recovery" ? "New password" : "Password"}
+          autoComplete={
+            mode === "signup" ? "new-password" : "current-password"
+          }
+          value={password}
+          onChange={setPassword}
+          autoFocus={mode === "recovery"}
+          extra={
+            mode === "signin" ? (
               <button
                 type="button"
-                className="text-xs font-medium text-primary underline-offset-4 hover:underline disabled:opacity-50"
+                className="text-sm font-medium text-accent underline-offset-4 hover:underline disabled:opacity-50"
                 onClick={onForgotPassword}
                 disabled={resetting}
               >
                 {resetting ? "Sending…" : "Forgot password?"}
               </button>
-            )}
-          </div>
-          <Input
-            id="password"
-            type="password"
-            autoComplete={
-              mode === "signup" ? "new-password" : "current-password"
-            }
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoFocus={mode === "recovery"}
-          />
-        </div>
+            ) : undefined
+          }
+        />
         {(mode === "signup" || mode === "recovery") && (
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
+          <PasswordField
+            id="confirmPassword"
+            label="Confirm password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+          />
         )}
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button
+          type="submit"
+          variant="brand"
+          size="lg"
+          className="w-full"
+          disabled={loading}
+        >
           {loading && <Spinner />}
           {loading
             ? mode === "recovery"
@@ -244,21 +301,16 @@ function LoginForm() {
       </form>
 
       {mode === "signin" && (
-        <>
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            Certificate holder?{" "}
-            <button
-              type="button"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-              onClick={() => setAccountMode("signup")}
-            >
-              Create a recipient account
-            </button>
-          </p>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
-            Club admins: use the account your district linked for you.
-          </p>
-        </>
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          Certificate holder?{" "}
+          <button
+            type="button"
+            className="font-medium text-accent underline-offset-4 hover:underline"
+            onClick={() => setAccountMode("signup")}
+          >
+            Create a recipient account
+          </button>
+        </p>
       )}
       {mode === "signup" && (
         <p className="mt-5 text-center text-sm text-muted-foreground">
@@ -302,7 +354,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Sign in"
-      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates."
+      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates. Club admins: use the account your district linked for you."
     >
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />

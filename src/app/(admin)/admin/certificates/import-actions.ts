@@ -13,7 +13,7 @@ export type ImportActionResult = ImportServiceResult;
 export async function startCsvImportAction(
   formData: FormData,
 ): Promise<ImportActionResult> {
-  return asClubAdmin(async (user) => {
+  return asClubAdmin(async (user, tx) => {
   const clubId = user.clubId!;
   const eventId = String(formData.get("eventId") || "");
   const file = formData.get("csv");
@@ -23,13 +23,16 @@ export async function startCsvImportAction(
     return { ok: false, error: "Spreadsheet file is required" };
   }
 
-  const result = await startCertificateImport({
-    clubId,
-    actorUserId: user.id,
-    eventId,
-    file,
-    mapping,
-  });
+  const result = await startCertificateImport(
+    {
+      clubId,
+      actorUserId: user.id,
+      eventId,
+      file,
+      mapping,
+    },
+    tx,
+  );
 
   if (result.ok) {
     revalidatePath("/admin/certificates");

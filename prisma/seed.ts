@@ -3,6 +3,7 @@ import { PrismaClient, PlanTier, UserRole } from "../src/generated/prisma/client
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { issueCertificate } from "../src/lib/certificates/issue";
+import { withRlsContext } from "../src/lib/db";
 import { ensureAuthUser } from "../src/lib/supabase/admin";
 
 async function linkAuthUser(input: {
@@ -29,9 +30,9 @@ async function linkAuthUser(input: {
 }
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DIRECT_DATABASE_URL;
   if (!connectionString) {
-    throw new Error("DATABASE_URL is required to seed");
+    throw new Error("DIRECT_DATABASE_URL is required to seed");
   }
 
   const pool = new Pool({ connectionString });
@@ -196,16 +197,21 @@ async function main() {
     if (!template) {
       console.log("  Skip recipient certificate: no approved UOM template");
     } else {
-      const issued = await issueCertificate({
-        eventId: template.eventId,
-        clubId: club.id,
-        actorUserId: admin.id,
-        recipientName: "QA2 Recipient",
-        recipientEmail,
-        role: "Participant",
-        achievement: "QA2 claim seed",
-        sendEmail: false,
-      });
+      const issued = await withRlsContext(admin.supabaseId, (tx) =>
+        issueCertificate(
+          {
+            eventId: template.eventId,
+            clubId: club.id,
+            actorUserId: admin.id,
+            recipientName: "QA2 Recipient",
+            recipientEmail,
+            role: "Participant",
+            achievement: "QA2 claim seed",
+            sendEmail: false,
+          },
+          tx,
+        ),
+      );
       console.log(
         `  Recipient cert: ${issued.uniqueId}${issued.skipped ? " (skipped)" : ""} · ${template.event.name}`,
       );

@@ -1,3 +1,4 @@
+import type { PrismaClient } from "@/generated/prisma/client";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { sendCertificateEmail } from "@/lib/email/resend";
 import {
@@ -14,13 +15,15 @@ import {
   deleteCertificatePdfObject,
   renderAndUploadCertificatePdf,
 } from "@/lib/certificates/issue-pdf";
+import { prisma } from "@/lib/db";
 
 export type { IssueCertificateInput, IssueCertificateResult };
 
 export async function issueCertificate(
   input: IssueCertificateInput,
+  tx: PrismaClient = prisma,
 ): Promise<IssueCertificateResult> {
-  const created = await createCertificateRecord(input);
+  const created = await createCertificateRecord(input, tx);
   if (created.skipped) return created.result;
 
   const { certificate, uniqueId, verificationToken, issueDateIso, club, event, template } =
@@ -44,20 +47,26 @@ export async function issueCertificate(
     certificate.uniqueId,
     verificationToken,
   );
-  await attachCertificatePdf({
-    certificateId: certificate.id,
-    pdfUrl: gatedPdfUrl,
-    pdfKey: uploaded.key,
-  });
+  await attachCertificatePdf(
+    {
+      certificateId: certificate.id,
+      pdfUrl: gatedPdfUrl,
+      pdfKey: uploaded.key,
+    },
+    tx,
+  );
 
-  await auditCertificateIssue({
-    actorUserId: input.actorUserId,
-    certificateId: certificate.id,
-    clubId: input.clubId,
-    uniqueId,
-    recipientName: certificate.recipientName,
-    eventId: input.eventId,
-  });
+  await auditCertificateIssue(
+    {
+      actorUserId: input.actorUserId,
+      certificateId: certificate.id,
+      clubId: input.clubId,
+      uniqueId,
+      recipientName: certificate.recipientName,
+      eventId: input.eventId,
+    },
+    tx,
+  );
 
   let emailSent = false;
   if (input.sendEmail !== false && certificate.recipientEmail) {
@@ -88,13 +97,16 @@ export async function issueCertificate(
   };
 }
 
-export async function revokeCertificate(input: {
-  certificateId: string;
-  clubId: string;
-  actorUserId: string;
-  reason: string;
-}) {
-  const result = await revokeCertificateRecord(input);
+export async function revokeCertificate(
+  input: {
+    certificateId: string;
+    clubId: string;
+    actorUserId: string;
+    reason: string;
+  },
+  tx: PrismaClient = prisma,
+) {
+  const result = await revokeCertificateRecord(input, tx);
   if (result.alreadyRevoked) return result.cert;
 
   await deleteCertificatePdfObject(result.previousPdfKey);
@@ -102,12 +114,15 @@ export async function revokeCertificate(input: {
 }
 
 /** New token + PDF; status stays issued. Does not revoke. */
-export async function reissueCertificate(input: {
-  certificateId: string;
-  clubId: string;
-  actorUserId: string;
-}): Promise<IssueCertificateResult> {
-  const prepared = await prepareReissue(input);
+export async function reissueCertificate(
+  input: {
+    certificateId: string;
+    clubId: string;
+    actorUserId: string;
+  },
+  tx: PrismaClient = prisma,
+): Promise<IssueCertificateResult> {
+  const prepared = await prepareReissue(input, tx);
   const { cert, template, issueDateIso, tokenVersion, verificationToken, club } =
     prepared;
 
@@ -125,16 +140,19 @@ export async function reissueCertificate(input: {
   });
 
   const gatedPdfUrl = buildPdfDownloadPath(cert.uniqueId, verificationToken);
-  const updated = await commitReissue({
-    certificateId: cert.id,
-    clubId: input.clubId,
-    actorUserId: input.actorUserId,
-    verificationToken,
-    tokenVersion,
-    uniqueId: cert.uniqueId,
-    pdfUrl: gatedPdfUrl,
-    pdfKey: uploaded.key,
-  });
+  const updated = await commitReissue(
+    {
+      certificateId: cert.id,
+      clubId: input.clubId,
+      actorUserId: input.actorUserId,
+      verificationToken,
+      tokenVersion,
+      uniqueId: cert.uniqueId,
+      pdfUrl: gatedPdfUrl,
+      pdfKey: uploaded.key,
+    },
+    tx,
+  );
 
   if (!updated) {
     await deleteCertificatePdfObject(uploaded.key);

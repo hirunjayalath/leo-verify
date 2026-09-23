@@ -45,7 +45,7 @@ export function AuthShell({
 
       <div className="surface-grid flex items-center justify-center px-4 py-12 sm:px-8">
         <div className="w-full max-w-md animate-fade-up">
-          <div className="mb-8 lg:hidden">
+          <div className="mb-8">
             <Link href="/" className="inline-flex">
               <BrandLockup size={32} priority />
             </Link>

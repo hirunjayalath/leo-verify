@@ -14,12 +14,21 @@ import {
 } from "@/lib/certificates/issue";
 import { verifyVerificationToken } from "@/lib/certificates/token";
 import { DEFAULT_LAYOUT } from "@/lib/certificates/layout";
+import { withRlsContext } from "@/lib/db";
 import { resetServerEnvCache } from "@/lib/env";
 
+const ADMIN_A = "test-admin-a";
+const ADMIN_B = "test-admin-b";
+
+function ownerDatabaseUrl(): string | undefined {
+  return process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
+}
+
 async function databaseReady(): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return false;
+  const connectionString = ownerDatabaseUrl();
+  if (!connectionString) return false;
   const probe = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     connectionTimeoutMillis: 2500,
   });
   try {
@@ -50,7 +59,7 @@ describe.skipIf(!dbReady)(
     process.env.CERT_HMAC_SECRET =
       process.env.CERT_HMAC_SECRET ||
       "test-hmac-secret-at-least-32-characters-long";
-    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    pool = new Pool({ connectionString: ownerDatabaseUrl() });
     prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
     const district = await prisma.district.upsert({
@@ -81,10 +90,10 @@ describe.skipIf(!dbReady)(
 
     const admin = await prisma.user.upsert({
       where: { email: "admin-a@test.local" },
-      update: { clubId: clubA.id },
+      update: { clubId: clubA.id, supabaseId: ADMIN_A },
       create: {
         email: "admin-a@test.local",
-        supabaseId: "test-admin-a",
+        supabaseId: ADMIN_A,
         role: UserRole.club_admin,
         clubId: clubA.id,
         districtId: district.id,
@@ -117,16 +126,21 @@ describe.skipIf(!dbReady)(
   });
 
   it("issues a certificate retrievable by ID+token", async () => {
-    const issued = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "Test Person",
-      recipientEmail: "person@test.local",
-      role: "Volunteer",
-      achievement: "Service",
-      sendEmail: false,
-    });
+    const issued = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "Test Person",
+          recipientEmail: "person@test.local",
+          role: "Volunteer",
+          achievement: "Service",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
 
     const row = await prisma.certificate.findUniqueOrThrow({
       where: { uniqueId: issued.uniqueId },
@@ -159,21 +173,31 @@ describe.skipIf(!dbReady)(
   });
 
   it("shows revoked with no further detail", async () => {
-    const issued = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "Revokee",
-      recipientEmail: "revokee@test.local",
-      role: "Volunteer",
-      sendEmail: false,
-    });
-    await revokeCertificate({
-      certificateId: issued.id,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      reason: "Issued in error",
-    });
+    const issued = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "Revokee",
+          recipientEmail: "revokee@test.local",
+          role: "Volunteer",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
+    await withRlsContext(ADMIN_A, (tx) =>
+      revokeCertificate(
+        {
+          certificateId: issued.id,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          reason: "Issued in error",
+        },
+        tx,
+      ),
+    );
     const row = await prisma.certificate.findUniqueOrThrow({
       where: { id: issued.id },
       include: { event: { include: { club: true } } },
@@ -204,24 +228,34 @@ describe.skipIf(!dbReady)(
   });
 
   it("skips duplicate issue without email (same event + name)", async () => {
-    const first = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "No Email Twin",
-      recipientEmail: null,
-      role: "Volunteer",
-      sendEmail: false,
-    });
-    const second = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "No Email Twin",
-      recipientEmail: null,
-      role: "Volunteer",
-      sendEmail: false,
-    });
+    const first = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "No Email Twin",
+          recipientEmail: null,
+          role: "Volunteer",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
+    const second = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "No Email Twin",
+          recipientEmail: null,
+          role: "Volunteer",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
     expect(second.skipped).toBe(true);
     expect(second.uniqueId).toBe(first.uniqueId);
   });
@@ -235,15 +269,20 @@ describe.skipIf(!dbReady)(
         slug: `linked-${Date.now()}`,
       },
     });
-    const issued = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "Linked Person",
-      recipientEmail: email,
-      role: "Volunteer",
-      sendEmail: false,
-    });
+    const issued = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "Linked Person",
+          recipientEmail: email,
+          role: "Volunteer",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
     const row = await prisma.certificate.findUniqueOrThrow({
       where: { id: issued.id },
     });
@@ -251,21 +290,31 @@ describe.skipIf(!dbReady)(
   });
 
   it("reissue rotates verification token so old links fail", async () => {
-    const issued = await issueCertificate({
-      eventId: eventAId,
-      clubId: clubAId,
-      actorUserId: adminAId,
-      recipientName: "Reissue Target",
-      recipientEmail: `reissue-${Date.now()}@test.local`,
-      role: "Volunteer",
-      sendEmail: false,
-    });
+    const issued = await withRlsContext(ADMIN_A, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventAId,
+          clubId: clubAId,
+          actorUserId: adminAId,
+          recipientName: "Reissue Target",
+          recipientEmail: `reissue-${Date.now()}@test.local`,
+          role: "Volunteer",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
     const oldToken = issued.verificationToken;
-    const reissued = await reissueCertificate({
-      certificateId: issued.id,
-      clubId: clubAId,
-      actorUserId: adminAId,
-    });
+    const reissued = await withRlsContext(ADMIN_A, (tx) =>
+      reissueCertificate(
+        {
+          certificateId: issued.id,
+          clubId: clubAId,
+          actorUserId: adminAId,
+        },
+        tx,
+      ),
+    );
     expect(reissued.verificationToken).not.toBe(oldToken);
 
     const row = await prisma.certificate.findUniqueOrThrow({
@@ -306,14 +355,19 @@ describe.skipIf(!dbReady)(
     });
 
     await expect(
-      issueCertificate({
-        eventId: draftEvent.id,
-        clubId: clubAId,
-        actorUserId: adminAId,
-        recipientName: "Blocked",
-        role: "Volunteer",
-        sendEmail: false,
-      }),
+      withRlsContext(ADMIN_A, (tx) =>
+        issueCertificate(
+          {
+            eventId: draftEvent.id,
+            clubId: clubAId,
+            actorUserId: adminAId,
+            recipientName: "Blocked",
+            role: "Volunteer",
+            sendEmail: false,
+          },
+          tx,
+        ),
+      ),
     ).rejects.toThrow(/approved template/i);
   });
 
@@ -323,10 +377,10 @@ describe.skipIf(!dbReady)(
     });
     const adminB = await prisma.user.upsert({
       where: { email: "admin-b@test.local" },
-      update: {},
+      update: { clubId: clubBId, supabaseId: ADMIN_B },
       create: {
         email: "admin-b@test.local",
-        supabaseId: "test-admin-b",
+        supabaseId: ADMIN_B,
         role: UserRole.club_admin,
         clubId: clubBId,
       },
@@ -343,14 +397,19 @@ describe.skipIf(!dbReady)(
         lastEditedById: adminB.id,
       },
     });
-    const issued = await issueCertificate({
-      eventId: eventB.id,
-      clubId: clubBId,
-      actorUserId: adminB.id,
-      recipientName: "Secret",
-      role: "Member",
-      sendEmail: false,
-    });
+    const issued = await withRlsContext(ADMIN_B, (tx) =>
+      issueCertificate(
+        {
+          eventId: eventB.id,
+          clubId: clubBId,
+          actorUserId: adminB.id,
+          recipientName: "Secret",
+          role: "Member",
+          sendEmail: false,
+        },
+        tx,
+      ),
+    );
 
     const leaked = await prisma.certificate.findFirst({
       where: { id: issued.id, clubId: clubAId },
@@ -358,12 +417,17 @@ describe.skipIf(!dbReady)(
     expect(leaked).toBeNull();
 
     await expect(
-      revokeCertificate({
-        certificateId: issued.id,
-        clubId: clubAId,
-        actorUserId: adminAId,
-        reason: "Cross-tenant attempt",
-      }),
+      withRlsContext(ADMIN_A, (tx) =>
+        revokeCertificate(
+          {
+            certificateId: issued.id,
+            clubId: clubAId,
+            actorUserId: adminAId,
+            reason: "Cross-tenant attempt",
+          },
+          tx,
+        ),
+      ),
     ).rejects.toThrow(/not found/i);
   });
 });

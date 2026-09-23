@@ -139,7 +139,7 @@ export default function HomePage() {
                 priority
                 className="rounded-xl shadow-elevated"
               />
-              <h1 className="text-4xl font-semibold tracking-tight text-[#323232] sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
+              <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
                 LeoVerify
               </h1>
             </div>
@@ -150,7 +150,7 @@ export default function HomePage() {
             <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap gap-3">
               <Link
                 href="/signup"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-base font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-6 text-base font-medium text-brand-foreground shadow-sm transition-all hover:bg-brand/90 active:scale-[0.98]"
               >
                 Sign up
               </Link>

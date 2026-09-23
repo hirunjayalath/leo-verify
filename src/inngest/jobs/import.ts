@@ -7,13 +7,14 @@ import { issueCertificate } from "@/lib/certificates/issue";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
-import { prisma, prismaService, withRlsContext } from "@/lib/db";
+import type { PrismaClient } from "@/generated/prisma/client";
+import { prismaService, withRlsContext } from "@/lib/db";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
 import type { CertificateEmailPayload } from "@/inngest/jobs/types";
 
 export const IMPORT_BATCH_SIZE = 20;
-export const IMPORT_PDF_CONCURRENCY = 2;
+export const IMPORT_PDF_CONCURRENCY = 1;
 export const IMPORT_MAX_BATCHES = 250;
 export const EMAIL_EVENT_CHUNK = 25;
 
@@ -97,13 +98,16 @@ export async function processImportBatch(
   jobId: string,
 ): Promise<ImportBatchResult> {
   const supabaseId = await actorSupabaseIdForJob(jobId);
-  return withRlsContext(supabaseId, () => processImportBatchAsActor(jobId));
+  return withRlsContext(supabaseId, (tx) =>
+    processImportBatchAsActor(jobId, tx),
+  );
 }
 
 async function processImportBatchAsActor(
   jobId: string,
+  tx: PrismaClient,
 ): Promise<ImportBatchResult> {
-  const job = await prisma.importJob.findUnique({
+  const job = await tx.importJob.findUnique({
     where: { id: jobId },
     include: {
       rows: {
@@ -126,7 +130,7 @@ async function processImportBatchAsActor(
 
   if (job.rows.length === 0) {
     if (job.status !== ImportJobStatus.completed) {
-      await prisma.importJob.update({
+      await tx.importJob.update({
         where: { id: jobId },
         data: { status: ImportJobStatus.completed },
       });
@@ -135,7 +139,7 @@ async function processImportBatchAsActor(
   }
 
   if (job.status !== ImportJobStatus.running) {
-    await prisma.importJob.update({
+    await tx.importJob.update({
       where: { id: jobId },
       data: { status: ImportJobStatus.running },
     });
@@ -158,17 +162,20 @@ async function processImportBatchAsActor(
     IMPORT_PDF_CONCURRENCY,
     async (row) => {
       try {
-        const issued = await issueCertificate({
-          eventId: job.eventId,
-          clubId: job.clubId,
-          actorUserId: job.createdById ?? "system",
-          recipientName: row.recipientName,
-          recipientEmail: row.recipientEmail,
-          role: row.role,
-          achievement: row.achievement,
-          sendEmail: false,
-          backgroundBytes,
-        });
+        const issued = await issueCertificate(
+          {
+            eventId: job.eventId,
+            clubId: job.clubId,
+            actorUserId: job.createdById ?? "system",
+            recipientName: row.recipientName,
+            recipientEmail: row.recipientEmail,
+            role: row.role,
+            achievement: row.achievement,
+            sendEmail: false,
+            backgroundBytes,
+          },
+          tx,
+        );
 
         const email: CertificateEmailPayload | undefined =
           !issued.skipped && row.recipientEmail
@@ -188,7 +195,7 @@ async function processImportBatchAsActor(
             : undefined;
 
         if (issued.skipped) {
-          await prisma.importJobRow.update({
+          await tx.importJobRow.update({
             where: { id: row.id },
             data: {
               status: ImportRowStatus.skipped,
@@ -202,7 +209,7 @@ async function processImportBatchAsActor(
           } satisfies RowOutcome;
         }
 
-        await prisma.importJobRow.update({
+        await tx.importJobRow.update({
           where: { id: row.id },
           data: {
             status: ImportRowStatus.issued,
@@ -222,7 +229,7 @@ async function processImportBatchAsActor(
           phase: "issue",
         });
         const message = error instanceof Error ? error.message : "Failed";
-        await prisma.importJobRow.update({
+        await tx.importJobRow.update({
           where: { id: row.id },
           data: {
             status: ImportRowStatus.failed,
@@ -239,10 +246,10 @@ async function processImportBatchAsActor(
     if (outcome.kind === "issued" && outcome.email) emails.push(outcome.email);
   }
 
-  const remaining = await prisma.importJobRow.count({
+  const remaining = await tx.importJobRow.count({
     where: { jobId, status: ImportRowStatus.pending },
   });
-  const groups = await prisma.importJobRow.groupBy({
+  const groups = await tx.importJobRow.groupBy({
     by: ["status"],
     where: { jobId },
     _count: { _all: true },
@@ -250,7 +257,7 @@ async function processImportBatchAsActor(
   const done = remaining === 0;
   const counters = countersFromRowGroups(groups);
 
-  await prisma.importJob.update({
+  await tx.importJob.update({
     where: { id: jobId },
     data: {
       status: done ? ImportJobStatus.completed : ImportJobStatus.running,

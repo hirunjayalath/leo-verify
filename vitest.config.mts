@@ -19,6 +19,8 @@ export default defineConfig({
         process.env.CERT_HMAC_SECRET_PREVIOUS ||
         "previous-hmac-secret-at-least-32-chars!!",
       DATABASE_URL: process.env.DATABASE_URL ?? "",
+      SERVICE_DATABASE_URL: process.env.SERVICE_DATABASE_URL ?? "",
+      DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL ?? "",
     },
     fileParallelism: false,
   },

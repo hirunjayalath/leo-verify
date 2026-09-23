@@ -2,6 +2,7 @@ import {
   ImportJobStatus,
   ImportRowStatus,
   TemplateStatus,
+  type PrismaClient,
 } from "@/generated/prisma/client";
 import { writeAuditLog } from "@/lib/audit";
 import {
@@ -71,13 +72,16 @@ export function isSpreadsheetFile(file: File): boolean {
   );
 }
 
-export async function startCertificateImport(input: {
-  clubId: string;
-  actorUserId: string;
-  eventId: string;
-  file: File;
-  mapping?: ColumnMapping;
-}): Promise<ImportServiceResult> {
+export async function startCertificateImport(
+  input: {
+    clubId: string;
+    actorUserId: string;
+    eventId: string;
+    file: File;
+    mapping?: ColumnMapping;
+  },
+  tx: PrismaClient = prisma,
+): Promise<ImportServiceResult> {
   if (!input.eventId) return { ok: false, error: "Event is required" };
   if (!(input.file instanceof File) || input.file.size === 0) {
     return { ok: false, error: "Spreadsheet file is required" };
@@ -89,12 +93,12 @@ export async function startCertificateImport(input: {
     return { ok: false, error: "Upload a .csv or .xlsx file" };
   }
 
-  const event = await prisma.event.findFirst({
+  const event = await tx.event.findFirst({
     where: { id: input.eventId, clubId: input.clubId },
   });
   if (!event) return { ok: false, error: "Event not found" };
 
-  const approved = await prisma.certificateTemplate.findFirst({
+  const approved = await tx.certificateTemplate.findFirst({
     where: {
       eventId: input.eventId,
       clubId: input.clubId,
@@ -127,7 +131,7 @@ export async function startCertificateImport(input: {
     };
   }
 
-  const job = await prisma.importJob.create({
+  const job = await tx.importJob.create({
     data: {
       clubId: input.clubId,
       eventId: input.eventId,
@@ -158,6 +162,7 @@ export async function startCertificateImport(input: {
       totalRows: validated.rows.length,
       name: event.name,
     },
+    client: tx,
   });
 
   const hasInngest = Boolean(process.env.INNGEST_EVENT_KEY);
@@ -175,7 +180,7 @@ export async function startCertificateImport(input: {
   }
 
   await processImportJob(job.id);
-  const finished = await prisma.importJob.findUniqueOrThrow({
+  const finished = await tx.importJob.findUniqueOrThrow({
     where: { id: job.id },
   });
   return {

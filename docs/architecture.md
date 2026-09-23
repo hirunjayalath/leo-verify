@@ -10,14 +10,16 @@ If a secret has been pasted into chat, email, or a screenshot, rotate it in that
 
 ## Postgres
 
-Authoritative certificate and club data. Prisma reads `DATABASE_URL` at runtime. Migrations use `DIRECT_DATABASE_URL` (direct `:5432`, never the pooler).
+Authoritative certificate and club data. Prisma reads `DATABASE_URL` at runtime. Migrations and seed use `DIRECT_DATABASE_URL` (direct `:5432`, never the pooler).
+
+`DATABASE_URL` and `SERVICE_DATABASE_URL` must be the two app roles (`leoverify_app` / `leoverify_service`). An owner or `postgres` pooler URL is not a supported runtime mode.
 
 | Variable | Production |
 |---|---|
 | `DATABASE_URL` | Required. Transaction pooler as role `leoverify_app` (RLS + `withRlsContext`). |
 | `SERVICE_DATABASE_URL` | Required. Transaction pooler as role `leoverify_service` (public verify, portals, signup). |
-| `DIRECT_DATABASE_URL` | Required. Owner session URL (`:5432`) for Prisma migrate only. |
-| `PG_POOL_MAX` | Optional. Default `1`. |
+| `DIRECT_DATABASE_URL` | Required. Owner session URL (`:5432`) for Prisma migrate and seed only. |
+| `PG_POOL_MAX` | Optional. Default `3`. |
 
 Absent in production: the process cannot verify or issue. Boot fails.
 

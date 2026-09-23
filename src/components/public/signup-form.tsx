@@ -45,7 +45,7 @@ export function SignupForm({
           becomes the organization admin — we never accept a pasted Auth UUID.
         </p>
         <Link href="/login?next=/signup">
-          <Button type="button" className="w-full">
+          <Button type="button" variant="brand" size="lg" className="w-full">
             Sign in to continue
           </Button>
         </Link>
@@ -72,7 +72,7 @@ export function SignupForm({
         <Input id="adminName" name="adminName" required />
       </div>
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" variant="brand" size="lg" className="w-full" disabled={pending}>
         {pending && <Spinner />}
         {pending ? "Creating…" : "Create organization"}
       </Button>
