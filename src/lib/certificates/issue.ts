@@ -40,9 +40,13 @@ export async function issueCertificate(
     clubName: club.name,
   });
 
+  const gatedPdfUrl = buildPdfDownloadPath(
+    certificate.uniqueId,
+    certificate.verificationToken,
+  );
   await attachCertificatePdf({
     certificateId: certificate.id,
-    pdfUrl: uploaded.url,
+    pdfUrl: gatedPdfUrl,
     pdfKey: uploaded.key,
   });
 
@@ -79,7 +83,7 @@ export async function issueCertificate(
     id: certificate.id,
     uniqueId,
     verificationToken,
-    pdfUrl: uploaded.url,
+    pdfUrl: gatedPdfUrl,
     emailSent,
   };
 }
@@ -120,10 +124,7 @@ export async function reissueCertificate(input: {
     clubName: club.name,
   });
 
-  if (cert.pdfKey && cert.pdfKey !== uploaded.key) {
-    await deleteCertificatePdfObject(cert.pdfKey);
-  }
-
+  const gatedPdfUrl = buildPdfDownloadPath(cert.uniqueId, verificationToken);
   const updated = await commitReissue({
     certificateId: cert.id,
     clubId: input.clubId,
@@ -131,14 +132,23 @@ export async function reissueCertificate(input: {
     verificationToken,
     tokenVersion,
     uniqueId: cert.uniqueId,
-    pdfUrl: uploaded.url,
+    pdfUrl: gatedPdfUrl,
     pdfKey: uploaded.key,
   });
+
+  if (!updated) {
+    await deleteCertificatePdfObject(uploaded.key);
+    throw new Error("Only issued certificates can be reissued");
+  }
+
+  if (cert.pdfKey && cert.pdfKey !== uploaded.key) {
+    await deleteCertificatePdfObject(cert.pdfKey);
+  }
 
   return {
     id: updated.id,
     uniqueId: updated.uniqueId,
     verificationToken: updated.verificationToken,
-    pdfUrl: updated.pdfUrl,
+    pdfUrl: gatedPdfUrl,
   };
 }

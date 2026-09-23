@@ -37,6 +37,16 @@ function getR2Client(): S3Client {
   });
 }
 
+/** Certificate PDFs stay private; logos/templates may use R2_PUBLIC_URL. */
+export function publicUrlForObjectKey(
+  key: string,
+  publicBase: string | undefined,
+): string | null {
+  if (key.startsWith("certificates/")) return null;
+  if (!publicBase) return null;
+  return `${publicBase.replace(/\/$/, "")}/${key}`;
+}
+
 export async function uploadObject(input: {
   key: string;
   body: Buffer | Uint8Array;
@@ -61,14 +71,17 @@ export async function uploadObject(input: {
         CacheControl: cacheControl,
       }),
     );
-    const publicBase = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
-    const url = publicBase
-      ? `${publicBase}/${input.key}`
-      : await getSignedUrl(
-          client,
-          new GetObjectCommand({ Bucket: bucket, Key: input.key }),
-          { expiresIn: 60 * 60 * 24 * 7 },
-        );
+    const publicUrl = publicUrlForObjectKey(
+      input.key,
+      process.env.R2_PUBLIC_URL,
+    );
+    const url =
+      publicUrl ??
+      (await getSignedUrl(
+        client,
+        new GetObjectCommand({ Bucket: bucket, Key: input.key }),
+        { expiresIn: 60 * 60 * 24 * 7 },
+      ));
     return { key: input.key, url };
   }
 

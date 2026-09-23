@@ -47,18 +47,13 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (cert.pdfKey) {
-    const url = await getShortLivedObjectUrl(cert.pdfKey, 120);
-    if (!url) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    return NextResponse.redirect(url, 302);
+  if (!cert.pdfKey) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Legacy rows without pdfKey.
-  if (cert.pdfUrl) {
-    return NextResponse.redirect(cert.pdfUrl, 302);
+  const url = await getShortLivedObjectUrl(cert.pdfKey, 120);
+  if (!url) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-
-  return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.redirect(url, 302);
 }

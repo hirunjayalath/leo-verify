@@ -16,9 +16,25 @@ import { verifyVerificationToken } from "@/lib/certificates/token";
 import { DEFAULT_LAYOUT } from "@/lib/certificates/layout";
 import { resetServerEnvCache } from "@/lib/env";
 
-const hasDb = Boolean(process.env.DATABASE_URL);
+async function databaseReady(): Promise<boolean> {
+  if (!process.env.DATABASE_URL) return false;
+  const probe = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    connectionTimeoutMillis: 2500,
+  });
+  try {
+    await probe.query("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await probe.end().catch(() => undefined);
+  }
+}
 
-describe.skipIf(!hasDb)("issue + verify golden path (Rule 11)", () => {
+const dbReady = await databaseReady();
+
+describe.skipIf(!dbReady)("issue + verify golden path (Rule 11)", () => {
   let prisma: PrismaClient;
   let pool: Pool;
   let clubAId = "";

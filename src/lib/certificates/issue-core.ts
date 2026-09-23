@@ -366,6 +366,17 @@ export async function prepareReissue(input: {
   return { cert, template, issueDateIso, tokenVersion, verificationToken, club };
 }
 
+export function reissueCommitWhere(input: {
+  certificateId: string;
+  clubId: string;
+}) {
+  return {
+    id: input.certificateId,
+    clubId: input.clubId,
+    status: CertificateStatus.issued,
+  };
+}
+
 export async function commitReissue(input: {
   certificateId: string;
   clubId: string;
@@ -376,14 +387,22 @@ export async function commitReissue(input: {
   pdfUrl: string;
   pdfKey: string;
 }) {
-  const updated = await prisma.certificate.update({
-    where: { id: input.certificateId },
+  const result = await prisma.certificate.updateMany({
+    where: reissueCommitWhere({
+      certificateId: input.certificateId,
+      clubId: input.clubId,
+    }),
     data: {
       verificationToken: input.verificationToken,
       tokenVersion: input.tokenVersion,
       pdfUrl: input.pdfUrl,
       pdfKey: input.pdfKey,
     },
+  });
+  if (result.count === 0) return null;
+
+  const updated = await prisma.certificate.findUniqueOrThrow({
+    where: { id: input.certificateId },
   });
 
   await writeAuditLog({
