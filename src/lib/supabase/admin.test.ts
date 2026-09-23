@@ -10,6 +10,7 @@ describe("ensureAuthUser", () => {
       }),
       listUsers: vi.fn(),
       updateUserById: vi.fn(),
+      inviteUserByEmail: vi.fn(),
     };
 
     await expect(
@@ -31,6 +32,7 @@ describe("ensureAuthUser", () => {
         error: null,
       }),
       updateUserById: vi.fn().mockResolvedValue({ error: null }),
+      inviteUserByEmail: vi.fn(),
     };
 
     await expect(

@@ -93,6 +93,10 @@ describe.skipIf(!dbReady)(
     });
     clubAId = clubA.id;
     clubBId = clubB.id;
+    await prisma.club.update({
+      where: { id: clubA.id },
+      data: { monthlyCertLimit: 10_000 },
+    });
 
     const admin = await prisma.user.upsert({
       where: { email: "admin-a@test.local" },

@@ -130,7 +130,7 @@ export function CsvImportForm({
       const result = await startCsvImportAction(formData);
       if (!result.ok) {
         toast.error(result.error);
-        setRowErrors(result.rowErrors ?? []);
+        setRowErrors("rowErrors" in result ? result.rowErrors : []);
         return;
       }
       if (result.mode === "async") {

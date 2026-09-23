@@ -72,14 +72,16 @@ function nonempty(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+type EnvRecord = Record<string, string | undefined>;
+
 /** True when this process must satisfy the production secret contract. */
 export function isProductionEnvContract(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvRecord = process.env,
 ): boolean {
   return Boolean(env.VERCEL || env.NODE_ENV === "production");
 }
 
-function readDevelopmentServerEnv(env: NodeJS.ProcessEnv) {
+function readDevelopmentServerEnv(env: EnvRecord) {
   return {
     DATABASE_URL: nonempty(env.DATABASE_URL),
     CERT_HMAC_SECRET: env.CERT_HMAC_SECRET,
@@ -95,7 +97,7 @@ function readDevelopmentServerEnv(env: NodeJS.ProcessEnv) {
   };
 }
 
-function readProductionEnv(env: NodeJS.ProcessEnv) {
+function readProductionEnv(env: EnvRecord) {
   return {
     DATABASE_URL: nonempty(env.DATABASE_URL),
     DIRECT_DATABASE_URL: nonempty(env.DIRECT_DATABASE_URL),
@@ -137,7 +139,9 @@ function formatEnvIssues(issues: { path: PropertyKey[] }[]): string {
  * Development and test env objects return immediately.
  * Names every missing or invalid key in one error.
  */
-export function assertProductionEnv(env: NodeJS.ProcessEnv = process.env): void {
+export function assertProductionEnv(
+  env: EnvRecord = process.env,
+): void {
   if (!isProductionEnvContract(env)) return;
 
   const parsed = productionEnvSchema.safeParse(readProductionEnv(env));

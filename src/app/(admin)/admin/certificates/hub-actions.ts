@@ -27,7 +27,7 @@ export async function exportVerifyUrlsCsvAction(eventId?: string) {
 
 export async function resendCertificateEmailAction(formData: FormData) {
   try {
-    return await asClubAdmin((user) => {
+    return await asClubAdmin(async (user) => {
       const parsed = certificateIdSchema.safeParse({
         certificateId: formData.get("certificateId"),
       });

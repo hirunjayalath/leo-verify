@@ -4,7 +4,7 @@ import { assertProductionEnv, isProductionEnvContract } from "@/lib/env";
 const HMAC = "test-hmac-secret-at-least-32-characters-long";
 
 function completeProductionEnv(
-  overrides: NodeJS.ProcessEnv = {},
+  overrides: Partial<NodeJS.ProcessEnv> = {},
 ): NodeJS.ProcessEnv {
   return {
     NODE_ENV: "production",

@@ -54,13 +54,24 @@ export type CreatedCertificateRow = {
   achievement: string | null;
 };
 
+function uniqueViolationCode(error: unknown, depth = 0): string | undefined {
+  if (depth > 4 || typeof error !== "object" || error === null) return undefined;
+  const record = error as {
+    code?: unknown;
+    kind?: unknown;
+    cause?: unknown;
+    meta?: unknown;
+  };
+  if (typeof record.code === "string") return record.code;
+  if (record.kind === "UniqueConstraintViolation") return "23505";
+  if (record.cause) return uniqueViolationCode(record.cause, depth + 1);
+  if (record.meta) return uniqueViolationCode(record.meta, depth + 1);
+  return undefined;
+}
+
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "P2002"
-  );
+  const code = uniqueViolationCode(error);
+  return code === "P2002" || code === "23505";
 }
 
 function tokenFromRow(row: {
@@ -108,10 +119,7 @@ async function findIssuedDuplicate(
     return tx.certificate.findFirst({
       where: {
         eventId: input.eventId,
-        recipientEmail: {
-          equals: input.recipientEmail,
-          mode: "insensitive",
-        },
+        recipientEmail: input.recipientEmail,
         recipientName: input.recipientName,
         status: CertificateStatus.issued,
       },
@@ -247,11 +255,20 @@ export async function createCertificateRecord(
       break;
     } catch (error) {
       if (isUniqueViolation(error)) {
-        const raced = await findIssuedDuplicate(tx, {
-          eventId: input.eventId,
-          recipientName,
-          recipientEmail,
-        });
+        const raced =
+          (await findIssuedDuplicate(tx, {
+            eventId: input.eventId,
+            recipientName,
+            recipientEmail,
+          })) ??
+          (await tx.certificate.findFirst({
+            where: {
+              eventId: input.eventId,
+              recipientName,
+              recipientEmail,
+              status: CertificateStatus.issued,
+            },
+          }));
         if (raced) {
           return {
             skipped: true,

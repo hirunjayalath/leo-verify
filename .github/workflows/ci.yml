@@ -7,7 +7,7 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -30,8 +30,8 @@ jobs:
       DATABASE_URL: postgresql://leoverify_app:ci-app-pass@localhost:5432/postgres
       SERVICE_DATABASE_URL: postgresql://leoverify_service:ci-service-pass@localhost:5432/postgres
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: npm

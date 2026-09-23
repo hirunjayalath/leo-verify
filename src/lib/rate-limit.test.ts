@@ -31,7 +31,7 @@ describe("rate limit smoke", () => {
   it("extracts client IP from forwarded headers outside production", () => {
     delete process.env.VERCEL;
     delete process.env.VERCEL_ENV;
-    process.env.NODE_ENV = "test";
+    Object.assign(process.env, { NODE_ENV: "test" });
     const headers = new Headers({
       "x-forwarded-for": "203.0.113.10, 10.0.0.1",
     });
