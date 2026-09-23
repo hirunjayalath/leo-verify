@@ -21,9 +21,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+import { CertificateStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import {
   claimCertificates,
+  getRecipientDashboardData,
   updateProfileVisibility,
 } from "@/lib/recipients/service";
 
@@ -98,6 +100,51 @@ describe("recipients service", () => {
         }),
       }),
     );
+  });
+
+  it("does not crash when Event include is null under RLS", async () => {
+    process.env.CERT_HMAC_SECRET =
+      process.env.CERT_HMAC_SECRET ||
+      "test-hmac-secret-at-least-32-characters-long";
+
+    vi.mocked(prisma.recipient.findFirst).mockResolvedValue({
+      id: "r1",
+      email: "person@test.local",
+      name: "Person",
+      slug: "person",
+      publicProfile: false,
+      certificates: [
+        {
+          id: "c1",
+          uniqueId: "LEO-UOM-2026-000123",
+          recipientName: "Person",
+          eventId: "evt_1",
+          clubId: "club_1",
+          issueDate: new Date("2026-03-15"),
+          role: "Volunteer",
+          tokenVersion: 1,
+          pdfKey: null,
+          pdfUrl: null,
+          status: CertificateStatus.issued,
+          unlisted: false,
+          event: null,
+        },
+      ],
+    } as never);
+
+    const result = await getRecipientDashboardData({
+      id: "auth-1",
+      email: "person@test.local",
+    });
+
+    expect(result.recipient).not.toBeNull();
+    expect(result.recipient?.certificates).toEqual([
+      expect.objectContaining({
+        id: "c1",
+        uniqueId: "LEO-UOM-2026-000123",
+        eventName: "Certificate",
+      }),
+    ]);
   });
 
   it("refuses visibility update when supabaseId does not match", async () => {

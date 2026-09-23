@@ -137,6 +137,7 @@ DROP POLICY IF EXISTS district_select ON "District";
 DROP POLICY IF EXISTS club_select ON "Club";
 DROP POLICY IF EXISTS club_modify ON "Club";
 DROP POLICY IF EXISTS event_club_access ON "Event";
+DROP POLICY IF EXISTS event_recipient_select ON "Event";
 DROP POLICY IF EXISTS template_club_access ON "CertificateTemplate";
 DROP POLICY IF EXISTS certificate_club_access ON "Certificate";
 DROP POLICY IF EXISTS certificate_recipient_select ON "Certificate";
@@ -185,6 +186,18 @@ CREATE POLICY event_club_access ON "Event"
   FOR ALL
   USING (public.club_in_scope("clubId"))
   WITH CHECK (public.club_in_scope("clubId"));
+
+-- Recipient can read event names on certificates they can already see
+CREATE POLICY event_recipient_select ON "Event"
+  FOR SELECT
+  USING (
+    id IN (
+      SELECT "eventId" FROM "Certificate"
+      WHERE
+        "recipientEmail" IN (SELECT public.current_recipient_emails())
+        OR "recipientId" IN (SELECT public.current_recipient_ids())
+    )
+  );
 
 -- CertificateTemplate
 CREATE POLICY template_club_access ON "CertificateTemplate"

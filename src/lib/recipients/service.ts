@@ -28,6 +28,10 @@ function dashboardCertPaths(cert: {
   return { verifyPath, pdfPath };
 }
 
+function dashboardEventName(event: { name: string } | null | undefined) {
+  return event?.name ?? "Certificate";
+}
+
 function withRecipient<T>(
   auth: { id: string; email: string },
   fn: () => Promise<T>,
@@ -140,7 +144,7 @@ export async function claimCertificates(input: {
     certificates: linked.map((c) => ({
       id: c.id,
       uniqueId: c.uniqueId,
-      eventName: c.event.name,
+      eventName: dashboardEventName(c.event),
       unlisted: c.unlisted,
       issueDate: c.issueDate.toISOString().slice(0, 10),
       ...dashboardCertPaths(c),
@@ -246,7 +250,7 @@ export async function getRecipientDashboardData(auth: {
       certificates: recipient.certificates.map((c) => ({
         id: c.id,
         uniqueId: c.uniqueId,
-        eventName: c.event.name,
+        eventName: dashboardEventName(c.event),
         unlisted: c.unlisted,
         issueDate: c.issueDate.toISOString().slice(0, 10),
         ...dashboardCertPaths(c),
