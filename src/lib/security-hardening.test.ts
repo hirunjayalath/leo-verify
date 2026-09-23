@@ -49,5 +49,21 @@ describe("email HTML escape", () => {
   });
 });
 
+describe("requireEmailSent", () => {
+  it("throws when the provider reports a failed send", async () => {
+    const { requireEmailSent } = await import("@/lib/email/resend");
+    expect(() =>
+      requireEmailSent({ sent: false, error: "Resend 429" }),
+    ).toThrow(/Resend 429/);
+  });
+
+  it("does not throw when email was skipped because no API key", async () => {
+    const { requireEmailSent } = await import("@/lib/email/resend");
+    expect(
+      requireEmailSent({ sent: false, skipped: true, error: "not configured" }),
+    ).toMatchObject({ skipped: true });
+  });
+});
+
 // silence unused vi import warning in some configs
 void vi;

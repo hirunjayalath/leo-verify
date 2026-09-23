@@ -1,5 +1,5 @@
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
-import { sendCertificateEmail } from "@/lib/email/resend";
+import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
 import type { CertificateEmailPayload } from "@/inngest/jobs/types";
@@ -14,7 +14,7 @@ export const sendCertificateEmailFn = inngest.createFunction(
   async ({ event }) => {
     const data = event.data as CertificateEmailPayload;
     try {
-      await sendCertificateEmail({
+      const result = await sendCertificateEmail({
         to: data.to,
         recipientName: data.recipientName,
         uniqueId: data.uniqueId,
@@ -26,11 +26,14 @@ export const sendCertificateEmailFn = inngest.createFunction(
         primaryColor: data.primaryColor,
         accentColor: data.accentColor,
       });
-      logOps("email.sent", {
-        jobId: data.jobId,
-        clubId: data.clubId,
-        uniqueId: data.uniqueId,
-      });
+      requireEmailSent(result);
+      if (result.sent) {
+        logOps("email.sent", {
+          jobId: data.jobId,
+          clubId: data.clubId,
+          uniqueId: data.uniqueId,
+        });
+      }
       return { ok: true };
     } catch (error) {
       captureException(error, {

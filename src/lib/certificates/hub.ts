@@ -11,6 +11,18 @@ export const VERIFY_URL_CSV_PAGE_SIZE = 500;
 export const VERIFY_URL_CSV_MAX_ROWS = 5000;
 export const PDF_ZIP_MANIFEST_MAX = 500;
 
+/** Next page after (createdAt desc, id desc) without Prisma id-only cursor. */
+export function csvSeekWhere(cursor: { createdAt: Date; id: string }) {
+  return {
+    OR: [
+      { createdAt: { lt: cursor.createdAt } },
+      {
+        AND: [{ createdAt: cursor.createdAt }, { id: { lt: cursor.id } }],
+      },
+    ],
+  };
+}
+
 export async function exportVerifyUrlsCsv(input: {
   clubId: string;
   eventId?: string;
@@ -27,15 +39,10 @@ export async function exportVerifyUrlsCsv(input: {
         clubId: input.clubId,
         status: CertificateStatus.issued,
         ...(input.eventId ? { eventId: input.eventId } : {}),
+        ...(cursor ? csvSeekWhere(cursor) : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take,
-      ...(cursor
-        ? {
-            cursor: { id: cursor.id },
-            skip: 1,
-          }
-        : {}),
       select: {
         id: true,
         uniqueId: true,
@@ -88,7 +95,7 @@ export async function resendIssuedCertificateEmail(input: {
   const club = await prisma.club.findUniqueOrThrow({
     where: { id: input.clubId },
   });
-  await resendCertificateEmail({
+  const sent = await resendCertificateEmail({
     to: cert.recipientEmail,
     recipientName: cert.recipientName,
     eventName: cert.event.name,
@@ -99,6 +106,12 @@ export async function resendIssuedCertificateEmail(input: {
     primaryColor: club.primaryColor,
     accentColor: club.accentColor,
   });
+  if (!sent.sent) {
+    return {
+      ok: false as const,
+      error: sent.error ?? "Email send failed",
+    };
+  }
   return { ok: true as const };
 }
 

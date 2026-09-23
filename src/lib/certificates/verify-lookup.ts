@@ -9,64 +9,60 @@ export async function lookupCertificateForVerifyQuery(uniqueId: string) {
   if (!parseCertificateId(uniqueId)) return null;
   if (!process.env.DATABASE_URL) return null;
 
-  try {
-    const row = await prisma.certificate.findUnique({
-      where: { uniqueId },
-      select: {
-        uniqueId: true,
-        verificationToken: true,
-        recipientName: true,
-        role: true,
-        achievement: true,
-        issueDate: true,
-        status: true,
-        clubId: true,
-        eventId: true,
-        pdfUrl: true,
-        pdfKey: true,
-        tokenVersion: true,
-        event: {
-          select: {
-            name: true,
-            club: {
-              select: {
-                name: true,
-                logoUrl: true,
-                primaryColor: true,
-                accentColor: true,
-                publicSlug: true,
-              },
+  const row = await prisma.certificate.findUnique({
+    where: { uniqueId },
+    select: {
+      uniqueId: true,
+      verificationToken: true,
+      recipientName: true,
+      role: true,
+      achievement: true,
+      issueDate: true,
+      status: true,
+      clubId: true,
+      eventId: true,
+      pdfUrl: true,
+      pdfKey: true,
+      tokenVersion: true,
+      event: {
+        select: {
+          name: true,
+          club: {
+            select: {
+              name: true,
+              logoUrl: true,
+              primaryColor: true,
+              accentColor: true,
+              publicSlug: true,
             },
           },
         },
       },
-    });
+    },
+  });
 
-    if (!row) return null;
+  if (!row) return null;
 
-    return {
-      uniqueId: row.uniqueId,
-      verificationToken: row.verificationToken,
-      recipientName: row.recipientName,
-      role: row.role,
-      achievement: row.achievement,
-      issueDate: row.issueDate,
-      status: row.status,
-      clubId: row.clubId,
-      eventId: row.eventId,
-      clubName: row.event.club.name,
-      eventName: row.event.name,
-      pdfUrl: row.pdfUrl,
-      pdfKey: row.pdfKey,
-      tokenVersion: row.tokenVersion,
-      clubLogoUrl: row.event.club.logoUrl,
-      primaryColor: row.event.club.primaryColor,
-      accentColor: row.event.club.accentColor,
-      publicSlug: row.event.club.publicSlug,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    uniqueId: row.uniqueId,
+    verificationToken: row.verificationToken,
+    recipientName: row.recipientName,
+    role: row.role,
+    achievement: row.achievement,
+    issueDate: row.issueDate,
+    status: row.status,
+    clubId: row.clubId,
+    eventId: row.eventId,
+    clubName: row.event.club.name,
+    eventName: row.event.name,
+    pdfUrl: row.pdfUrl,
+    pdfKey: row.pdfKey,
+    tokenVersion: row.tokenVersion,
+    clubLogoUrl: row.event.club.logoUrl,
+    primaryColor: row.event.club.primaryColor,
+    accentColor: row.event.club.accentColor,
+    publicSlug: row.event.club.publicSlug,
+  };
 }
 
 /** Request-scoped memo — metadata + page share one live DB read. */

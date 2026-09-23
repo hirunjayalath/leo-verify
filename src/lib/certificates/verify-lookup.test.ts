@@ -49,6 +49,15 @@ describe("getVerifiedShareCard", () => {
     expect(prisma.certificate.findUnique).not.toHaveBeenCalled();
   });
 
+  it("does not map a database error to a missing certificate", async () => {
+    vi.mocked(prisma.certificate.findUnique).mockRejectedValue(
+      new Error("connection refused"),
+    );
+    await expect(
+      lookupCertificateForVerifyQuery("LEO-UOM-2026-000001"),
+    ).rejects.toThrow(/connection refused/);
+  });
+
   it("returns share fields for a valid issued certificate", async () => {
     const fields = {
       uniqueId: "LEO-UOM-2026-000001",

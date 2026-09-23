@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Clock } from "lucide-react";
+import { Clock, ServerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verify/verification-result";
@@ -24,10 +24,19 @@ export async function generateMetadata({
   const { id } = await params;
   const { t } = await searchParams;
   const uniqueId = decodeURIComponent(id);
-  const row = await lookupCertificateForVerify(uniqueId);
+  const robots = { index: false, follow: false } as const;
+  let row;
+  try {
+    row = await lookupCertificateForVerify(uniqueId);
+  } catch {
+    return {
+      title: "Certificate check",
+      description: "Live certificate verification on LeoVerify.",
+      robots,
+    };
+  }
   const result = evaluateVerification(row, t);
 
-  const robots = { index: false, follow: false } as const;
   const ogImagePath = t
     ? `/api/og/verify/${encodeURIComponent(uniqueId)}?t=${encodeURIComponent(t)}`
     : `/api/og/verify/${encodeURIComponent(uniqueId)}`;
@@ -94,7 +103,27 @@ export default async function VerificationPage({
   const { id } = await params;
   const { t } = await searchParams;
   const uniqueId = decodeURIComponent(id);
-  const row = await lookupCertificateForVerify(uniqueId);
+  let row;
+  try {
+    row = await lookupCertificateForVerify(uniqueId);
+  } catch {
+    return (
+      <div className="surface-grid">
+        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+          <EmptyState
+            icon={ServerOff}
+            title="Verification is temporarily unavailable"
+            description="We could not reach the live records. Try again in a moment."
+            action={
+              <Link href="/#verify">
+                <Button variant="outline">Back to verify</Button>
+              </Link>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
   const result = evaluateVerification(row, t);
   const checkedAt = new Date().toISOString();
   const isRevoked = result.status === "revoked";

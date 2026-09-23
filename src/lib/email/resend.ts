@@ -98,4 +98,13 @@ export async function sendCertificateEmail(input: {
   }
 }
 
+export function requireEmailSent(result: {
+  sent: boolean;
+  skipped?: boolean;
+  error?: string;
+}) {
+  if (result.sent || result.skipped) return result;
+  throw new Error(result.error ?? "Email send failed");
+}
+
 export const resendCertificateEmail = sendCertificateEmail;

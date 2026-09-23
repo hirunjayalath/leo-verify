@@ -17,7 +17,11 @@ vi.mock("@/lib/email/resend", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { buildPdfZipManifest, exportVerifyUrlsCsv } from "@/lib/certificates/hub";
+import {
+  buildPdfZipManifest,
+  csvSeekWhere,
+  exportVerifyUrlsCsv,
+} from "@/lib/certificates/hub";
 
 describe("exportVerifyUrlsCsv", () => {
   beforeEach(() => {
@@ -43,6 +47,19 @@ describe("exportVerifyUrlsCsv", () => {
     expect(prisma.certificate.findMany).toHaveBeenCalledTimes(2);
     expect(vi.mocked(prisma.certificate.findMany).mock.calls[0]![0]).toMatchObject({
       take: 500,
+    });
+    const secondWhere = vi.mocked(prisma.certificate.findMany).mock.calls[1]![0]
+      ?.where as { OR?: unknown };
+    expect(secondWhere.OR).toBeDefined();
+  });
+
+  it("seeks the next page by createdAt then id", () => {
+    const createdAt = new Date("2026-01-01T00:00:00.000Z");
+    expect(csvSeekWhere({ createdAt, id: "id-9" })).toEqual({
+      OR: [
+        { createdAt: { lt: createdAt } },
+        { AND: [{ createdAt }, { id: { lt: "id-9" } }] },
+      ],
     });
   });
 });

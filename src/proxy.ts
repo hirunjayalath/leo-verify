@@ -74,7 +74,7 @@ export async function proxy(request: NextRequest) {
   const isMfaPath = request.nextUrl.pathname === "/admin/mfa";
   if (isAdminPath && user && !isMfaPath) {
     const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal && aal.currentLevel !== "aal2") {
+    if (!aal || aal.currentLevel !== "aal2") {
       return NextResponse.redirect(new URL("/admin/mfa", request.url));
     }
   }

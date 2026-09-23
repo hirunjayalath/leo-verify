@@ -6,7 +6,7 @@ import {
 import { issueCertificate } from "@/lib/certificates/issue";
 import { fetchBackgroundBytes } from "@/lib/certificates/safe-fetch";
 import { buildPdfDownloadPath } from "@/lib/certificates/token";
-import { sendCertificateEmail } from "@/lib/email/resend";
+import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
 import { prisma } from "@/lib/db";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
@@ -24,6 +24,22 @@ export function chunkItems<T>(items: T[], size: number): T[][] {
     out.push(items.slice(i, i + step));
   }
   return out;
+}
+
+export function countersFromRowGroups(
+  groups: { status: ImportRowStatus; _count: { _all: number } }[],
+): { successRows: number; failedRows: number; skippedRows: number } {
+  let successRows = 0;
+  let failedRows = 0;
+  let skippedRows = 0;
+  for (const group of groups) {
+    if (group.status === ImportRowStatus.issued) successRows = group._count._all;
+    else if (group.status === ImportRowStatus.failed)
+      failedRows = group._count._all;
+    else if (group.status === ImportRowStatus.skipped)
+      skippedRows = group._count._all;
+  }
+  return { successRows, failedRows, skippedRows };
 }
 
 async function mapPool<T, R>(
@@ -109,11 +125,7 @@ export async function processImportBatch(
   let backgroundBytes: Uint8Array | undefined;
   const published = job.event.templates[0];
   if (published?.backgroundUrl) {
-    try {
-      backgroundBytes = await fetchBackgroundBytes(published.backgroundUrl);
-    } catch (error) {
-      captureException(error, { jobId, clubId: job.clubId, phase: "bg-fetch" });
-    }
+    backgroundBytes = await fetchBackgroundBytes(published.backgroundUrl);
   }
 
   const outcomes = await mapPool(
@@ -197,34 +209,29 @@ export async function processImportBatch(
     },
   );
 
-  let success = job.successRows;
-  let failed = job.failedRows;
-  let skipped = job.skippedRows;
   const emails: CertificateEmailPayload[] = [];
-
   for (const outcome of outcomes) {
-    if (outcome.kind === "issued") {
-      success += 1;
-      if (outcome.email) emails.push(outcome.email);
-    } else if (outcome.kind === "skipped") {
-      skipped += 1;
-    } else {
-      failed += 1;
-    }
+    if (outcome.kind === "issued" && outcome.email) emails.push(outcome.email);
   }
 
-  const remaining = await prisma.importJobRow.count({
-    where: { jobId, status: ImportRowStatus.pending },
-  });
+  const [remaining, groups] = await Promise.all([
+    prisma.importJobRow.count({
+      where: { jobId, status: ImportRowStatus.pending },
+    }),
+    prisma.importJobRow.groupBy({
+      by: ["status"],
+      where: { jobId },
+      _count: { _all: true },
+    }),
+  ]);
   const done = remaining === 0;
+  const counters = countersFromRowGroups(groups);
 
   await prisma.importJob.update({
     where: { id: jobId },
     data: {
       status: done ? ImportJobStatus.completed : ImportJobStatus.running,
-      successRows: success,
-      failedRows: failed,
-      skippedRows: skipped,
+      ...counters,
     },
   });
 
@@ -232,9 +239,7 @@ export async function processImportBatch(
     logOps("import.complete", {
       jobId,
       clubId: job.clubId,
-      success,
-      failed,
-      skipped,
+      ...counters,
       emailsQueued: emails.length,
     });
   }
@@ -260,7 +265,7 @@ async function dispatchImportEmails(emails: CertificateEmailPayload[]) {
 
   for (const payload of emails) {
     try {
-      await sendCertificateEmail({
+      const result = await sendCertificateEmail({
         to: payload.to,
         recipientName: payload.recipientName,
         uniqueId: payload.uniqueId,
@@ -275,6 +280,7 @@ async function dispatchImportEmails(emails: CertificateEmailPayload[]) {
         primaryColor: payload.primaryColor,
         accentColor: payload.accentColor,
       });
+      requireEmailSent(result);
     } catch (error) {
       captureException(error, {
         jobId: payload.jobId,
@@ -299,7 +305,7 @@ export const processImportJobFn = inngest.createFunction(
   {
     id: "certificate-import-job",
     triggers: [{ event: "certificate/import.start" }],
-    concurrency: { limit: 3 },
+    concurrency: { limit: 1, key: "event.data.jobId" },
   },
   async ({ event, step }) => {
     const jobId = String(event.data.jobId);

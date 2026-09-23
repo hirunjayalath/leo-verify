@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { CertificateStatus } from "@/generated/prisma/client";
+import { isBadgeExportAllowed } from "@/lib/certificates/badge-access";
 import {
   buildPdfDownloadPath,
   verifyVerificationToken,
@@ -34,31 +35,35 @@ export async function GET(request: Request, { params }: Params) {
     },
   });
 
-  if (!cert || cert.status !== CertificateStatus.issued) {
+  const tokenValid = Boolean(
+    cert &&
+      token &&
+      verifyVerificationToken(
+        {
+          uniqueId: cert.uniqueId,
+          recipientName: cert.recipientName,
+          eventId: cert.eventId,
+          clubId: cert.clubId,
+          issueDate: cert.issueDate.toISOString().slice(0, 10),
+          role: cert.role,
+          tokenVersion: cert.tokenVersion,
+        },
+        token,
+      ),
+  );
+
+  if (
+    !isBadgeExportAllowed({
+      issued: Boolean(cert && cert.status === CertificateStatus.issued),
+      token,
+      tokenValid,
+    })
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!token) {
-    return NextResponse.json(
-      { error: "Verification token required" },
-      { status: 401 },
-    );
-  }
-
-  const ok = verifyVerificationToken(
-    {
-      uniqueId: cert.uniqueId,
-      recipientName: cert.recipientName,
-      eventId: cert.eventId,
-      clubId: cert.clubId,
-      issueDate: cert.issueDate.toISOString().slice(0, 10),
-      role: cert.role,
-      tokenVersion: cert.tokenVersion,
-    },
-    token,
-  );
-  if (!ok) {
-    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  if (!cert || !token) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const appUrl = getPublicEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
@@ -76,9 +81,11 @@ export async function GET(request: Request, { params }: Params) {
     id: `${appUrl}/api/credentials/${encodeURIComponent(cert.uniqueId)}/badge`,
     type: ["VerifiableCredential", "OpenBadgeCredential"],
     issuer: {
-      id: `${appUrl}/org/${cert.event.club.code}`,
       type: ["Profile"],
       name: cert.event.club.name,
+      ...(cert.event.club.publicSlug
+        ? { id: `${appUrl}/o/${cert.event.club.publicSlug}` }
+        : {}),
     },
     validFrom: cert.issueDate.toISOString(),
     name: `${cert.event.name} — ${cert.role}`,
