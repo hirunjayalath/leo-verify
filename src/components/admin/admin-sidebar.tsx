@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { signOutAction } from "@/app/(admin)/admin/actions";
-import { ClubSwitcher } from "@/components/admin/club-switcher";
 import { BrandMark } from "@/components/public/brand-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -120,16 +119,12 @@ export function AdminSidebar({
   userName,
   showDistrict,
   showClubNav = true,
-  districtClubs = [],
-  currentClubId,
 }: {
   clubName?: string | null;
   userEmail?: string | null;
   userName?: string | null;
   showDistrict?: boolean;
   showClubNav?: boolean;
-  districtClubs?: { id: string; name: string }[];
-  currentClubId?: string | null;
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -155,13 +150,6 @@ export function AdminSidebar({
         </button>
       </div>
       <nav className="flex flex-1 flex-col overflow-y-auto p-3" aria-label="Admin">
-        {showDistrict && districtClubs.length > 0 && (
-          <ClubSwitcher
-            variant="sidebar"
-            clubs={districtClubs}
-            currentClubId={currentClubId}
-          />
-        )}
         <SidebarNav
           pathname={pathname}
           showDistrict={showDistrict}

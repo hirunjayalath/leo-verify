@@ -2,8 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { requireUser, withSessionRls } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,17 +33,6 @@ export default async function AdminLayout({
 
   const chip = initials(user.email, user.name);
   const hasClub = Boolean(user.clubId);
-  const districtId = user.districtId;
-  const districtClubs =
-    user.role === "district_admin" && districtId
-      ? await withSessionRls(user, () =>
-          prisma.club.findMany({
-            where: { districtId },
-            orderBy: { name: "asc" },
-            select: { id: true, name: true },
-          }),
-        )
-      : [];
 
   return (
     <div className="flex min-h-full flex-1 bg-background">
@@ -54,8 +42,6 @@ export default async function AdminLayout({
         userName={user.name}
         showDistrict={user.role === "district_admin"}
         showClubNav={hasClub}
-        districtClubs={districtClubs}
-        currentClubId={user.clubId}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-card/90 px-4 backdrop-blur sm:px-6">

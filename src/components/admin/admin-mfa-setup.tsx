@@ -54,7 +54,7 @@ export function AdminMfaSetup({
 
   useEffect(() => {
     if (level === "aal2") {
-      router.replace("/admin");
+      router.replace("/continue");
       router.refresh();
     }
   }, [level, router]);
@@ -113,7 +113,7 @@ export function AdminMfaSetup({
       setQr(null);
       setSecret(null);
       await refresh();
-      router.replace("/admin");
+      router.replace("/continue");
       router.refresh();
     });
   }

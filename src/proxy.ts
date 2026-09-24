@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { continueHref } from "@/lib/auth-redirect";
 import { safeInternalPath } from "@/lib/safe-redirect";
 
 export async function proxy(request: NextRequest) {
@@ -88,11 +89,9 @@ export async function proxy(request: NextRequest) {
     if (type === "recovery") {
       return response;
     }
-    const next = safeInternalPath(
-      request.nextUrl.searchParams.get("next"),
-      "/admin",
+    return NextResponse.redirect(
+      new URL(continueHref(request.nextUrl.searchParams.get("next")), request.url),
     );
-    return NextResponse.redirect(new URL(next, request.url));
   }
 
   return response;

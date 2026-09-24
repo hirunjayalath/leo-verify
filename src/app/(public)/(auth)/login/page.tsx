@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { safeInternalPath } from "@/lib/safe-redirect";
+import { continueHref } from "@/lib/auth-redirect";
 
 type AuthMode = "signin" | "signup" | "recovery";
 
@@ -87,7 +87,7 @@ function PasswordField({
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeInternalPath(searchParams.get("next"), "/admin");
+  const continueTo = continueHref(searchParams.get("next"));
   const hashType = useSyncExternalStore(subscribeHash, getHashType, () => null);
   const recovery =
     searchParams.get("type") === "recovery" || hashType === "recovery";
@@ -137,7 +137,7 @@ function LoginForm() {
           return;
         }
         toast.success("Password updated. You are signed in.");
-        router.push(safeInternalPath(searchParams.get("next"), "/claim"));
+        router.push(continueTo);
         router.refresh();
         return;
       }
@@ -153,7 +153,7 @@ function LoginForm() {
           setLoading(false);
           return;
         }
-        const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/claim`;
+        const redirectTo = `${(process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, "")}/continue`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -165,7 +165,7 @@ function LoginForm() {
           return;
         }
         toast.success("Account created. Check your email if you need to confirm it.");
-        router.push(safeInternalPath(searchParams.get("next"), "/claim"));
+        router.push(continueTo);
         router.refresh();
         return;
       }
@@ -180,7 +180,7 @@ function LoginForm() {
         return;
       }
       toast.success("Signed in");
-      router.push(next);
+      router.push(continueTo);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign-in failed");

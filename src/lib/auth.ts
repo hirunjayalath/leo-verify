@@ -5,7 +5,8 @@ import type {
   User as AppUser,
   UserRole,
 } from "@/generated/prisma/client";
-import { withRlsContext } from "@/lib/db";
+import { resolveSessionLookup } from "@/lib/auth-redirect";
+import { prismaService, withRlsContext } from "@/lib/db";
 import { logOps } from "@/lib/observability";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -119,13 +120,13 @@ async function loadSessionUser(supabaseId: string): Promise<SessionUser | null> 
   }
 }
 
-export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
-  if (isAuthDevBypassEnabled()) {
-    const supabaseId = process.env.SEED_ADMIN_SUPABASE_ID;
-    if (!supabaseId) return null;
-    return loadSessionUser(supabaseId);
-  }
+type AuthIdentity = {
+  id: string;
+  email: string | null;
+  emailConfirmed: boolean;
+};
 
+async function getAuthIdentity(): Promise<AuthIdentity | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return null;
@@ -136,11 +137,73 @@ export const getSessionUser = cache(async function getSessionUser(): Promise<Ses
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return null;
-
-    return loadSessionUser(user.id);
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      emailConfirmed: Boolean(user.email_confirmed_at),
+    };
   } catch {
     return null;
   }
+}
+
+/** Match a Prisma User by verified email and repair a drifted Auth UUID. */
+async function healSessionUserByEmail(
+  authSupabaseId: string,
+  email: string,
+): Promise<SessionUser | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+
+  try {
+    const existing = await prismaService.user.findFirst({
+      where: { email: { equals: normalized, mode: "insensitive" } },
+      select: { id: true, supabaseId: true },
+    });
+    if (!existing) return null;
+
+    if (existing.supabaseId !== authSupabaseId) {
+      try {
+        await prismaService.user.update({
+          where: { id: existing.id },
+          data: { supabaseId: authSupabaseId },
+        });
+      } catch (error) {
+        logOps("auth.supabase_id_heal_failed", {
+          message: error instanceof Error ? error.message : "unknown",
+        });
+        return loadSessionUser(existing.supabaseId);
+      }
+    }
+
+    return loadSessionUser(authSupabaseId);
+  } catch (error) {
+    logOps("auth.email_lookup_failed", {
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    return null;
+  }
+}
+
+export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
+  const auth = await getAuthIdentity();
+  const plan = resolveSessionLookup({
+    bypassEnabled: isAuthDevBypassEnabled(),
+    authSupabaseId: auth?.id ?? null,
+    seedAdminSupabaseId: process.env.SEED_ADMIN_SUPABASE_ID,
+  });
+  if (!plan) return null;
+
+  if (plan.source === "session") {
+    const byId = await loadSessionUser(plan.supabaseId);
+    if (byId) return byId;
+    if (auth?.email && auth.emailConfirmed) {
+      return healSessionUserByEmail(plan.supabaseId, auth.email);
+    }
+    return null;
+  }
+
+  return loadSessionUser(plan.supabaseId);
 });
 
 /** Run work with RLS GUC for this app user. */

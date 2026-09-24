@@ -1,10 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/public/auth-shell";
 import { ClaimForm } from "@/components/public/claim-form";
 import { getRecipientDashboard } from "@/app/(public)/(auth)/claim/actions";
-import { getSupabaseAuthUser } from "@/lib/auth";
+import { getSessionUser, getSupabaseAuthUser } from "@/lib/auth";
+import { homePathForRole, isAdminRole } from "@/lib/auth-redirect";
 
 export default async function ClaimPage() {
+  const session = await getSessionUser();
+  if (session && isAdminRole(session.role)) {
+    redirect(homePathForRole(session.role));
+  }
+
   const auth = await getSupabaseAuthUser();
   const dashboard = auth ? await getRecipientDashboard() : null;
 
@@ -25,12 +32,14 @@ export default async function ClaimPage() {
             : null
         }
       />
-      <p className="mt-5 text-center text-sm text-muted-foreground">
-        Club admin?{" "}
-        <Link href="/login" className="font-medium underline-offset-4 hover:underline">
-          Sign in to dashboard
-        </Link>
-      </p>
+      {!auth && (
+        <p className="mt-5 text-center text-sm text-muted-foreground">
+          Club admin?{" "}
+          <Link href="/login" className="font-medium underline-offset-4 hover:underline">
+            Sign in to dashboard
+          </Link>
+        </p>
+      )}
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/" className="underline-offset-4 hover:underline">
           Back to home

@@ -17,7 +17,7 @@ export default async function AdminMfaPage() {
     listTotpFactors(),
   ]);
   if (level === "aal2") {
-    redirect("/admin");
+    redirect("/continue");
   }
 
   return (

@@ -5,7 +5,6 @@ import {
   FileBadge2,
   LayoutTemplate,
 } from "lucide-react";
-import { ClubSwitcher } from "@/components/admin/club-switcher";
 import { DistrictCharts } from "@/components/admin/district-charts";
 import {
   CreateClubForm,
@@ -364,29 +363,6 @@ export default async function DistrictAdminPage() {
                   </li>
                 ))}
               </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Work as a club</CardTitle>
-            <CardDescription>
-              Issue and manage certificates as one club in this district
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {clubs.length === 0 ? (
-              <EmptyState
-                icon={Building2}
-                title="No clubs yet"
-                description="Add a club first, then you can work as that club."
-              />
-            ) : (
-              <ClubSwitcher
-                clubs={clubs.map((c) => ({ id: c.id, name: c.name }))}
-                currentClubId={user.clubId}
-              />
             )}
           </CardContent>
         </Card>

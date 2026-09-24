@@ -153,7 +153,7 @@ async function main() {
         supabaseId: resolvedDistrictAuthId,
         name: districtAdminName,
         role: UserRole.district_admin,
-        clubId: null,
+        clubId: club.id,
         districtId: district.id,
       },
       create: {
@@ -161,12 +161,12 @@ async function main() {
         supabaseId: resolvedDistrictAuthId,
         name: districtAdminName,
         role: UserRole.district_admin,
-        clubId: null,
+        clubId: club.id,
         districtId: district.id,
       },
     });
     console.log(
-      `  District admin: ${districtAdmin.email} · role=${districtAdmin.role} (no clubId)`,
+      `  District admin: ${districtAdmin.email} · role=${districtAdmin.role} · club=${club.code} → /admin/district`,
     );
   } else if (promoteUomAsDistrict) {
     console.log(
@@ -213,6 +213,17 @@ async function main() {
     }
   }
 
+  console.log("Expected landings (sign in as each email; bypass off or session-first):");
+  console.log(`  ${admin.email} → /admin`);
+  if (clubAdminLoginEmail && clubAdminLoginEmail !== adminEmail) {
+    console.log(`  ${clubAdminLoginEmail} → /admin`);
+  }
+  if (districtAdminEmail) {
+    console.log(`  ${districtAdminEmail} → /admin/district`);
+  }
+  if (recipientEmail) {
+    console.log(`  ${recipientEmail} → /claim`);
+  }
   console.log(
     "Link SEED_ADMIN_SUPABASE_ID to the matching Supabase Auth user UUID.",
   );

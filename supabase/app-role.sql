@@ -80,6 +80,13 @@ CREATE POLICY service_user_select ON "User"
   FOR SELECT TO leoverify_service
   USING (true);
 
+DROP POLICY IF EXISTS service_user_heal_id ON "User";
+CREATE POLICY service_user_heal_id ON "User"
+  FOR UPDATE TO leoverify_service
+  USING (true)
+  WITH CHECK (true);
+GRANT UPDATE ("supabaseId", "updatedAt") ON "User" TO leoverify_service;
+
 CREATE POLICY service_event_select ON "Event"
   FOR SELECT TO leoverify_service
   USING (true);

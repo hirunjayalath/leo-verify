@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isAuthDevBypassEnabled } from "@/lib/auth";
+import { resolveSessionLookup } from "@/lib/auth-redirect";
 
 describe("isAuthDevBypassEnabled", () => {
   it("is false when AUTH_DEV_BYPASS is unset", () => {
@@ -51,5 +52,24 @@ describe("isAuthDevBypassEnabled", () => {
         VERCEL_ENV: "preview",
       }),
     ).toBe(false);
+  });
+});
+
+describe("session-first bypass", () => {
+  it("ignores the seed admin when a real session is present", () => {
+    const bypassEnabled = isAuthDevBypassEnabled({
+      AUTH_DEV_BYPASS: "true",
+      NODE_ENV: "development",
+    });
+    expect(
+      resolveSessionLookup({
+        bypassEnabled,
+        authSupabaseId: "signed-in-district-admin",
+        seedAdminSupabaseId: "00000000-0000-4000-8000-000000000001",
+      }),
+    ).toEqual({
+      source: "session",
+      supabaseId: "signed-in-district-admin",
+    });
   });
 });
