@@ -8,7 +8,10 @@ import type {
 import { resolveSessionLookup } from "@/lib/auth-redirect";
 import { prismaService, withRlsContext } from "@/lib/db";
 import { logOps } from "@/lib/observability";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  createRouteSupabaseClient,
+  createServerSupabaseClient,
+} from "@/lib/supabase/server";
 
 export type SessionUser = AppUser & {
   club: { id: string; code: string; name: string; districtId: string } | null;
@@ -154,7 +157,7 @@ export function withSessionRls<T>(
 }
 
 /** Recipient claim/profile — never uses admin bypass. */
-export async function getSupabaseAuthUser(): Promise<{
+export async function getSupabaseAuthUser(request?: Request): Promise<{
   id: string;
   email: string;
 } | null> {
@@ -163,7 +166,9 @@ export async function getSupabaseAuthUser(): Promise<{
   if (!url || !anonKey) return null;
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = request
+      ? createRouteSupabaseClient(request)
+      : await createServerSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -172,6 +177,16 @@ export async function getSupabaseAuthUser(): Promise<{
   } catch {
     return null;
   }
+}
+
+/** App User row for an already-resolved Auth identity (API routes). */
+export async function getSessionUserForAuth(auth: {
+  id: string;
+  email: string;
+}): Promise<SessionUser | null> {
+  const byId = await loadSessionUser(auth.id);
+  if (byId) return byId;
+  return healSessionUserByEmail(auth.id, auth.email);
 }
 
 export async function requireUser(): Promise<SessionUser> {

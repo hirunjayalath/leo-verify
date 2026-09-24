@@ -48,14 +48,27 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const { slug } = await params;
   const recipient = await prismaService.recipient.findUnique({
     where: { slug },
-    include: {
+    select: {
+      name: true,
+      publicProfile: true,
       certificates: {
         where: {
           status: CertificateStatus.issued,
           unlisted: false,
         },
-        include: {
-          event: { include: { club: true } },
+        select: {
+          id: true,
+          uniqueId: true,
+          role: true,
+          achievement: true,
+          issueDate: true,
+          status: true,
+          event: {
+            select: {
+              name: true,
+              club: { select: { name: true } },
+            },
+          },
         },
         orderBy: { issueDate: "desc" },
       },

@@ -8,7 +8,6 @@ import {
   RecipientSettings,
   type RecipientDashboardCert,
 } from "@/components/public/recipient-settings";
-import { RecipientSignOut } from "@/components/public/recipient-sign-out";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
 export function ClaimForm({
   authEmail,
   initialSettings,
+  displayName = "",
 }: {
   authEmail: string | null;
   initialSettings?: {
@@ -24,14 +24,13 @@ export function ClaimForm({
     publicProfile: boolean;
     certificates: RecipientDashboardCert[];
   } | null;
+  displayName?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [successSlug, setSuccessSlug] = useState<string | null>(
     initialSettings?.slug ?? null,
   );
-  const [claimed, setClaimed] = useState<number | null>(
-    initialSettings ? null : null,
-  );
+  const [claimed, setClaimed] = useState<number | null>(null);
   const [settings, setSettings] = useState(initialSettings ?? null);
   const publicProfile = settings?.publicProfile ?? false;
 
@@ -87,15 +86,11 @@ export function ClaimForm({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <p className="text-muted-foreground">
-          Signed in as <span className="font-medium text-foreground">{authEmail}</span>
-        </p>
-        <RecipientSignOut />
-      </div>
-
-      <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-10">
+      <form
+        onSubmit={onSubmit}
+        className="grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-elevated sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+      >
         <div className="space-y-2">
           <Label htmlFor="email">Email used on certificates</Label>
           <Input
@@ -109,54 +104,36 @@ export function ClaimForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="name">Display name</Label>
-          <Input id="name" name="name" placeholder="Optional" autoFocus />
+          <Input
+            id="name"
+            name="name"
+            placeholder="Optional"
+            defaultValue={displayName}
+          />
         </div>
-        <Button type="submit" variant="brand" size="lg" className="w-full" disabled={pending}>
+        <Button type="submit" variant="brand" disabled={pending}>
           {pending && <Spinner />}
-          {pending ? "Claiming…" : "Claim certificates"}
+          {pending ? "Claiming…" : "Claim"}
         </Button>
       </form>
 
-      {successSlug && (
-        <div className="space-y-4 rounded-xl border border-success/30 bg-success-muted/40 px-4 py-5">
+      {successSlug && claimed != null && (
+        <div className="space-y-3 rounded-2xl border border-success/30 bg-success-muted/40 px-5 py-4">
           <p className="text-sm font-medium text-foreground">
-            {claimed != null
-              ? `Claimed ${claimed} certificate(s). Next steps are below.`
-              : "Your profile is ready."}
+            Claimed {claimed} certificate(s).
           </p>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>Turn on public profile if you want a shareable list.</li>
-            <li>Hide a certificate if it should stay private.</li>
-            <li>Copy or open your profile URL when you want to share it.</li>
-          </ol>
           {publicProfile ? (
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/u/${successSlug}`}
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-foreground shadow-sm hover:opacity-90"
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground hover:opacity-90"
               >
-                View profile /u/{successSlug}
+                View public profile
               </Link>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const url = `${window.location.origin}/u/${successSlug}`;
-                    await navigator.clipboard.writeText(url);
-                    toast.success("Profile URL copied");
-                  } catch {
-                    toast.error("Could not copy link");
-                  }
-                }}
-              >
-                Copy profile URL
-              </Button>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Your profile is private. Turn on public profile below if you want
-              a public URL.
+              Your list is private until you turn on a public profile.
             </p>
           )}
         </div>

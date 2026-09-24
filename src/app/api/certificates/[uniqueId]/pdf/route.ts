@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { CertificateStatus } from "@/generated/prisma/client";
-import { getSessionUser, getSupabaseAuthUser } from "@/lib/auth";
-import {
-  canAccessCertificatePdf,
-  recipientClaimLoginPath,
-} from "@/lib/certificates/pdf-access";
+import { getSessionUserForAuth, getSupabaseAuthUser } from "@/lib/auth";
+import { recipientClaimLoginPath } from "@/lib/certificates/pdf-access";
 import { verifyVerificationToken } from "@/lib/certificates/token";
-import { prismaService, withRlsContext } from "@/lib/db";
+import { withRlsContext } from "@/lib/db";
 import {
   clientIpFromHeaders,
   rateLimitVerification,
@@ -17,6 +14,18 @@ import {
 } from "@/lib/storage/r2";
 
 type Params = { params: Promise<{ uniqueId: string }> };
+
+const pdfCertSelect = {
+  uniqueId: true,
+  recipientName: true,
+  eventId: true,
+  clubId: true,
+  issueDate: true,
+  role: true,
+  tokenVersion: true,
+  status: true,
+  pdfKey: true,
+} as const;
 
 /** HMAC + issued + recipient (or club admin) session. Revoked certs 404. */
 export async function GET(request: Request, { params }: Params) {
@@ -34,20 +43,50 @@ export async function GET(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const cert = await prismaService.certificate.findUnique({
-    where: { uniqueId },
-    select: {
-      uniqueId: true,
-      recipientName: true,
-      eventId: true,
-      clubId: true,
-      issueDate: true,
-      role: true,
-      tokenVersion: true,
-      status: true,
-      pdfKey: true,
-    },
-  });
+  const auth = await getSupabaseAuthUser(request);
+  const admin = auth ? await getSessionUserForAuth(auth) : null;
+  const adminActor =
+    admin &&
+    (admin.role === "club_admin" || admin.role === "district_admin")
+      ? admin
+      : null;
+
+  if (!auth && !adminActor) {
+    return NextResponse.json(
+      {
+        error: "Sign in to download",
+        claimUrl: recipientClaimLoginPath(),
+      },
+      { status: 401 },
+    );
+  }
+
+  let cert = null;
+  if (auth?.id && auth.email) {
+    cert = await withRlsContext(
+      auth.id,
+      (tx) =>
+        tx.certificate.findFirst({
+          where: {
+            uniqueId,
+            status: CertificateStatus.issued,
+          },
+          select: pdfCertSelect,
+        }),
+      { recipientEmail: auth.email },
+    );
+  }
+  if (!cert && adminActor) {
+    cert = await withRlsContext(adminActor.supabaseId, (tx) =>
+      tx.certificate.findFirst({
+        where: {
+          uniqueId,
+          status: CertificateStatus.issued,
+        },
+        select: pdfCertSelect,
+      }),
+    );
+  }
   if (!cert || cert.status !== CertificateStatus.issued) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -66,46 +105,6 @@ export async function GET(request: Request, { params }: Params) {
   );
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const [auth, admin] = await Promise.all([
-    getSupabaseAuthUser(),
-    getSessionUser(),
-  ]);
-  let recipientOwns = false;
-  if (auth?.id && auth.email) {
-    const visible = await withRlsContext(
-      auth.id,
-      (tx) =>
-        tx.certificate.findFirst({
-          where: {
-            uniqueId: cert.uniqueId,
-            status: CertificateStatus.issued,
-          },
-          select: { id: true },
-        }),
-      { recipientEmail: auth.email },
-    );
-    recipientOwns = Boolean(visible);
-  }
-  const access = canAccessCertificatePdf({
-    clubId: cert.clubId,
-    authEmail: auth?.email,
-    recipientOwns,
-    admin:
-      admin &&
-      (admin.role === "club_admin" || admin.role === "district_admin")
-        ? { role: admin.role, clubId: admin.clubId }
-        : null,
-  });
-  if (!access.ok) {
-    return NextResponse.json(
-      {
-        error: "Sign in to download",
-        claimUrl: recipientClaimLoginPath(),
-      },
-      { status: 401 },
-    );
   }
 
   if (!cert.pdfKey) {

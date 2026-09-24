@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { FileBadge2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   setCertificateUnlistedAction,
   updateProfileVisibilityAction,
 } from "@/app/(public)/(auth)/claim/actions";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Spinner } from "@/components/ui/spinner";
 import { certificateAboutText } from "@/lib/certificates/pdf-access";
 import { cn } from "@/lib/utils";
@@ -75,10 +78,10 @@ export function RecipientSettings({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3 rounded-xl border border-border p-4">
+    <div className="space-y-10">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-elevated">
         <p className="text-sm font-medium">Public profile</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           When this is on, anyone can see your listed certificates at{" "}
           {slug ? (
             <Link href={`/u/${slug}`} className="underline underline-offset-4">
@@ -89,7 +92,7 @@ export function RecipientSettings({
           )}
           .
         </p>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="mt-4 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={publicProfile}
@@ -98,47 +101,67 @@ export function RecipientSettings({
           />
           Make my profile public
         </label>
-        <Button type="button" size="sm" disabled={pending} onClick={saveVisibility}>
+        <Button
+          type="button"
+          size="sm"
+          className="mt-4"
+          disabled={pending}
+          onClick={saveVisibility}
+        >
           {pending && <Spinner />}
           Save visibility
         </Button>
       </div>
 
-      <div className="space-y-3">
-        <p className="text-sm font-medium">Your certificates</p>
-        {certs.length === 0 ? (
+      <div>
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-semibold">Certificates</h2>
           <p className="text-sm text-muted-foreground">
-            No claimed certificates yet.
+            {certs.length === 0
+              ? "None claimed"
+              : `${certs.length} claimed`}
           </p>
+        </div>
+
+        {certs.length === 0 ? (
+          <EmptyState
+            icon={FileBadge2}
+            title="No claimed certificates yet"
+            description="Claim with the email on your certificates to see them here."
+          />
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {certs.map((cert) => (
               <li
                 key={cert.id}
-                className="space-y-2 rounded-lg border border-border px-3 py-2.5 text-sm"
+                className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-elevated"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{cert.eventName}</p>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {cert.uniqueId}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Issued {cert.issueDate}
-                    </p>
-                  </div>
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={cert.unlisted}
-                      disabled={pending}
-                      onChange={(e) => onUnlisted(cert.id, e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-border"
-                    />
-                    Hide from profile
-                  </label>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium leading-snug text-foreground">
+                    {cert.eventName}
+                  </p>
+                  <Badge variant="success">Valid</Badge>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {cert.role}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  {cert.uniqueId}
+                </p>
+                <p className="mt-3 text-xs tabular-nums text-muted-foreground">
+                  {cert.issueDate}
+                </p>
+                <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={cert.unlisted}
+                    disabled={pending}
+                    onChange={(e) => onUnlisted(cert.id, e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-border"
+                  />
+                  Hide from public profile
+                </label>
+                <div className="mt-4 flex flex-wrap gap-2">
                   <Link
                     href={cert.verifyPath}
                     className={cn(
@@ -172,7 +195,7 @@ export function RecipientSettings({
                     Share flyer
                   </a>
                   <a
-                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrlFor(slug, cert.verifyPath))}`}
+                    href={linkedinShareHref(slug, cert.verifyPath)}
                     target="_blank"
                     rel="noreferrer"
                     className={cn(
@@ -211,13 +234,19 @@ export function RecipientSettings({
   );
 }
 
+function appOrigin() {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+}
+
 function absoluteAppUrl(path: string) {
-  if (typeof window === "undefined") return path;
-  return `${window.location.origin}${path}`;
+  return `${appOrigin()}${path}`;
 }
 
 function shareUrlFor(slug: string | null, verifyPath: string) {
-  if (typeof window === "undefined") return verifyPath;
-  if (slug) return `${window.location.origin}/u/${encodeURIComponent(slug)}`;
-  return `${window.location.origin}${verifyPath}`;
+  if (slug) return `${appOrigin()}/u/${encodeURIComponent(slug)}`;
+  return `${appOrigin()}${verifyPath}`;
+}
+
+function linkedinShareHref(slug: string | null, verifyPath: string) {
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrlFor(slug, verifyPath))}`;
 }
