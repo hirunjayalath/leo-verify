@@ -15,6 +15,10 @@ export async function proxy(request: NextRequest) {
 
   const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
+  if (request.nextUrl.pathname === "/admin/mfa") {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
   // Never honor AUTH_DEV_BYPASS on Vercel.
   if (
     process.env.AUTH_DEV_BYPASS === "true" &&
@@ -72,15 +76,6 @@ export async function proxy(request: NextRequest) {
       safeInternalPath(request.nextUrl.pathname, "/admin"),
     );
     return NextResponse.redirect(login);
-  }
-
-  // AAL2 required for /admin except enrollment.
-  const isMfaPath = request.nextUrl.pathname === "/admin/mfa";
-  if (isAdminPath && user && !isMfaPath) {
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (!aal || aal.currentLevel !== "aal2") {
-      return NextResponse.redirect(new URL("/admin/mfa", request.url));
-    }
   }
 
   if (request.nextUrl.pathname === "/login" && user) {

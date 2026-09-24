@@ -69,11 +69,10 @@ Manual path for Leo Club of University of Moratuwa as platform operator:
 1. Full production secret contract set on Vercel (see [`.env.example`](.env.example) / [`docs/architecture.md`](docs/architecture.md)): pooler `DATABASE_URL` (`leoverify_app`), `SERVICE_DATABASE_URL` (`leoverify_service`), `DIRECT_DATABASE_URL`, `CERT_HMAC_SECRET`, Supabase, `NEXT_PUBLIC_APP_URL`, R2, Resend, Inngest, **Upstash**. Boot throws if any required value is missing.
 2. Migrations applied (includes RLS and roles). Point `DATABASE_URL` at `leoverify_app` and `SERVICE_DATABASE_URL` at `leoverify_service`.
 3. Seed UOM club and admin. Auth user id linked. `AUTH_DEV_BYPASS` is **false** (rejected when `NODE_ENV=production`).
-4. MFA (TOTP) required for club and district admins. Enable Multi-Factor Authentication in the Supabase project, then finish enrollment at `/admin/mfa` (AAL2). `AUTH_DEV_BYPASS` skips this locally only.
-5. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
-6. Optional: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` for error tracking.
-7. Run the operator smoke checklist above.
-8. Inngest configured for bulk import (emails fan out as separate steps).
+4. Point UptimeRobot / Better Stack at `GET /api/health` (expects 200 + `db: true`).
+5. Optional: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` for error tracking.
+6. Run the operator smoke checklist above.
+7. Inngest configured for bulk import (emails fan out as separate steps).
 
 ### Security launch gates
 
@@ -104,17 +103,6 @@ Infrastructure stays **Vercel + Supabase + R2 + Upstash + Inngest**. Upgrades ar
 2. Confirm p95 check under ~500ms excluding cold start. Watch Supabase connection count.
 3. Run a 500-row CSV import via Inngest. Confirm no Vercel timeout and emails enqueue separately.
 4. Revoke mid-test. The public page must flip without depending on a status cache.
-
-### Admin MFA (Supabase AAL2)
-
-Club and district admin routes require authenticator assurance level **aal2**:
-
-1. In the Supabase dashboard: **Authentication → Providers / Multi-Factor**. Enable TOTP.
-2. Sign in at `/login` with the admin account.
-3. You are redirected to `/admin/mfa` until a TOTP factor is enrolled and the session is verified.
-4. Later visits need a fresh code when the session drops back to aal1 (for example after a password-only re-login).
-
-Local `AUTH_DEV_BYPASS=true` (development only) skips the AAL2 gate so seed admins can operate without Supabase MFA.
 
 ### HMAC secret rotation
 

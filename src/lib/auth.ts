@@ -34,65 +34,6 @@ export function isAuthDevBypassEnabled(
   return true;
 }
 
-export type AuthenticatorAssuranceLevel = "aal1" | "aal2" | null;
-
-export async function getAuthenticatorAssuranceLevel(): Promise<AuthenticatorAssuranceLevel> {
-  if (isAuthDevBypassEnabled()) return "aal2";
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return null;
-
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error || !data?.currentLevel) return null;
-    return data.currentLevel === "aal2" ? "aal2" : "aal1";
-  } catch {
-    return null;
-  }
-}
-
-export type TotpFactor = {
-  id: string;
-  friendly_name?: string | null;
-  factor_type: string;
-  status: string;
-};
-
-export async function listTotpFactors(): Promise<TotpFactor[]> {
-  if (isAuthDevBypassEnabled()) return [];
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return [];
-
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.mfa.listFactors();
-    if (error || !data) return [];
-    return [...(data.totp ?? []), ...(data.phone ?? [])]
-      .filter((factor) => factor.factor_type === "totp")
-      .map((factor) => ({
-        id: factor.id,
-        friendly_name: factor.friendly_name,
-        factor_type: factor.factor_type,
-        status: factor.status,
-      }));
-  } catch {
-    return [];
-  }
-}
-
-/** Club/district admins must complete TOTP (AAL2). */
-export async function requireAdminAal2(): Promise<void> {
-  if (isAuthDevBypassEnabled()) return;
-  const level = await getAuthenticatorAssuranceLevel();
-  if (level === "aal2") return;
-  redirect("/admin/mfa");
-}
-
 const sessionInclude = {
   club: {
     select: { id: true, code: true, name: true, districtId: true },
@@ -255,7 +196,6 @@ export async function requireClubAdmin(): Promise<ClubAdminUser> {
   if (user.role !== "club_admin" && user.role !== "district_admin") {
     redirect("/claim");
   }
-  await requireAdminAal2();
   if (user.role === "district_admin" && !user.clubId) {
     redirect("/admin/district");
   }
@@ -270,7 +210,6 @@ export async function requireDistrictAdmin(): Promise<DistrictAdminUser> {
   if (user.role !== "district_admin") {
     redirect("/admin");
   }
-  await requireAdminAal2();
   if (!user.districtId) {
     throw new Error("District admin is missing districtId");
   }

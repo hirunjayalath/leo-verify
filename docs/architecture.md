@@ -25,7 +25,7 @@ Absent in production: the process cannot check or issue. Boot fails.
 
 ## Supabase Auth
 
-Login, claim, and admin MFA (AAL2). Gated in `src/proxy.ts` and `src/lib/auth.ts`.
+Password session and role routing. Gated in `src/proxy.ts` and `src/lib/auth.ts`.
 
 | Variable | Production |
 |---|---|
