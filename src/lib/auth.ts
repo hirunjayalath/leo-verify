@@ -111,6 +111,10 @@ async function loadSessionUser(supabaseId: string): Promise<SessionUser | null> 
     if (!scoped) {
       logOps("auth.session_missing", {});
     }
+    if (scoped?.disabledAt) {
+      logOps("auth.session_disabled", {});
+      return null;
+    }
     return scoped;
   } catch (error) {
     logOps("auth.session_rls_failed", {
@@ -275,6 +279,21 @@ export async function requireDistrictAdmin(): Promise<DistrictAdminUser> {
 
 export function isDistrictAdmin(role: UserRole): boolean {
   return role === "district_admin";
+}
+
+export function isUomPlatformAdmin(user: {
+  role: string;
+  club?: { code: string } | null;
+}): boolean {
+  return user.role === "club_admin" && user.club?.code === "UOM";
+}
+
+export async function requireUomPlatformAdmin(): Promise<ClubAdminUser> {
+  const user = await requireClubAdmin();
+  if (!isUomPlatformAdmin(user)) {
+    redirect("/admin");
+  }
+  return user;
 }
 
 export async function asClubAdmin<T>(

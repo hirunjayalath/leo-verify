@@ -24,6 +24,7 @@ export async function createTemplate(input: {
   actorSupabaseId: string;
   eventId: string;
   name: string;
+  kind?: "certificate" | "service_letter";
   background: File;
 }): Promise<TemplateResult> {
   assertNotInRlsContext("createTemplate");
@@ -67,6 +68,7 @@ export async function createTemplate(input: {
         eventId: input.eventId,
         clubId: input.clubId,
         name: input.name,
+        kind: input.kind === "service_letter" ? "service_letter" : "certificate",
         backgroundUrl: uploaded.url,
         layout: DEFAULT_LAYOUT,
         status,

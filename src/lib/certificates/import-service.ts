@@ -72,12 +72,14 @@ export async function startCertificateImport(input: {
   actorUserId: string;
   actorSupabaseId: string;
   eventId: string;
+  templateId?: string;
   file: File;
   mapping?: ColumnMapping;
 }): Promise<ImportServiceResult> {
   assertNotInRlsContext("startCertificateImport");
 
   if (!input.eventId) return { ok: false, error: "Event is required" };
+  if (!input.templateId) return { ok: false, error: "Template is required" };
   if (!(input.file instanceof File) || input.file.size === 0) {
     return { ok: false, error: "Spreadsheet file is required" };
   }
@@ -113,6 +115,7 @@ export async function startCertificateImport(input: {
 
     const approved = await tx.certificateTemplate.findFirst({
       where: {
+        id: input.templateId,
         eventId: input.eventId,
         clubId: input.clubId,
         status: TemplateStatus.approved,
@@ -123,7 +126,7 @@ export async function startCertificateImport(input: {
       return {
         ok: false as const,
         error:
-          "This event has no approved template. Create and approve a template before importing.",
+          "Pick an approved template for this event before importing.",
       };
     }
 
@@ -131,6 +134,7 @@ export async function startCertificateImport(input: {
       data: {
         clubId: input.clubId,
         eventId: input.eventId,
+        templateId: approved.id,
         createdById: input.actorUserId,
         status: ImportJobStatus.pending,
         totalRows: validated.rows.length,

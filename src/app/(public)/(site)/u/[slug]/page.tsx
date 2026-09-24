@@ -4,11 +4,9 @@ import Link from "next/link";
 import { FileBadge2 } from "lucide-react";
 import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { prismaService } from "@/lib/db";
-import { cn } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -69,10 +67,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
   }
 
   const name = recipient.name ?? "LeoVerify recipient";
-  const appUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  ).replace(/\/$/, "");
-  const shareUrl = `${appUrl}/u/${encodeURIComponent(slug)}`;
 
   return (
     <div className="surface-grid">
@@ -103,14 +97,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
               This person chose to list certificates here. You can still check
               one certificate from the QR without a profile.
             </p>
-            <a
-              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
-              target="_blank"
-              rel="noreferrer"
-              className={cn(buttonVariants({ size: "sm", variant: "outline" }), "mt-4")}
-            >
-              Share on LinkedIn
-            </a>
           </div>
         </div>
 

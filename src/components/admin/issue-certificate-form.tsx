@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useTransition } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { issueOneCertificateAction } from "@/app/(admin)/admin/certificates/actions";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,16 @@ import { buildVerificationPath } from "@/lib/certificates/token";
 export function IssueCertificateForm({
   events,
 }: {
-  events: { id: string; name: string }[];
+  events: {
+    id: string;
+    name: string;
+    templates: { id: string; name: string }[];
+  }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [eventId, setEventId] = useState(events[0]?.id ?? "");
+  const templates = events.find((event) => event.id === eventId)?.templates ?? [];
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -73,10 +79,26 @@ export function IssueCertificateForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="eventId">Event</Label>
-        <Select id="eventId" name="eventId" required>
+        <Select
+          id="eventId"
+          name="eventId"
+          required
+          value={eventId}
+          onChange={(e) => setEventId(e.target.value)}
+        >
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="templateId">Template</Label>
+        <Select id="templateId" name="templateId" required>
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
             </option>
           ))}
         </Select>

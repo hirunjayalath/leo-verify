@@ -1,4 +1,3 @@
-import { buildPdfDownloadPath } from "@/lib/certificates/token";
 import { requireEmailSent, sendCertificateEmail } from "@/lib/email/resend";
 import { captureException, logOps } from "@/lib/observability";
 import { inngest } from "@/inngest/client";
@@ -21,7 +20,7 @@ export const sendCertificateEmailFn = inngest.createFunction(
         verificationToken: data.verificationToken,
         eventName: data.eventName,
         clubName: data.clubName,
-        pdfUrl: buildPdfDownloadPath(data.uniqueId, data.verificationToken),
+        pdfUrl: "/claim",
         clubLogoUrl: data.clubLogoUrl,
         primaryColor: data.primaryColor,
         accentColor: data.accentColor,

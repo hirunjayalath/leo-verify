@@ -27,6 +27,11 @@ enum TemplateStatus {
   rejected
 }
 
+enum TemplateKind {
+  certificate
+  service_letter
+}
+
 enum ClubType {
   leo
   public
@@ -96,6 +101,7 @@ model User {
   role       UserRole
   clubId     String?
   districtId String?
+  disabledAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -119,9 +125,9 @@ model Event {
   updatedAt   DateTime @updatedAt
 
   club       Club                 @relation(fields: [clubId], references: [id])
-  templates  CertificateTemplate[]
+  templates    CertificateTemplate[]
   certificates Certificate[]
-  importJobs ImportJob[]
+  importJobs   ImportJob[]
 
   @@index([clubId])
 }
@@ -131,6 +137,7 @@ model CertificateTemplate {
   eventId          String
   clubId           String
   name             String
+  kind             TemplateKind   @default(certificate)
   backgroundUrl    String
   status           TemplateStatus @default(draft)
   /// Structured field positions: [{ field, x, y, fontSize, fontFamily, color, align, ... }]
@@ -143,9 +150,11 @@ model CertificateTemplate {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  event      Event @relation(fields: [eventId], references: [id])
-  club       Club  @relation(fields: [clubId], references: [id])
-  lastEditor User? @relation("TemplateEditor", fields: [lastEditedById], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id])
+  club         Club          @relation(fields: [clubId], references: [id])
+  lastEditor   User?         @relation("TemplateEditor", fields: [lastEditedById], references: [id])
+  certificates Certificate[]
+  importJobs   ImportJob[]
 
   @@index([eventId])
   @@index([clubId])
@@ -172,6 +181,7 @@ model Certificate {
   uniqueId          String            @unique
   clubId            String
   eventId           String
+  templateId        String?
   recipientName     String
   recipientEmail    String?
   role              String
@@ -192,14 +202,16 @@ model Certificate {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  club      Club       @relation(fields: [clubId], references: [id], onDelete: Restrict)
-  event     Event      @relation(fields: [eventId], references: [id])
-  recipient Recipient? @relation(fields: [recipientId], references: [id])
-  revokedBy User?      @relation("CertificateRevoker", fields: [revokedById], references: [id])
+  club      Club                  @relation(fields: [clubId], references: [id], onDelete: Restrict)
+  event     Event                 @relation(fields: [eventId], references: [id])
+  template  CertificateTemplate?  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  recipient Recipient?            @relation(fields: [recipientId], references: [id])
+  revokedBy User?                 @relation("CertificateRevoker", fields: [revokedById], references: [id])
 
   /// Partial unique indexes (issued-only) live in SQL migrations — see 20260915040000
   @@index([clubId])
   @@index([eventId])
+  @@index([templateId])
   @@index([recipientId])
   @@index([status])
 }
@@ -223,6 +235,7 @@ model ImportJob {
   id           String          @id @default(cuid())
   clubId       String
   eventId      String
+  templateId   String?
   createdById  String?
   status       ImportJobStatus @default(pending)
   totalRows    Int             @default(0)
@@ -233,12 +246,14 @@ model ImportJob {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  club  Club           @relation(fields: [clubId], references: [id], onDelete: Restrict)
-  event Event          @relation(fields: [eventId], references: [id])
-  rows  ImportJobRow[]
+  club     Club                  @relation(fields: [clubId], references: [id], onDelete: Restrict)
+  event    Event                 @relation(fields: [eventId], references: [id])
+  template CertificateTemplate?  @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  rows     ImportJobRow[]
 
   @@index([clubId])
   @@index([eventId])
+  @@index([templateId])
   @@index([status])
 }
 

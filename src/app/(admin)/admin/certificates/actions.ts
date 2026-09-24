@@ -14,6 +14,7 @@ import { captureException } from "@/lib/observability";
 
 const issueSchema = z.object({
   eventId: z.string().min(1),
+  templateId: z.string().min(1),
   recipientName: z.string().trim().min(2).max(200),
   recipientEmail: z.string().email().optional().or(z.literal("")),
   role: z.string().trim().min(1).max(200),
@@ -41,6 +42,7 @@ export async function issueOneCertificateAction(
   const user = await requireClubAdmin();
   const parsed = issueSchema.safeParse({
     eventId: formData.get("eventId"),
+    templateId: formData.get("templateId"),
     recipientName: formData.get("recipientName"),
     recipientEmail: formData.get("recipientEmail") || "",
     role: formData.get("role"),
@@ -54,6 +56,7 @@ export async function issueOneCertificateAction(
   try {
     const result = await issueCertificate({
       eventId: parsed.data.eventId,
+      templateId: parsed.data.templateId,
       clubId: user.clubId,
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,

@@ -28,7 +28,9 @@ const ACTION_LABELS: Record<string, string> = {
   "club.create": "Onboarded club",
   "club.branding.update": "Updated club branding",
   "club.switch": "Switched acting club",
-  "user.invite": "Invited club admin",
+  "user.invite": "Invited admin",
+  "user.disable": "Disabled admin",
+  "district.create": "Created district",
   // Legacy underscore keys (if any old rows exist)
   create_event: "Created event",
   update_event: "Updated event",

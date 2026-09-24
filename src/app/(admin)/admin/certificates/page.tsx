@@ -101,7 +101,15 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
       const events = await prisma.event.findMany({
         where: { clubId },
         orderBy: { createdAt: "desc" },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          templates: {
+            where: { status: "approved" },
+            orderBy: { updatedAt: "desc" },
+            select: { id: true, name: true },
+          },
+        },
       });
       const jobs = await prisma.importJob.findMany({
         where: { clubId },
@@ -326,7 +334,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
             <CardHeader>
               <CardTitle>Issue one</CardTitle>
               <CardDescription>
-                Uses the latest approved template for the event.
+                Pick the template for this part of the event.
               </CardDescription>
             </CardHeader>
             <CardContent>

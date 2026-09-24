@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "I lost my PDF. Can I download it again?",
-    a: "Open the original check link from email or the QR. If the certificate is still issued, use Download PDF on that page. Club admins can also send a new PDF and link.",
+    a: "Sign in at /claim with the email on the certificate. Download and LinkedIn share are on that page. Anyone can still open the QR or check link to see if it is valid.",
   },
   {
     q: "What does “revoked” mean?",

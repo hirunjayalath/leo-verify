@@ -21,6 +21,7 @@ const templateIdSchema = z.object({ templateId: z.string().min(1) });
 const createSchema = z.object({
   eventId: z.string().min(1),
   name: z.string().trim().min(2),
+  kind: z.enum(["certificate", "service_letter"]).optional(),
 });
 const gallerySchema = z.object({
   eventId: z.string().min(1),
@@ -41,6 +42,7 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
   const parsed = createSchema.safeParse({
     eventId: formData.get("eventId"),
     name: formData.get("name"),
+    kind: formData.get("kind") || "certificate",
   });
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Invalid input");
@@ -52,6 +54,7 @@ export async function createTemplateAction(formData: FormData): Promise<ActionRe
       actorSupabaseId: user.supabaseId,
       eventId: parsed.data.eventId,
       name: parsed.data.name,
+      kind: parsed.data.kind,
       background: file,
     });
     if (!result.ok) return result;

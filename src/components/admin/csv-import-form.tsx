@@ -36,7 +36,11 @@ type PreviewState = {
 export function CsvImportForm({
   events,
 }: {
-  events: { id: string; name: string }[];
+  events: {
+    id: string;
+    name: string;
+    templates: { id: string; name: string }[];
+  }[];
 }) {
   const router = useRouter();
   const [rowErrors, setRowErrors] = useState<
@@ -45,6 +49,8 @@ export function CsvImportForm({
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [eventId, setEventId] = useState(events[0]?.id ?? "");
+  const templates = events.find((event) => event.id === eventId)?.templates ?? [];
 
   const loadFile = useCallback(async (file: File) => {
     setRowErrors([]);
@@ -163,13 +169,34 @@ export function CsvImportForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="import-eventId">Event</Label>
-        <Select id="import-eventId" name="eventId" required>
+        <Select
+          id="import-eventId"
+          name="eventId"
+          required
+          value={eventId}
+          onChange={(e) => setEventId(e.target.value)}
+        >
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.name}
             </option>
           ))}
         </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="import-templateId">Template</Label>
+        <Select id="import-templateId" name="templateId" required>
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </Select>
+        {templates.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Approve a template for this event first.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">

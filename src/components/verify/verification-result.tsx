@@ -3,7 +3,6 @@
 import {
   Check,
   Copy,
-  Download,
   Printer,
   ShieldAlert,
   ShieldCheck,
@@ -12,21 +11,18 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { BrandMark } from "@/components/public/brand-logo";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { formatCheckedAt } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { PublicVerificationResult } from "@/lib/certificates/verify";
 
 export function VerificationResult({
   uniqueId,
   result,
   checkedAt,
-  shareUrl,
 }: {
   uniqueId: string;
   result: PublicVerificationResult;
   checkedAt: string;
-  shareUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -54,7 +50,6 @@ export function VerificationResult({
 
   const issuerName = result.status === "valid" ? result.clubName : null;
   const eventName = result.status === "valid" ? result.eventName : null;
-  const pdfUrl = result.status === "valid" ? result.pdfUrl : null;
 
   return (
     <div className="animate-fade-up relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
@@ -75,17 +70,6 @@ export function VerificationResult({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <StatusSeal status={result.status} />
             <div className="no-print flex shrink-0 flex-wrap gap-2">
-              {pdfUrl && (
-                <a
-                  href={pdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(buttonVariants({ size: "sm" }))}
-                >
-                  <Download className="h-4 w-4" aria-hidden />
-                  Download PDF
-                </a>
-              )}
               <Button type="button" variant="outline" size="sm" onClick={copyLink}>
                 {copied ? (
                   <Check className="h-4 w-4" aria-hidden />
@@ -94,16 +78,6 @@ export function VerificationResult({
                 )}
                 Copy link
               </Button>
-              {result.status === "valid" && shareUrl && (
-                <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
-                >
-                  Share on LinkedIn
-                </a>
-              )}
               <Button
                 type="button"
                 variant="outline"
@@ -157,6 +131,19 @@ export function VerificationResult({
               </div>
             )}
           </div>
+
+          {result.status === "valid" && (
+            <p className="text-sm text-muted-foreground">
+              Recipient:{" "}
+              <a
+                href="/login?next=/claim"
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                sign in to download or share
+              </a>
+              .
+            </p>
+          )}
 
           <p className="text-xs text-muted-foreground">
             Checked live{" "}

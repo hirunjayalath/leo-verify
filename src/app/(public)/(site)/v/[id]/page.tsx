@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verify/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
-import { buildVerificationPath } from "@/lib/certificates/token";
 import { loadPublicVerification } from "@/lib/certificates/verify-lookup";
 import { clientIpFromHeaders } from "@/lib/rate-limit";
 
@@ -126,12 +125,6 @@ export default async function VerificationPage({
   const result = evaluateVerification(load.row, t);
   const checkedAt = new Date().toISOString();
   const isRevoked = result.status === "revoked";
-  const appUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-  ).replace(/\/$/, "");
-  const shareUrl = t
-    ? `${appUrl}${buildVerificationPath(uniqueId, t)}`
-    : `${appUrl}/v/${encodeURIComponent(uniqueId)}`;
 
   return (
     <div className="surface-grid">
@@ -155,7 +148,6 @@ export default async function VerificationPage({
             uniqueId={uniqueId}
             result={result}
             checkedAt={checkedAt}
-            shareUrl={shareUrl}
           />
         </div>
 

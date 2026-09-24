@@ -80,6 +80,23 @@ describe("email HTML escape", () => {
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
   });
+
+  it("points recipients at /claim instead of an anonymous PDF URL", async () => {
+    const { buildCertificateEmailHtml } = await import("@/lib/email/resend");
+    const html = buildCertificateEmailHtml({
+      recipientName: "Ada",
+      uniqueId: "LEO-UOM-2026-000001",
+      verificationToken: "abc",
+      eventName: "Service Day",
+      clubName: "Leo Club of UOM",
+      pdfDownloadPath: "/claim",
+      appBaseUrl: "https://app.example",
+    });
+    expect(html).toContain("https://app.example/v/");
+    expect(html).toContain("https://app.example/claim");
+    expect(html).toContain("Sign in to download or share");
+    expect(html).not.toContain("/api/certificates/");
+  });
 });
 
 describe("requireEmailSent", () => {

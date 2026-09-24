@@ -13,15 +13,19 @@ import { captureException } from "@/lib/observability";
 
 const importSchema = z.object({
   eventId: z.string().min(1),
+  templateId: z.string().min(1),
 });
 
 export async function startCsvImportAction(
   formData: FormData,
 ): Promise<ImportServiceResult> {
   const user = await requireClubAdmin();
-  const parsed = importSchema.safeParse({ eventId: formData.get("eventId") });
+  const parsed = importSchema.safeParse({
+    eventId: formData.get("eventId"),
+    templateId: formData.get("templateId"),
+  });
   if (!parsed.success) {
-    return fail("Event is required");
+    return fail("Event and template are required");
   }
   const file = formData.get("csv");
   const mapping = parseColumnMapping(formData.get("columnMapping"));
@@ -36,6 +40,7 @@ export async function startCsvImportAction(
       actorUserId: user.id,
       actorSupabaseId: user.supabaseId,
       eventId: parsed.data.eventId,
+      templateId: parsed.data.templateId,
       file,
       mapping,
     });

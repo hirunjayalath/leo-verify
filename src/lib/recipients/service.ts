@@ -25,7 +25,8 @@ function dashboardCertPaths(cert: {
     cert.status === CertificateStatus.issued && (cert.pdfKey || cert.pdfUrl)
       ? buildPdfDownloadPath(cert.uniqueId, token)
       : null;
-  return { verifyPath, pdfPath };
+  const flyerPath = `/api/og/verify/${encodeURIComponent(cert.uniqueId)}?t=${encodeURIComponent(token)}`;
+  return { verifyPath, pdfPath, flyerPath };
 }
 
 function dashboardEventName(event: { name: string } | null | undefined) {
@@ -144,6 +145,8 @@ export async function claimCertificates(input: {
     certificates: linked.map((c) => ({
       id: c.id,
       uniqueId: c.uniqueId,
+      recipientName: c.recipientName,
+      role: c.role,
       eventName: dashboardEventName(c.event),
       unlisted: c.unlisted,
       issueDate: c.issueDate.toISOString().slice(0, 10),
@@ -250,6 +253,8 @@ export async function getRecipientDashboardData(auth: {
       certificates: recipient.certificates.map((c) => ({
         id: c.id,
         uniqueId: c.uniqueId,
+        recipientName: c.recipientName,
+        role: c.role,
         eventName: dashboardEventName(c.event),
         unlisted: c.unlisted,
         issueDate: c.issueDate.toISOString().slice(0, 10),

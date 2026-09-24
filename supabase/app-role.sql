@@ -87,6 +87,20 @@ CREATE POLICY service_user_heal_id ON "User"
   WITH CHECK (true);
 GRANT UPDATE ("supabaseId", "updatedAt") ON "User" TO leoverify_service;
 
+DROP POLICY IF EXISTS service_district_write ON "District";
+CREATE POLICY service_district_write ON "District"
+  FOR ALL TO leoverify_service
+  USING (true)
+  WITH CHECK (true);
+GRANT INSERT, UPDATE ON "District" TO leoverify_service;
+
+DROP POLICY IF EXISTS service_user_write ON "User";
+CREATE POLICY service_user_write ON "User"
+  FOR ALL TO leoverify_service
+  USING (true)
+  WITH CHECK (true);
+GRANT INSERT, UPDATE ON "User" TO leoverify_service;
+
 CREATE POLICY service_event_select ON "Event"
   FOR SELECT TO leoverify_service
   USING (true);

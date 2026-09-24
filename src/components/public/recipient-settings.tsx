@@ -9,17 +9,21 @@ import {
 } from "@/app/(public)/(auth)/claim/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { certificateAboutText } from "@/lib/certificates/pdf-access";
 import { cn } from "@/lib/utils";
 
 export type RecipientDashboardCert = {
   id: string;
   uniqueId: string;
+  recipientName: string;
+  role: string;
   eventName: string;
   unlisted: boolean;
   issueDate: string;
   /** Session-only — never render on public /u/[slug] HTML. */
   verifyPath: string;
   pdfPath: string | null;
+  flyerPath: string;
 };
 
 export function RecipientSettings({
@@ -157,6 +161,46 @@ export function RecipientSettings({
                       PDF not available yet
                     </span>
                   )}
+                  <a
+                    href={cert.flyerPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      buttonVariants({ size: "sm", variant: "outline" }),
+                    )}
+                  >
+                    Share flyer
+                  </a>
+                  <a
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrlFor(slug, cert.verifyPath))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      buttonVariants({ size: "sm", variant: "outline" }),
+                    )}
+                  >
+                    Share on LinkedIn
+                  </a>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => {
+                      const text = certificateAboutText({
+                        recipientName: cert.recipientName,
+                        eventName: cert.eventName,
+                        role: cert.role,
+                        checkUrl: absoluteAppUrl(cert.verifyPath),
+                      });
+                      void navigator.clipboard.writeText(text).then(
+                        () => toast.success("About text copied"),
+                        () => toast.error("Could not copy"),
+                      );
+                    }}
+                  >
+                    Copy About text
+                  </Button>
                 </div>
               </li>
             ))}
@@ -165,4 +209,15 @@ export function RecipientSettings({
       </div>
     </div>
   );
+}
+
+function absoluteAppUrl(path: string) {
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+
+function shareUrlFor(slug: string | null, verifyPath: string) {
+  if (typeof window === "undefined") return verifyPath;
+  if (slug) return `${window.location.origin}/u/${encodeURIComponent(slug)}`;
+  return `${window.location.origin}${verifyPath}`;
 }

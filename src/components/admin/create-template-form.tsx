@@ -54,6 +54,13 @@ export function CreateTemplateForm({
         </Select>
       </div>
       <div className="space-y-2">
+        <Label htmlFor="kind">Document type</Label>
+        <Select id="kind" name="kind" defaultValue="certificate">
+          <option value="certificate">Certificate</option>
+          <option value="service_letter">Service letter</option>
+        </Select>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="name">Template name</Label>
         <Input
           id="name"

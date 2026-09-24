@@ -451,4 +451,158 @@ describe.skipIf(!dbReady)(
     });
     expect(issuedCount).toBe(1);
   });
+
+  it("issues two templates on the same event for the same email", async () => {
+    const second = await prisma.certificateTemplate.create({
+      data: {
+        eventId: eventAId,
+        clubId: clubAId,
+        name: "Service letter A",
+        kind: "service_letter",
+        backgroundUrl: "https://example.com/bg-letter.png",
+        layout: DEFAULT_LAYOUT,
+        status: TemplateStatus.approved,
+        createdById: adminAId,
+        lastEditedById: adminAId,
+      },
+    });
+    const firstTemplate = await prisma.certificateTemplate.findFirstOrThrow({
+      where: {
+        eventId: eventAId,
+        clubId: clubAId,
+        name: "Approved Template A",
+      },
+    });
+    const email = `two-templates-${Date.now()}@test.local`;
+    const cert = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      templateId: firstTemplate.id,
+      actorUserId: adminAId,
+      actorSupabaseId: ADMIN_A,
+      recipientName: "Twin Docs",
+      recipientEmail: email,
+      role: "Participant",
+      sendEmail: false,
+    });
+    const letter = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      templateId: second.id,
+      actorUserId: adminAId,
+      actorSupabaseId: ADMIN_A,
+      recipientName: "Twin Docs",
+      recipientEmail: email,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    expect(cert.skipped).toBeFalsy();
+    expect(letter.skipped).toBeFalsy();
+    const again = await issueCertificate({
+      eventId: eventAId,
+      clubId: clubAId,
+      templateId: second.id,
+      actorUserId: adminAId,
+      actorSupabaseId: ADMIN_A,
+      recipientName: "Twin Docs",
+      recipientEmail: email,
+      role: "Volunteer",
+      sendEmail: false,
+    });
+    expect(again.skipped).toBe(true);
+  });
+
+  it("two CSVs on one event issue two docs for the same email, then skip", async () => {
+    const letter = await prisma.certificateTemplate.create({
+      data: {
+        eventId: eventAId,
+        clubId: clubAId,
+        name: `CSV letter ${Date.now()}`,
+        kind: "service_letter",
+        backgroundUrl: "https://example.com/bg-letter.png",
+        layout: DEFAULT_LAYOUT,
+        status: TemplateStatus.approved,
+        createdById: adminAId,
+        lastEditedById: adminAId,
+      },
+    });
+    const firstTemplate = await prisma.certificateTemplate.findFirstOrThrow({
+      where: {
+        eventId: eventAId,
+        clubId: clubAId,
+        name: "Approved Template A",
+      },
+    });
+    const email = `two-csv-${Date.now()}@test.local`;
+    const job1 = await prisma.importJob.create({
+      data: {
+        clubId: clubAId,
+        eventId: eventAId,
+        templateId: firstTemplate.id,
+        createdById: adminAId,
+        status: ImportJobStatus.pending,
+        totalRows: 1,
+        rows: {
+          create: [
+            {
+              rowNumber: 1,
+              clubId: clubAId,
+              recipientName: "CSV Twin",
+              recipientEmail: email,
+              role: "Participant",
+              status: ImportRowStatus.pending,
+            },
+          ],
+        },
+      },
+    });
+    const job2 = await prisma.importJob.create({
+      data: {
+        clubId: clubAId,
+        eventId: eventAId,
+        templateId: letter.id,
+        createdById: adminAId,
+        status: ImportJobStatus.pending,
+        totalRows: 1,
+        rows: {
+          create: [
+            {
+              rowNumber: 1,
+              clubId: clubAId,
+              recipientName: "CSV Twin",
+              recipientEmail: email,
+              role: "Volunteer",
+              status: ImportRowStatus.pending,
+            },
+          ],
+        },
+      },
+    });
+
+    expect((await processImportBatch(job1.id)).processed).toBe(1);
+    expect((await processImportBatch(job2.id)).processed).toBe(1);
+    expect(
+      await prisma.certificate.count({
+        where: {
+          eventId: eventAId,
+          recipientEmail: email,
+          status: "issued",
+        },
+      }),
+    ).toBe(2);
+
+    await prisma.importJobRow.updateMany({
+      where: { jobId: job2.id },
+      data: { status: ImportRowStatus.pending, certificateId: null },
+    });
+    await prisma.importJob.update({
+      where: { id: job2.id },
+      data: { status: ImportJobStatus.pending },
+    });
+    await processImportBatch(job2.id);
+    const rerun = await prisma.importJobRow.findFirstOrThrow({
+      where: { jobId: job2.id },
+    });
+    expect(rerun.status).toBe(ImportRowStatus.skipped);
+  });
 });

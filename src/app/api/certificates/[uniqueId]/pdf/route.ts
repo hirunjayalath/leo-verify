@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { CertificateStatus } from "@/generated/prisma/client";
+import { getSessionUser, getSupabaseAuthUser } from "@/lib/auth";
+import {
+  canAccessCertificatePdf,
+  recipientClaimLoginPath,
+} from "@/lib/certificates/pdf-access";
 import { verifyVerificationToken } from "@/lib/certificates/token";
-import { prismaService } from "@/lib/db";
+import { prismaService, withRlsContext } from "@/lib/db";
 import {
   clientIpFromHeaders,
   rateLimitVerification,
@@ -13,7 +18,7 @@ import {
 
 type Params = { params: Promise<{ uniqueId: string }> };
 
-/** Token-gated PDF. Live DB status is authoritative — revoked certs 404. */
+/** HMAC + issued + recipient (or club admin) session. Revoked certs 404. */
 export async function GET(request: Request, { params }: Params) {
   const limit = await rateLimitVerification(
     clientIpFromHeaders(new Headers(request.headers)),
@@ -61,6 +66,46 @@ export async function GET(request: Request, { params }: Params) {
   );
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const [auth, admin] = await Promise.all([
+    getSupabaseAuthUser(),
+    getSessionUser(),
+  ]);
+  let recipientOwns = false;
+  if (auth?.id && auth.email) {
+    const visible = await withRlsContext(
+      auth.id,
+      (tx) =>
+        tx.certificate.findFirst({
+          where: {
+            uniqueId: cert.uniqueId,
+            status: CertificateStatus.issued,
+          },
+          select: { id: true },
+        }),
+      { recipientEmail: auth.email },
+    );
+    recipientOwns = Boolean(visible);
+  }
+  const access = canAccessCertificatePdf({
+    clubId: cert.clubId,
+    authEmail: auth?.email,
+    recipientOwns,
+    admin:
+      admin &&
+      (admin.role === "club_admin" || admin.role === "district_admin")
+        ? { role: admin.role, clubId: admin.clubId }
+        : null,
+  });
+  if (!access.ok) {
+    return NextResponse.json(
+      {
+        error: "Sign in to download",
+        claimUrl: recipientClaimLoginPath(),
+      },
+      { status: 401 },
+    );
   }
 
   if (!cert.pdfKey) {

@@ -67,8 +67,9 @@ export default async function AdminTemplatesPage() {
         <CardHeader>
           <CardTitle>Designer checklist</CardTitle>
           <CardDescription>
-            One template per event. Paint the artwork, then place merge fields —
-            the PNG is not scanned.{" "}
+            One design per template. An event can have a certificate and a
+            service letter. Paint the artwork, then place merge fields — the PNG
+            is not scanned.{" "}
             <Link
               href="/admin/templates/guide"
               className="font-medium text-primary underline-offset-4 hover:underline"
@@ -128,6 +129,7 @@ export default async function AdminTemplatesPage() {
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Event</TableHead>
+                        <TableHead>Kind</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -140,6 +142,11 @@ export default async function AdminTemplatesPage() {
                           </TableCell>
                           <TableCell className="text-muted-foreground">
                             {template.event.name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {template.kind === "service_letter"
+                              ? "Service letter"
+                              : "Certificate"}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -190,7 +197,11 @@ export default async function AdminTemplatesPage() {
                       <div>
                         <p className="font-medium">{template.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {template.event.name} · {template.status}
+                          {template.event.name} ·{" "}
+                          {template.kind === "service_letter"
+                            ? "service letter"
+                            : "certificate"}{" "}
+                          · {template.status}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-2">

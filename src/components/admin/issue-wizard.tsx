@@ -17,12 +17,18 @@ const steps = ["Event", "Recipients", "Send"] as const;
 export function IssueWizard({
   events,
 }: {
-  events: { id: string; name: string }[];
+  events: {
+    id: string;
+    name: string;
+    templates: { id: string; name: string }[];
+  }[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"one" | "bulk">("one");
   const [eventId, setEventId] = useState(events[0]?.id ?? "");
+  const templates = events.find((event) => event.id === eventId)?.templates ?? [];
+  const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
   const [draft, setDraft] = useState({
     recipientName: "",
     recipientEmail: "",
@@ -35,6 +41,7 @@ export function IssueWizard({
     e.preventDefault();
     const formData = new FormData();
     formData.set("eventId", eventId);
+    formData.set("templateId", templateId);
     formData.set("recipientName", draft.recipientName);
     formData.set("recipientEmail", draft.recipientEmail);
     formData.set("role", draft.role);
@@ -89,7 +96,13 @@ export function IssueWizard({
             <Select
               id="wiz-event"
               value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
+              onChange={(e) => {
+                setEventId(e.target.value);
+                const next =
+                  events.find((ev) => ev.id === e.target.value)?.templates[0]
+                    ?.id ?? "";
+                setTemplateId(next);
+              }}
             >
               {events.map((ev) => (
                 <option key={ev.id} value={ev.id}>
@@ -98,7 +111,25 @@ export function IssueWizard({
               ))}
             </Select>
           </div>
-          <Button type="button" onClick={() => setStep(1)} disabled={!eventId}>
+          <div className="space-y-2">
+            <Label htmlFor="wiz-template">Template</Label>
+            <Select
+              id="wiz-template"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+            >
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button
+            type="button"
+            onClick={() => setStep(1)}
+            disabled={!eventId || !templateId}
+          >
             Continue
           </Button>
         </div>
@@ -184,7 +215,9 @@ export function IssueWizard({
             </div>
           ) : (
             <div className="space-y-3">
-              <CsvImportForm events={events.filter((e) => e.id === eventId)} />
+              <CsvImportForm
+                events={events.filter((e) => e.id === eventId)}
+              />
               <Button type="button" variant="outline" onClick={() => setStep(0)}>
                 Back
               </Button>
@@ -199,6 +232,10 @@ export function IssueWizard({
             <p>
               <span className="text-muted-foreground">Event:</span>{" "}
               {events.find((e) => e.id === eventId)?.name}
+            </p>
+            <p className="mt-1">
+              <span className="text-muted-foreground">Template:</span>{" "}
+              {templates.find((t) => t.id === templateId)?.name}
             </p>
             <p className="mt-1">
               <span className="text-muted-foreground">Recipient:</span>{" "}

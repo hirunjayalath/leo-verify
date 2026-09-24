@@ -45,7 +45,7 @@ export function buildCertificateEmailHtml(input: {
         <p>Your certificate for <strong>${eventName}</strong> is ready.</p>
         <p>Certificate ID: <code>${uniqueId}</code></p>
         <p><a href="${safeVerify}" style="color:${accent}">Check your certificate</a></p>
-        ${safePdf ? `<p><a href="${safePdf}" style="color:${accent}">Download PDF</a></p>` : ""}
+        ${safePdf ? `<p><a href="${safePdf}" style="color:${accent}">Sign in to download or share</a></p>` : ""}
         <p style="margin-top:24px;font-size:13px;color:#646464">From ${clubName} on LeoVerify</p>
         </div>
       `;
@@ -83,7 +83,7 @@ export async function sendCertificateEmail(input: {
         verificationToken: input.verificationToken,
         eventName: input.eventName,
         clubName: input.clubName,
-        pdfDownloadPath: input.pdfUrl,
+        pdfDownloadPath: "/claim",
         clubLogoUrl: input.clubLogoUrl,
         primaryColor: input.primaryColor,
         accentColor: input.accentColor,

@@ -19,6 +19,7 @@ export type IssueRecordCreatedOutcome = {
 export type IssueCertificateInput = {
   eventId: string;
   clubId: string;
+  templateId?: string | null;
   actorUserId: string;
   actorSupabaseId: string;
   recipientName: string;
@@ -90,15 +91,25 @@ export async function requireApprovedTemplate(
   eventId: string,
   clubId: string,
   tx: PrismaClient = prisma,
+  templateId?: string | null,
 ) {
-  const template = await tx.certificateTemplate.findFirst({
-    where: {
-      eventId,
-      clubId,
-      status: TemplateStatus.approved,
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  const template = templateId
+    ? await tx.certificateTemplate.findFirst({
+        where: {
+          id: templateId,
+          eventId,
+          clubId,
+          status: TemplateStatus.approved,
+        },
+      })
+    : await tx.certificateTemplate.findFirst({
+        where: {
+          eventId,
+          clubId,
+          status: TemplateStatus.approved,
+        },
+        orderBy: { updatedAt: "desc" },
+      });
   if (!template) {
     throw new Error(
       "No approved template for this event. Approve a template before issuing.",
@@ -111,6 +122,7 @@ async function findIssuedDuplicate(
   tx: PrismaClient,
   input: {
     eventId: string;
+    templateId?: string | null;
     recipientName: string;
     recipientEmail: string | null;
   },
@@ -119,6 +131,7 @@ async function findIssuedDuplicate(
     return tx.certificate.findFirst({
       where: {
         eventId: input.eventId,
+        templateId: input.templateId ?? undefined,
         recipientEmail: input.recipientEmail,
         recipientName: input.recipientName,
         status: CertificateStatus.issued,
@@ -128,6 +141,7 @@ async function findIssuedDuplicate(
   return tx.certificate.findFirst({
     where: {
       eventId: input.eventId,
+      templateId: input.templateId ?? undefined,
       recipientName: input.recipientName,
       recipientEmail: null,
       status: CertificateStatus.issued,
@@ -173,6 +187,7 @@ export async function createCertificateRecord(
     input.eventId,
     input.clubId,
     tx,
+    input.templateId,
   );
 
   const recipientName = input.recipientName.trim();
@@ -181,6 +196,7 @@ export async function createCertificateRecord(
 
   const existing = await findIssuedDuplicate(tx, {
     eventId: input.eventId,
+    templateId: template.id,
     recipientName,
     recipientEmail,
   });
@@ -234,6 +250,7 @@ export async function createCertificateRecord(
           tokenVersion,
           clubId: input.clubId,
           eventId: input.eventId,
+          templateId: template.id,
           recipientName,
           recipientEmail,
           role,
@@ -258,12 +275,14 @@ export async function createCertificateRecord(
         const raced =
           (await findIssuedDuplicate(tx, {
             eventId: input.eventId,
+            templateId: template.id,
             recipientName,
             recipientEmail,
           })) ??
           (await tx.certificate.findFirst({
             where: {
               eventId: input.eventId,
+              templateId: template.id,
               recipientName,
               recipientEmail,
               status: CertificateStatus.issued,

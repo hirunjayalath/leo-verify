@@ -120,6 +120,7 @@ describe("templates service", () => {
       actorSupabaseId: "auth-1",
       eventId: "event-1",
       name: "Leo cert",
+      kind: "service_letter",
       background: pngFile(),
     });
 
@@ -128,6 +129,7 @@ describe("templates service", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           status: TemplateStatus.approved,
+          kind: "service_letter",
         }),
       }),
     );

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAuthDevBypassEnabled } from "@/lib/auth";
+import { isAuthDevBypassEnabled, isUomPlatformAdmin } from "@/lib/auth";
 import { resolveSessionLookup } from "@/lib/auth-redirect";
 
 describe("isAuthDevBypassEnabled", () => {
@@ -51,6 +51,20 @@ describe("isAuthDevBypassEnabled", () => {
         NODE_ENV: "development",
         VERCEL_ENV: "preview",
       }),
+    ).toBe(false);
+  });
+});
+
+describe("isUomPlatformAdmin", () => {
+  it("is only the UOM club admin", () => {
+    expect(
+      isUomPlatformAdmin({ role: "club_admin", club: { code: "UOM" } }),
+    ).toBe(true);
+    expect(
+      isUomPlatformAdmin({ role: "district_admin", club: { code: "UOM" } }),
+    ).toBe(false);
+    expect(
+      isUomPlatformAdmin({ role: "club_admin", club: { code: "OTHER" } }),
     ).toBe(false);
   });
 });

@@ -9,6 +9,8 @@ import {
   LayoutTemplate,
   LogOut,
   Map,
+  Shield,
+  BarChart3,
   Menu,
   ScrollText,
   Send,
@@ -41,16 +43,51 @@ function initials(email?: string | null, name?: string | null) {
 function SidebarNav({
   pathname,
   showDistrict,
+  showPlatform,
   showClubNav = true,
   onNavigate,
 }: {
   pathname: string;
   showDistrict?: boolean;
+  showPlatform?: boolean;
   showClubNav?: boolean;
   onNavigate?: () => void;
 }) {
   return (
     <>
+      {showPlatform && (
+        <div className="mb-3">
+          <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+            UOM
+          </p>
+          <Link
+            href="/admin/operators"
+            onClick={onNavigate}
+            className={cn(
+              "relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              pathname.startsWith("/admin/operators")
+                ? "bg-white/15 text-white"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <Shield className="h-4 w-4" aria-hidden />
+            Operators
+          </Link>
+          <Link
+            href="/admin/reports"
+            onClick={onNavigate}
+            className={cn(
+              "relative mt-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              pathname.startsWith("/admin/reports")
+                ? "bg-white/15 text-white"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden />
+            Reports
+          </Link>
+        </div>
+      )}
       {showDistrict && (
         <div className="mb-3">
           <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
@@ -118,12 +155,14 @@ export function AdminSidebar({
   userEmail,
   userName,
   showDistrict,
+  showPlatform,
   showClubNav = true,
 }: {
   clubName?: string | null;
   userEmail?: string | null;
   userName?: string | null;
   showDistrict?: boolean;
+  showPlatform?: boolean;
   showClubNav?: boolean;
 }) {
   const pathname = usePathname();
@@ -153,6 +192,7 @@ export function AdminSidebar({
         <SidebarNav
           pathname={pathname}
           showDistrict={showDistrict}
+          showPlatform={showPlatform}
           showClubNav={showClubNav}
           onNavigate={() => setMobileOpen(false)}
         />

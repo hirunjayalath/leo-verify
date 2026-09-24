@@ -15,7 +15,15 @@ export default async function AdminIssuePage() {
     prisma.event.findMany({
       where: { clubId: user.clubId },
       orderBy: { createdAt: "desc" },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        templates: {
+          where: { status: "approved" },
+          orderBy: { updatedAt: "desc" },
+          select: { id: true, name: true },
+        },
+      },
     }),
   );
 

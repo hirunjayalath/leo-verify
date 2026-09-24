@@ -84,6 +84,7 @@ async function actorSupabaseIdForJob(jobId: string): Promise<string> {
 type LoadedImportBatch = {
   clubId: string;
   eventId: string;
+  templateId: string | null;
   createdById: string | null;
   eventName: string;
   clubName: string;
@@ -116,6 +117,7 @@ export async function processImportBatch(
             take: IMPORT_BATCH_SIZE,
             orderBy: { rowNumber: "asc" },
           },
+          template: true,
           event: {
             include: {
               club: true,
@@ -149,13 +151,17 @@ export async function processImportBatch(
       return {
         clubId: job.clubId,
         eventId: job.eventId,
+        templateId: job.templateId ?? job.event.templates[0]?.id ?? null,
         createdById: job.createdById,
         eventName: job.event.name,
         clubName: job.event.club.name,
         clubLogoUrl: job.event.club.logoUrl,
         primaryColor: job.event.club.primaryColor,
         accentColor: job.event.club.accentColor,
-        backgroundUrl: job.event.templates[0]?.backgroundUrl ?? null,
+        backgroundUrl:
+          job.template?.backgroundUrl ??
+          job.event.templates[0]?.backgroundUrl ??
+          null,
         rows: job.rows.map((row) => ({
           id: row.id,
           recipientName: row.recipientName,
@@ -198,6 +204,7 @@ export async function processImportBatch(
         const issued = await issueCertificate({
           eventId: loaded.eventId,
           clubId: loaded.clubId,
+          templateId: loaded.templateId,
           actorUserId: loaded.createdById ?? "system",
           actorSupabaseId: supabaseId,
           recipientName: row.recipientName,

@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { requireUser } from "@/lib/auth";
+import { isUomPlatformAdmin, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,13 @@ export default async function AdminLayout({
   ) {
     redirect("/admin");
   }
+  if (
+    (pathname.startsWith("/admin/operators") ||
+      pathname.startsWith("/admin/reports")) &&
+    !isUomPlatformAdmin(user)
+  ) {
+    redirect("/admin");
+  }
 
   const chip = initials(user.email, user.name);
   const hasClub = Boolean(user.clubId);
@@ -41,6 +48,7 @@ export default async function AdminLayout({
         userEmail={user.email}
         userName={user.name}
         showDistrict={user.role === "district_admin"}
+        showPlatform={isUomPlatformAdmin(user)}
         showClubNav={hasClub}
       />
       <div className="flex min-w-0 flex-1 flex-col">

@@ -18,7 +18,9 @@ export type AuditAction =
   | "club.create"
   | "club.branding.update"
   | "club.switch"
-  | "user.invite";
+  | "user.invite"
+  | "user.disable"
+  | "district.create";
 
 export async function writeAuditLog(input: {
   actorUserId?: string | null;
