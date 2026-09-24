@@ -7,6 +7,45 @@ function uploadsRoot(): string {
   return path.resolve(process.cwd(), "public", "uploads");
 }
 
+function galleryRoot(): string {
+  return path.resolve(process.cwd(), "public", "template-gallery");
+}
+
+function assertContained(filePath: string, root: string, label: string): void {
+  if (!filePath.startsWith(root + path.sep) && filePath !== root) {
+    throw new Error(`Path escapes ${label} directory`);
+  }
+}
+
+async function readLocalBackground(filePath: string): Promise<Uint8Array> {
+  const { readFile } = await import("node:fs/promises");
+  const buf = await readFile(filePath);
+  if (buf.byteLength > MAX_BYTES) throw new Error("Background too large");
+  return new Uint8Array(buf);
+}
+
+/** Bundled designer presets — basename only, no traversal. */
+async function readGalleryBackground(url: string): Promise<Uint8Array | null> {
+  if (!url.startsWith("/template-gallery/")) return null;
+  const name = decodeURIComponent(
+    url.slice("/template-gallery/".length).split("?")[0] ?? "",
+  );
+  if (
+    !name ||
+    name.includes("..") ||
+    name.includes("/") ||
+    name.includes("\\") ||
+    path.isAbsolute(name) ||
+    !/\.(png|jpe?g)$/i.test(name)
+  ) {
+    throw new Error("Invalid local gallery path");
+  }
+  const root = galleryRoot();
+  const filePath = path.resolve(root, name);
+  assertContained(filePath, root, "gallery");
+  return readLocalBackground(filePath);
+}
+
 function allowedRemoteHosts(): Set<string> {
   const hosts = new Set<string>();
   for (const raw of [
@@ -53,6 +92,9 @@ export async function fetchBackgroundBytes(url: string): Promise<Uint8Array> {
     throw new Error("Invalid background URL");
   }
 
+  const gallery = await readGalleryBackground(url);
+  if (gallery) return gallery;
+
   if (url.startsWith("/") || url.includes("/uploads/")) {
     const rawName = url.includes("/uploads/")
       ? url.split("/uploads/").pop()!
@@ -69,13 +111,8 @@ export async function fetchBackgroundBytes(url: string): Promise<Uint8Array> {
     }
     const root = uploadsRoot();
     const filePath = path.resolve(root, filename);
-    if (!filePath.startsWith(root + path.sep) && filePath !== root) {
-      throw new Error("Path escapes uploads directory");
-    }
-    const { readFile } = await import("node:fs/promises");
-    const buf = await readFile(filePath);
-    if (buf.byteLength > MAX_BYTES) throw new Error("Background too large");
-    return new Uint8Array(buf);
+    assertContained(filePath, root, "uploads");
+    return readLocalBackground(filePath);
   }
 
   let parsed: URL;

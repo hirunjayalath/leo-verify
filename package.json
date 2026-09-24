@@ -13,7 +13,8 @@
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:migrate-deploy": "prisma db execute --file supabase/auth-uid-stub.sql --config prisma7.config.ts && prisma migrate deploy --config prisma7.config.ts",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:demo": "npx tsx prisma/demo-showcase.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -49,6 +50,7 @@
     "zod": "^4.6.4"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/postcss": "^4",
     "@types/fabric": "^5.3.11",
     "@types/node": "^24.13.4",

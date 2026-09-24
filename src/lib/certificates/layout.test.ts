@@ -4,6 +4,7 @@ import {
   templateLayoutSchema,
 } from "@/lib/certificates/layout";
 import { renderCertificatePdf } from "@/lib/certificates/render-pdf";
+import { galleryById } from "@/lib/templates/gallery";
 
 describe("layout signature fields", () => {
   it("parses signature overlay fields with imageUrl", () => {
@@ -43,6 +44,42 @@ describe("layout signature fields", () => {
       { field: "qr", x: 400, y: 400, width: 80, height: 80 },
     ]);
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("gallery certificate wording", () => {
+  it("completion and appreciation parse as merge-field layouts", () => {
+    for (const id of ["completion", "appreciation"] as const) {
+      const preset = galleryById(id);
+      expect(preset).toBeDefined();
+      const parsed = templateLayoutSchema.safeParse(preset!.layout);
+      expect(parsed.success).toBe(true);
+      const fields = new Set(preset!.layout.map((item) => item.field));
+      expect(fields.has("staticText")).toBe(false);
+      expect(fields.has("recipientName")).toBe(true);
+      expect(fields.has("role")).toBe(true);
+      expect(fields.has("eventName")).toBe(true);
+      expect(fields.has("achievement")).toBe(true);
+      expect(fields.has("qr")).toBe(true);
+    }
+  });
+
+  it("renders a completion layout without throwing", async () => {
+    const layout = galleryById("completion")!.layout;
+    const bytes = await renderCertificatePdf({
+      backgroundUrl: "/template-gallery/completion.png",
+      layout,
+      recipientName: "Ada Lovelace",
+      role: "Volunteer",
+      issueDate: "2026-09-24",
+      uniqueId: "LEO-UOM-2026-000099",
+      verificationToken: "abc",
+      achievement: "Community service",
+      eventName: "Leadership Workshop",
+      clubName: "Leo Club of University of Moratuwa",
+      appBaseUrl: "https://leoverify.test",
+    });
+    expect(bytes.byteLength).toBeGreaterThan(50_000);
   });
 });
 

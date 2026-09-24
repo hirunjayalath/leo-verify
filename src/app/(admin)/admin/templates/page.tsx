@@ -63,6 +63,46 @@ export default async function AdminTemplatesPage() {
         </p>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Designer checklist</CardTitle>
+          <CardDescription>
+            One template per event. Paint the artwork, then place merge fields —
+            the PNG is not scanned.{" "}
+            <Link
+              href="/admin/templates/guide"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Full designer guide
+            </Link>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+            <li>
+              Export <strong className="text-foreground">A4 landscape</strong>{" "}
+              PNG at 1684×1190 px (under 5 MB). Avoid 16:9 — it stretches on the
+              PDF.
+            </li>
+            <li>
+              Paint title, sentences, event title, club/logo, and signature
+              lines on the PNG.
+            </li>
+            <li>
+              Leave gaps for <strong className="text-foreground">name</strong>,{" "}
+              <strong className="text-foreground">role</strong>, optional
+              achievement, date, ID (bottom left), and QR (bottom right, with
+              space around it).
+            </li>
+            <li>
+              CSV supplies name, role, achievement, and email. Date, ID, and QR
+              come from issue. If you paint event or club on the PNG, delete
+              those fields in the designer.
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
           <CardHeader>
