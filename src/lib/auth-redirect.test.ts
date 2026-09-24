@@ -65,32 +65,18 @@ describe("continueHref", () => {
 });
 
 describe("resolveSessionLookup", () => {
-  it("prefers a real Auth session over bypass", () => {
+  it("uses the signed-in Auth user only", () => {
     expect(
       resolveSessionLookup({
-        bypassEnabled: true,
         authSupabaseId: "auth-user-id",
-        seedAdminSupabaseId: "seed-admin-id",
       }),
     ).toEqual({ source: "session", supabaseId: "auth-user-id" });
   });
 
-  it("falls back to the seed admin only when nobody is signed in", () => {
+  it("does not impersonate a seed admin when nobody is signed in", () => {
     expect(
       resolveSessionLookup({
-        bypassEnabled: true,
         authSupabaseId: null,
-        seedAdminSupabaseId: "seed-admin-id",
-      }),
-    ).toEqual({ source: "bypass", supabaseId: "seed-admin-id" });
-  });
-
-  it("does not use bypass when it is disabled", () => {
-    expect(
-      resolveSessionLookup({
-        bypassEnabled: false,
-        authSupabaseId: null,
-        seedAdminSupabaseId: "seed-admin-id",
       }),
     ).toBeNull();
   });

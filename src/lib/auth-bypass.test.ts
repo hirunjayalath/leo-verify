@@ -69,17 +69,19 @@ describe("isUomPlatformAdmin", () => {
   });
 });
 
-describe("session-first bypass", () => {
-  it("ignores the seed admin when a real session is present", () => {
-    const bypassEnabled = isAuthDevBypassEnabled({
-      AUTH_DEV_BYPASS: "true",
-      NODE_ENV: "development",
-    });
+describe("session lookup", () => {
+  it("never falls back to the seed admin", () => {
+    expect(isAuthDevBypassEnabled({ AUTH_DEV_BYPASS: "true", NODE_ENV: "development" })).toBe(
+      true,
+    );
     expect(
       resolveSessionLookup({
-        bypassEnabled,
+        authSupabaseId: null,
+      }),
+    ).toBeNull();
+    expect(
+      resolveSessionLookup({
         authSupabaseId: "signed-in-district-admin",
-        seedAdminSupabaseId: "00000000-0000-4000-8000-000000000001",
       }),
     ).toEqual({
       source: "session",

@@ -38,19 +38,11 @@ export function continueHref(next?: string | null): string {
   return `/continue?next=${encodeURIComponent(safe)}`;
 }
 
-/**
- * Bypass only when nobody is signed in. A real Auth session always wins.
- */
+/** Session identity only. AUTH_DEV_BYPASS never impersonates a seed admin. */
 export function resolveSessionLookup(input: {
-  bypassEnabled: boolean;
   authSupabaseId?: string | null;
-  seedAdminSupabaseId?: string | null;
-}): { source: "session" | "bypass"; supabaseId: string } | null {
+}): { source: "session"; supabaseId: string } | null {
   const authId = input.authSupabaseId?.trim();
   if (authId) return { source: "session", supabaseId: authId };
-  const seedId = input.seedAdminSupabaseId?.trim();
-  if (input.bypassEnabled && seedId) {
-    return { source: "bypass", supabaseId: seedId };
-  }
   return null;
 }

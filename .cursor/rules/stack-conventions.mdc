@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Pinned stack
 
-Production host is Vercel + Supabase + R2 + Resend + Inngest + Upstash. Sentry is optional. The full secret inventory is the contract in `.env.example` and `docs/architecture.md`. Production boot (`src/lib/env.ts`) throws if a required secret is missing. Development fallbacks (local disk, skip mail, in-process jobs, in-memory rate limit, `AUTH_DEV_BYPASS`) stay development only.
+Production host is Vercel + Supabase + R2 + Resend + Inngest + Upstash. Sentry is optional. The full secret inventory is the contract in `.env.example` and `docs/architecture.md`. Production boot (`src/lib/env.ts`) throws if a required secret is missing. Development fallbacks (local disk, skip mail, in-process jobs, in-memory rate limit) stay development only. `AUTH_DEV_BYPASS` is rejected in production and does not impersonate a user.
 
 - **App:** Next.js 16 App Router + React 19 + TypeScript (`src/`)
 - **DB:** PostgreSQL via Supabase; Prisma 7 with `@prisma/adapter-pg`

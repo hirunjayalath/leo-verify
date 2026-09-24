@@ -19,16 +19,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
-  // Never honor AUTH_DEV_BYPASS on Vercel.
-  if (
-    process.env.AUTH_DEV_BYPASS === "true" &&
-    process.env.NODE_ENV === "development" &&
-    !process.env.VERCEL &&
-    !process.env.VERCEL_ENV
-  ) {
-    return response;
-  }
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

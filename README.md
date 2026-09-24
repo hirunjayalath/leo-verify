@@ -28,14 +28,14 @@ npm install
 cp .env.example .env
 # Contract: docs/architecture.md. Every variable stays. Empty is allowed locally.
 # Required locally: DATABASE_URL, CERT_HMAC_SECRET (openssl rand -hex 32)
-# Local UI without Auth: AUTH_DEV_BYPASS=true (forbidden in production)
+# Role QA: sign in as each seeded account (club admin, district admin, recipient)
 npx prisma generate
 npx prisma migrate deploy   # or migrate dev locally
 # Plain Postgres (no Supabase auth schema): npm run db:migrate-deploy
 npm run db:seed
 # Supabase SQL editor: apply supabase/rls-policies.sql
 # Optional: SEED_DISTRICT_ADMIN_* / SEED_RECIPIENT_* / SEED_CLUB_ADMIN_LOGIN_*
-# Set SEED_ADMIN_SUPABASE_ID to your Auth user id. Then turn AUTH_DEV_BYPASS off.
+# AUTH_DEV_BYPASS must not be true in production. It does not skip login or pick a role.
 npm run dev
 ```
 
@@ -53,7 +53,7 @@ Without the pooler and a singleton `Pool`, concurrent check or issue work runs o
 
 Manual path for Leo Club of University of Moratuwa as platform operator:
 
-1. Login as UOM club admin (`AUTH_DEV_BYPASS` off in any shared or staging env).
+1. Login as UOM club admin. Sign out, then login as district admin and recipient to confirm three homes.
 2. Create an event, upload a template (approved on create), then edit the layout if you want.
 3. Issue one certificate with a recipient email. Confirm Resend send when configured.
 4. Open `/v/[id]?t=…`. Status should be Valid. Use **Download PDF**.
@@ -140,7 +140,7 @@ UI components     →      orgs/                      auth / supabase
 **Environment contract**
 
 - [`.env.example`](.env.example) lists every variable. [`docs/architecture.md`](docs/architecture.md) says why each system exists.
-- Local `.env` may leave production secrets empty. `AUTH_DEV_BYPASS` is local only.
+- Local `.env` may leave production secrets empty. `AUTH_DEV_BYPASS` is rejected in production and does not impersonate a user.
 - Production (`VERCEL` or `NODE_ENV=production`) calls `assertProductionEnv()` at boot in `src/instrumentation.ts`.
 - Upstash stays fail-closed in production. There is no in-memory limiter on the live host.
 

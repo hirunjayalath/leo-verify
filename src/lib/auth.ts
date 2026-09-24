@@ -133,22 +133,16 @@ async function healSessionUserByEmail(
 export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
   const auth = await getAuthIdentity();
   const plan = resolveSessionLookup({
-    bypassEnabled: isAuthDevBypassEnabled(),
     authSupabaseId: auth?.id ?? null,
-    seedAdminSupabaseId: process.env.SEED_ADMIN_SUPABASE_ID,
   });
   if (!plan) return null;
 
-  if (plan.source === "session") {
-    const byId = await loadSessionUser(plan.supabaseId);
-    if (byId) return byId;
-    if (auth?.email && auth.emailConfirmed) {
-      return healSessionUserByEmail(plan.supabaseId, auth.email);
-    }
-    return null;
+  const byId = await loadSessionUser(plan.supabaseId);
+  if (byId) return byId;
+  if (auth?.email && auth.emailConfirmed) {
+    return healSessionUserByEmail(plan.supabaseId, auth.email);
   }
-
-  return loadSessionUser(plan.supabaseId);
+  return null;
 });
 
 /** Run work with RLS GUC for this app user. */

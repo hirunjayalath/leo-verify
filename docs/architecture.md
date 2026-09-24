@@ -4,7 +4,7 @@ LeoVerify is one Next.js app plus Postgres. Production also depends on Auth, obj
 
 [`.env.example`](../.env.example) is the contract. Local [`.env`](../.env) is a gitignored copy (empty values are allowed). Production values live on the host (Vercel), never in the repo. [`src/lib/env.ts`](../src/lib/env.ts) enforces the production set at boot.
 
-Development may fall back: local disk for files, skip email, in-process imports, in-memory rate limit, `AUTH_DEV_BYPASS`. Production does not fall back. Missing required secrets throw before the first request.
+Development may fall back: local disk for files, skip email, in-process imports, in-memory rate limit. `AUTH_DEV_BYPASS` is rejected in production and does not skip login or impersonate a role. Production does not fall back. Missing required secrets throw before the first request.
 
 If a secret has been pasted into chat, email, or a screenshot, rotate it in that vendor's dashboard and update `.env` / Vercel. `.env` is gitignored and must stay uncommitted.
 
@@ -121,9 +121,9 @@ Empty DSNs disable Sentry.
 
 | Variable | Notes |
 |---|---|
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_SUPABASE_ID` / `SEED_ADMIN_NAME` | Optional. First-club seed (bypass lookup). |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_SUPABASE_ID` / `SEED_ADMIN_NAME` | Optional. First-club seed (UOM club admin login). |
 | `SEED_CLUB_ADMIN_LOGIN_EMAIL` / `SEED_CLUB_ADMIN_PASSWORD` | Optional. Extra UOM club admin Auth user (local). |
 | `SEED_DISTRICT_ADMIN_EMAIL` / `SEED_DISTRICT_ADMIN_PASSWORD` / `SEED_DISTRICT_ADMIN_NAME` | Optional. District admin Auth + Prisma row assigned to the UOM club (one admin, one club). `SEED_DISTRICT_ADMIN_SUPABASE_ID` optional when service role can create/link. |
 | `SEED_RECIPIENT_EMAIL` / `SEED_RECIPIENT_PASSWORD` | Optional. Auth-only recipient. Seed issues one cert for `/claim`. |
 | `SEED_PROMOTE_UOM_DISTRICT_ADMIN` | Optional. Do not use for role QA. Keeps the bypass admin as club admin. |
-| `AUTH_DEV_BYPASS` | Local only. A real sign-in wins; seed admin is used only when nobody is signed in. Must not be `true` when `NODE_ENV=production`. Ignored on Vercel. |
+| `AUTH_DEV_BYPASS` | Must not be `true` when `NODE_ENV=production`. Does not skip `/admin` login or load the seed admin. Local role QA is three seeded accounts. |
