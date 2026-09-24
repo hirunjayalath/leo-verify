@@ -21,15 +21,24 @@ export function CreateTemplateForm({
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const file = formData.get("background");
+    if (file instanceof File && file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be 5 MB or smaller");
+      return;
+    }
     startTransition(async () => {
-      const result = await createTemplateAction(formData);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
+      try {
+        const result = await createTemplateAction(formData);
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success("Template created. Opening designer.");
+        router.push(`/admin/templates/${result.id}/edit`);
+        router.refresh();
+      } catch {
+        toast.error("Image must be 5 MB or smaller");
       }
-      toast.success("Template created. Opening designer.");
-      router.push(`/admin/templates/${result.id}/edit`);
-      router.refresh();
     });
   }
 
@@ -78,6 +87,7 @@ export function CreateTemplateForm({
           accept="image/png,image/jpeg"
           required
         />
+        <p className="text-xs text-muted-foreground">PNG or JPEG, 5 MB or smaller.</p>
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
         {pending && <Spinner />}

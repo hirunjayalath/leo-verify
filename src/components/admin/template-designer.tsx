@@ -399,6 +399,10 @@ export function TemplateDesigner({
 
   async function onSignatureUpload(file: File) {
     if (!selectedKey || !isSignatureField(selectedKey)) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Signature image must be 2 MB or smaller");
+      return;
+    }
     const canvas = fabricRef.current;
     const obj = findByKey(selectedKey);
     if (!canvas || !obj) return;
@@ -453,6 +457,8 @@ export function TemplateDesigner({
       canvas.requestRenderAll();
       setDirty(true);
       toast.success("Signature stamp uploaded. Save the layout to keep it.");
+    } catch {
+      toast.error("Signature image must be 2 MB or smaller");
     } finally {
       setSigUploading(false);
     }
@@ -640,7 +646,7 @@ export function TemplateDesigner({
                   : "hover:bg-muted",
               )}
             >
-              {sigUploading ? "Uploading…" : "Upload PNG/JPEG"}
+              {sigUploading ? "Uploading…" : "Upload PNG/JPEG (2 MB max)"}
               <input
                 type="file"
                 accept="image/png,image/jpeg"
