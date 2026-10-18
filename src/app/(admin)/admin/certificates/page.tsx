@@ -27,6 +27,7 @@ import {
   tokenForCertificate,
 } from "@/lib/certificates/token";
 import { prisma } from "@/lib/db";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 
 const PAGE_SIZE = 25;
 
@@ -195,14 +196,20 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps)
     "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Certificates</h1>
-        <p className="mt-1 text-muted-foreground">
-          Issue, reissue, revoke, and import a roster. Each change is written to
-          the audit log. Filter by event, year, and status.
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Certificate hub"
+        title="Certificates"
+        description="Issue, reissue, revoke, and import certificates. Every change is written to the audit log."
+        action={
+          <Link
+            href="/admin/issue"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/85"
+          >
+            Issue certificate
+          </Link>
+        }
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
         <div className="space-y-6">

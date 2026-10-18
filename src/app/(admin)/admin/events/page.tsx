@@ -1,6 +1,7 @@
 import { CalendarDays } from "lucide-react";
 import { CreateEventForm } from "@/components/admin/create-event-form";
 import { EditEventForm } from "@/components/admin/edit-event-form";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import {
   Card,
   CardContent,
@@ -33,13 +34,12 @@ export default async function AdminEventsPage() {
   }));
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
-        <p className="mt-1 text-muted-foreground">
-          Events group templates and certificate batches for your club.
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Club workspace"
+        title="Events"
+        description="Group templates and certificate batches for your club."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <Card>
@@ -101,11 +101,11 @@ export default async function AdminEventsPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <ul className="space-y-3 sm:hidden">
+                <ul className="space-y-2 sm:hidden">
                   {events.map((event) => (
                     <li
                       key={event.id}
-                      className="rounded-xl border border-border p-4"
+                      className="rounded-md border border-border p-4"
                     >
                       <p className="font-medium">{event.name}</p>
                       <p className="mt-1 text-sm text-muted-foreground">

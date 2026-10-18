@@ -69,7 +69,7 @@ export function RecentImportsTable({ jobs }: { jobs: RecentImportJob[] }) {
               {open && (
                 <TableRow>
                   <TableCell colSpan={4}>
-                    <ul className="max-h-40 space-y-1 overflow-auto rounded-lg bg-danger-muted p-3 text-xs text-danger">
+                    <ul className="max-h-40 space-y-1 overflow-auto rounded-md bg-danger-muted p-3 text-xs text-danger">
                       {job.rowErrors.map((err) => (
                         <li key={`${job.id}-${err.rowNumber}-${err.error}`}>
                           Row {err.rowNumber}: {err.error}

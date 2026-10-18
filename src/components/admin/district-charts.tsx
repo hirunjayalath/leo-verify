@@ -72,7 +72,7 @@ export function DistrictCharts({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       {hasMonthData && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">Issued vs revoked</p>
             <p className="text-xs text-muted-foreground">
@@ -96,7 +96,7 @@ export function DistrictCharts({
         </div>
       )}
       {hasClubData && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <p className="text-sm font-medium">Issued by club</p>
           <div className="space-y-2.5">
             {perClub.map((row) => (

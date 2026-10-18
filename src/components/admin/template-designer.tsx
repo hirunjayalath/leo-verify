@@ -157,8 +157,8 @@ export function TemplateDesigner({
         top: field.y,
         width: w,
         height: h,
-        fill: "rgba(56,163,227,0.18)",
-        stroke: "#1cbdd8",
+        fill: "rgba(55,65,81,0.18)",
+        stroke: "#374151",
         strokeWidth: 2,
       });
       getMeta(box).fieldKey = field.field;
@@ -196,7 +196,7 @@ export function TemplateDesigner({
               width: field.width ?? 80,
               height: field.height ?? 80,
               fill: "rgba(201,162,39,0.25)",
-              stroke: "#38a3e3",
+              stroke: "#374151",
               strokeWidth: 2,
             });
             getMeta(box).fieldKey = field.field;
@@ -276,8 +276,8 @@ export function TemplateDesigner({
         top: 420,
         width: 140,
         height: 60,
-        fill: "rgba(56,163,227,0.18)",
-        stroke: "#1cbdd8",
+        fill: "rgba(55,65,81,0.18)",
+        stroke: "#374151",
         strokeWidth: 2,
       });
       getMeta(box).fieldKey = key;
@@ -444,8 +444,8 @@ export function TemplateDesigner({
           top,
           width: w,
           height: h,
-          fill: "rgba(56,163,227,0.18)",
-          stroke: "#1cbdd8",
+          fill: "rgba(55,65,81,0.18)",
+          stroke: "#374151",
           strokeWidth: 2,
         });
         getMeta(box).fieldKey = selectedKey;
@@ -482,7 +482,7 @@ export function TemplateDesigner({
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-16 z-20 space-y-3 rounded-xl border border-border bg-card/95 p-3 shadow-elevated backdrop-blur">
+      <div className="sticky top-16 z-20 space-y-2 rounded-md border border-border bg-card/95 p-3 shadow-elevated backdrop-blur">
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/admin/templates"
@@ -507,9 +507,9 @@ export function TemplateDesigner({
                 type="button"
                 onClick={() => selectField(key)}
                 className={cn(
-                  "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  "rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
                   selectedKey === key
-                    ? "bg-brand text-brand-foreground"
+                    ? "bg-foreground text-background"
                     : "bg-muted text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -605,7 +605,7 @@ export function TemplateDesigner({
               value={color}
               disabled={!textSelected}
               aria-label="Text color"
-              className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent disabled:opacity-40"
+              className="h-8 w-10 cursor-pointer rounded-none border border-border bg-transparent disabled:opacity-40"
               onChange={(e) => updateActiveText({ fill: e.target.value })}
             />
             <Button
@@ -640,7 +640,7 @@ export function TemplateDesigner({
             </span>
             <label
               className={cn(
-                "inline-flex cursor-pointer items-center rounded-md border border-border px-2.5 py-1.5 text-xs font-medium",
+                "inline-flex cursor-pointer items-center rounded-none border border-border px-2.5 py-1.5 text-xs font-medium",
                 !signatureSelected || sigUploading
                   ? "pointer-events-none opacity-40"
                   : "hover:bg-muted",
@@ -681,7 +681,7 @@ export function TemplateDesigner({
             </Button>
             <button
               type="button"
-              className="min-w-14 rounded-md px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted"
+              className="min-w-14 rounded-none px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground hover:bg-muted"
               onClick={() => setZoom(1)}
               aria-label="Reset zoom to 100%"
             >
@@ -708,7 +708,7 @@ export function TemplateDesigner({
 
       <div
         ref={stageRef}
-        className="checkerboard overflow-auto rounded-xl border border-border p-6"
+        className="checkerboard overflow-auto rounded-none border border-border p-6"
       >
         <div
           className="mx-auto origin-top shadow-float transition-transform"
@@ -730,7 +730,7 @@ export function TemplateDesigner({
         </div>
       </div>
 
-      <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+      <p className="rounded-none border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         Drag placeholders on the artboard. Add Event / Club / Achievement /
         Static text / Signatures from the toolbar. Preview PDF uses sample data.
         Layout JSON stays data (Rule 5).
@@ -738,7 +738,7 @@ export function TemplateDesigner({
       <iframe
         title="PDF preview"
         src={`/api/templates/${templateId}/preview`}
-        className="h-[420px] w-full rounded-xl border border-border bg-muted/20"
+        className="h-[420px] w-full rounded-none border border-border bg-muted/20"
       />
     </div>
   );

@@ -33,7 +33,7 @@ export function CreateDistrictForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="district-name">Name</Label>
         <Input id="district-name" name="name" required placeholder="District 306 A2" />
@@ -42,7 +42,7 @@ export function CreateDistrictForm() {
         <Label htmlFor="district-code">Code</Label>
         <Input id="district-code" name="code" required placeholder="306A2" />
       </div>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
         {pending && <Spinner />}
         Create district
       </Button>
@@ -84,7 +84,7 @@ export function InviteDistrictAdminForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="invite-district">District</Label>
         <Select
@@ -119,7 +119,11 @@ export function InviteDistrictAdminForm({
         <Label htmlFor="invite-name">Name</Label>
         <Input id="invite-name" name="name" />
       </div>
-      <Button type="submit" disabled={pending || clubs.length === 0}>
+      <Button
+        type="submit"
+        className="w-full sm:w-auto"
+        disabled={pending || clubs.length === 0}
+      >
         {pending && <Spinner />}
         Send invite
       </Button>

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   CertificateStatus,
   ClubType,
-  PlanTier,
   TemplateKind,
   TemplateStatus,
   UserRole,

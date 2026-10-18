@@ -56,7 +56,7 @@ export function EditEventForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="mt-3 space-y-3 rounded-xl border border-border bg-muted/30 p-3"
+      className="mt-2 space-y-2 rounded-md border border-border bg-muted/30 p-3"
     >
       <div className="space-y-2">
         <Label htmlFor={`name-${event.id}`}>Name</Label>

@@ -209,7 +209,7 @@ export function CsvImportForm({
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           className={cn(
-            "rounded-xl border border-dashed px-4 py-6 text-center transition-colors",
+            "rounded-md border border-dashed px-4 py-6 text-center transition-colors",
             dragOver
               ? "border-primary bg-primary/5"
               : "border-border bg-muted/20",
@@ -222,7 +222,7 @@ export function CsvImportForm({
             Max 500 rows · 2 MB · first sheet for Excel
           </p>
           <label className="mt-3 inline-flex cursor-pointer">
-            <span className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">
+              <span className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">
               Browse files
             </span>
             <input
@@ -245,7 +245,7 @@ export function CsvImportForm({
       </div>
 
       {preview && (
-        <div className="space-y-3 rounded-xl border border-border p-3">
+        <div className="space-y-2 rounded-md border border-border p-3">
           <p className="text-sm font-medium">
             {preview.needsMapping
               ? "Map columns"
@@ -266,7 +266,7 @@ export function CsvImportForm({
                   {field.required ? " *" : ""}
                 </span>
                 <select
-                  className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+                  className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm"
                   value={preview.mapping[field.key] ?? ""}
                   onChange={(e) => setField(field.key, e.target.value)}
                 >
@@ -284,7 +284,7 @@ export function CsvImportForm({
       )}
 
       {rowErrors.length > 0 && (
-        <ul className="max-h-40 space-y-1 overflow-auto rounded-lg bg-danger-muted p-3 text-xs text-danger">
+        <ul className="max-h-40 space-y-1 overflow-auto rounded-md bg-danger-muted p-3 text-xs text-danger">
           {rowErrors.map((err) => (
             <li key={`${err.rowNumber}-${err.message}`}>
               Row {err.rowNumber}: {err.message}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ScrollText } from "lucide-react";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -53,13 +54,12 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Audit log</h1>
-        <p className="mt-1 text-muted-foreground">
-          History of issue, revoke, reissue, and template edits. Rows are not deleted.
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Club workspace"
+        title="Audit log"
+        description="A durable history of issue, revoke, reissue, and template activity."
+      />
       <Card>
         <CardHeader>
           <CardTitle>Recent activity</CardTitle>
@@ -111,11 +111,11 @@ export default async function AdminAuditPage({ searchParams }: PageProps) {
                   </TableBody>
                 </Table>
               </div>
-              <ul className="space-y-3 sm:hidden">
+              <ul className="space-y-2 sm:hidden">
                 {logs.map((log) => (
                   <li
                     key={log.id}
-                    className="rounded-xl border border-border p-4 text-sm"
+                    className="rounded-md border border-border p-4 text-sm"
                   >
                     <p className="font-medium">
                       {formatAuditAction(log.action)}{" "}

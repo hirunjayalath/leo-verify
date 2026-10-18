@@ -41,7 +41,7 @@ export function ClubSwitcher({
 
   if (variant === "sidebar") {
     return (
-      <div className="mb-3 space-y-1.5 px-1">
+      <div className="mb-2 space-y-1.5 px-1">
         <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
           Work as
         </p>
@@ -65,7 +65,7 @@ export function ClubSwitcher({
 
   return (
     <form
-      className="space-y-3"
+      className="space-y-2"
       onSubmit={(event) => {
         event.preventDefault();
         applyClub(String(new FormData(event.currentTarget).get("clubId") ?? ""));

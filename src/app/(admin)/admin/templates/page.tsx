@@ -25,6 +25,7 @@ import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { getCachedGalleryPresets } from "@/lib/cache/safe-cache";
 import { prisma } from "@/lib/db";
 import { DuplicateTemplateButton } from "@/components/admin/duplicate-template-button";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 
 export default async function AdminTemplatesPage() {
   const user = await requireClubAdmin();
@@ -52,16 +53,12 @@ export default async function AdminTemplatesPage() {
   const isPublicOrg = club.type === "public";
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
-        <p className="mt-1 text-muted-foreground">
-          Upload a background and place the name, role, and other fields on it.
-          {isPublicOrg
-            ? " Public-organization templates start as drafts until district approval."
-            : " Leo club templates are approved on create so you can issue immediately."}
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Certificate design"
+        title="Templates"
+        description={`Upload a background and place the name, role, and other fields on it. ${isPublicOrg ? "Public-organization templates start as drafts until district approval." : "Leo club templates are approved on create so you can issue immediately."}`}
+      />
 
       <Card>
         <CardHeader>
@@ -188,11 +185,11 @@ export default async function AdminTemplatesPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <ul className="space-y-3 sm:hidden">
+                <ul className="space-y-2 sm:hidden">
                   {templates.map((template) => (
                     <li
                       key={template.id}
-                      className="flex items-center justify-between gap-4 rounded-xl border border-border p-4"
+                      className="flex items-center justify-between gap-4 rounded-md border border-border p-4"
                     >
                       <div>
                         <p className="font-medium">{template.name}</p>

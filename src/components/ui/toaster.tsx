@@ -11,7 +11,7 @@ export function Toaster() {
       toastOptions={{
         classNames: {
           toast:
-            "border border-border bg-card text-card-foreground shadow-float",
+            "rounded-none border border-border bg-card text-card-foreground shadow-float",
         },
       }}
     />

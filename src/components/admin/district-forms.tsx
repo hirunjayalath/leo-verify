@@ -35,7 +35,7 @@ export function CreateClubForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-2">
       <div className="space-y-2">
         <Label htmlFor="club-name">Club name</Label>
         <Input id="club-name" name="name" required />
@@ -77,7 +77,7 @@ export function InviteAdminForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-2">
       <p className="text-sm text-muted-foreground">
         We email them an invite to sign in as club admin. If they already have
         an account, they can sign in with this email.

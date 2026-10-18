@@ -6,6 +6,7 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { DistrictCharts } from "@/components/admin/district-charts";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import {
   CreateClubForm,
   InviteAdminForm,
@@ -161,7 +162,7 @@ export default async function DistrictAdminPage() {
       label: "Events",
       value: events,
       icon: CalendarDays,
-      tint: "bg-accent/20 text-accent",
+      tint: "bg-muted text-foreground",
     },
     {
       label: "Certificates issued",
@@ -178,16 +179,12 @@ export default async function DistrictAdminPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          District overview
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          {user.district?.name ?? "Your district"}. Add clubs and review public
-          organization templates. Leo club templates are approved on create.
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="District workspace"
+        title="District overview"
+        description={`${user.district?.name ?? "Your district"}. Add clubs and review public organization templates. Leo club templates are approved on create.`}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
@@ -341,7 +338,7 @@ export default async function DistrictAdminPage() {
                 {pendingTemplates.map((template) => (
                   <li
                     key={template.id}
-                    className="rounded-xl border border-border p-4"
+                    className="rounded-md border border-border p-4"
                   >
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{template.name}</p>

@@ -1,5 +1,6 @@
 import { requireUomPlatformAdmin } from "@/lib/auth";
 import { getPlatformClubReport } from "@/lib/orgs/platform";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import {
   Card,
   CardContent,
@@ -21,13 +22,12 @@ export default async function ReportsPage() {
   const rows = await getPlatformClubReport();
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-        <p className="mt-1 text-muted-foreground">
-          Counts only. Recipient names and emails are not included.
-        </p>
-      </div>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Platform operations"
+        title="Reports"
+        description="Club activity counts only. Recipient names and emails are not included."
+      />
       <Card>
         <CardHeader>
           <CardTitle>Club activity</CardTitle>

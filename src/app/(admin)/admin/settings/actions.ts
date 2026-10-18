@@ -22,7 +22,7 @@ export async function updateClubBrandingAction(
     tagline: formData.get("tagline") || "",
     publicSlug: formData.get("publicSlug") || "",
     primaryColor: formData.get("primaryColor") || "#323232",
-    accentColor: formData.get("accentColor") || "#38a3e3",
+    accentColor: formData.get("accentColor") || "#374151",
   });
   if (!parsed.success) {
     return fail(parsed.error.issues[0]?.message ?? "Invalid input");

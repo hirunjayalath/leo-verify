@@ -15,6 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  AdminPageHeader,
+  AdminSectionHeading,
+  AdminStatCard,
+} from "@/components/admin/admin-ui";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -174,7 +179,7 @@ export default async function AdminDashboardPage() {
       value: issuedThisMonth,
       hint: `Monthly quota ${club.monthlyCertLimit}`,
       icon: FileUp,
-      tint: "bg-accent/20 text-accent",
+      tint: "bg-muted text-foreground",
       href: "/admin/issue",
     },
     {
@@ -216,19 +221,23 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Issue and manage certificates for{" "}
-          {(user.club?.name ?? "your club").trim()}.
-        </p>
-      </div>
+    <div className="space-y-12 animate-fade-up">
+      <AdminPageHeader
+        eyebrow={user.club?.name ?? "Club workspace"}
+        title="Dashboard"
+        description="Keep your certificate program moving from one place."
+        action={
+          <Link
+            href="/admin/issue"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/85"
+          >
+            Issue certificate
+          </Link>
+        }
+      />
 
       {needsOnboarding && (
-        <Card className="border-accent/40 bg-accent/5">
+        <Card className="border-x-0 border-border bg-transparent">
           <CardHeader>
             <CardTitle>Get started in three steps</CardTitle>
             <CardDescription>
@@ -241,9 +250,9 @@ export default async function AdminDashboardPage() {
                 <li key={step.n}>
                   <Link
                     href={step.href}
-                    className="block h-full rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted"
+                    className="block h-full border border-border bg-card/60 p-5 transition-colors hover:bg-muted"
                   >
-                    <span className="font-mono text-sm font-semibold text-accent">
+                    <span className="font-mono text-sm font-semibold text-foreground">
                       {step.n}
                     </span>
                     <p className="mt-2 font-medium">{step.title}</p>
@@ -259,7 +268,7 @@ export default async function AdminDashboardPage() {
       )}
 
       {!needsOnboarding && certificatesIssued === 0 && (
-        <Card className="border-accent/40 bg-accent/5">
+        <Card className="border-x-0 border-border bg-transparent">
           <CardHeader>
             <CardTitle>First-issue checklist</CardTitle>
             <CardDescription>
@@ -273,10 +282,10 @@ export default async function AdminDashboardPage() {
                 <li key={step.n}>
                   <Link
                     href={step.href}
-                    className="block h-full rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted"
+                    className="block h-full border border-border bg-card/60 p-5 transition-colors hover:bg-muted"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-sm font-semibold text-accent">
+                      <span className="font-mono text-sm font-semibold text-foreground">
                         {step.n}
                       </span>
                       <span
@@ -301,41 +310,21 @@ export default async function AdminDashboardPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Link key={stat.label} href={stat.href} className="group">
-              <Card className="h-full transition-transform group-hover:-translate-y-0.5">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <CardDescription>{stat.label}</CardDescription>
-                    <span
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg ${stat.tint}`}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                  </div>
-                  <CardTitle className="text-3xl tabular-nums">
-                    {stat.value}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">{stat.hint}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          );
+          return <AdminStatCard key={stat.label} {...stat} />;
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-10 lg:grid-cols-[1.35fr_0.65fr]">
+        <Card className="border-x-0 bg-transparent">
           <CardHeader>
-            <CardTitle>This month</CardTitle>
-            <CardDescription>
-              Certificates issued this calendar month
-            </CardDescription>
+            <AdminSectionHeading
+              title="This month"
+              description="Certificate activity and club health"
+              href="/admin/certificates"
+              linkLabel="Open certificates"
+            />
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -373,10 +362,14 @@ export default async function AdminDashboardPage() {
             </Link>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-x-0 bg-transparent">
           <CardHeader>
-            <CardTitle>Top events</CardTitle>
-            <CardDescription>By issued certificates</CardDescription>
+            <AdminSectionHeading
+              title="Top events"
+              description="By issued certificates"
+              href="/admin/events"
+              linkLabel="View events"
+            />
           </CardHeader>
           <CardContent>
             {topEventRows.length === 0 ? (
@@ -400,11 +393,15 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <Card>
+      <div className="grid gap-10 lg:grid-cols-[1fr_280px]">
+        <Card className="border-x-0 bg-transparent">
           <CardHeader>
-            <CardTitle>Recent activity</CardTitle>
-            <CardDescription>Latest issue, revoke, and template edits for this club</CardDescription>
+            <AdminSectionHeading
+              title="Recent activity"
+              description="Latest issue, revoke, and template changes"
+              href="/admin/audit"
+              linkLabel="Open audit log"
+            />
           </CardHeader>
           <CardContent>
             {recentAudit.length === 0 ? (
@@ -443,10 +440,12 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-x-0 bg-transparent">
           <CardHeader>
-            <CardTitle>Quick actions</CardTitle>
-            <CardDescription>Common next steps</CardDescription>
+            <AdminSectionHeading
+              title="Quick actions"
+              description="Common next steps"
+            />
           </CardHeader>
           <CardContent className="grid gap-2">
             {actions.map((action) => {
@@ -455,7 +454,7 @@ export default async function AdminDashboardPage() {
                 <Link
                   key={action.label}
                   href={action.href}
-                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                  className="flex items-center gap-3 border-b border-border px-1 py-3 text-sm font-medium transition-colors hover:bg-muted"
                 >
                   <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
                   {action.label}

@@ -87,7 +87,7 @@ export function CertificatesTable({
       )}
 
       {/* Desktop table */}
-      <div className="hidden rounded-xl border border-border sm:block">
+      <div className="hidden overflow-hidden rounded-md border border-border sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,16 +154,16 @@ export function CertificatesTable({
       </div>
 
       {/* Mobile cards */}
-      <ul className="space-y-3 sm:hidden">
+      <ul className="space-y-2 sm:hidden">
         {filtered.length === 0 ? (
-          <li className="rounded-xl border border-border p-4 text-center text-sm text-muted-foreground">
+          <li className="rounded-md border border-border p-4 text-center text-sm text-muted-foreground">
             No matches{q ? ` for “${q}”` : ""}.
           </li>
         ) : (
           filtered.map((cert) => (
             <li
               key={cert.id}
-              className="rounded-xl border border-border bg-card p-4 shadow-elevated"
+              className="rounded-md border border-border bg-card p-4 shadow-elevated"
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="font-mono text-xs font-medium">{cert.uniqueId}</p>

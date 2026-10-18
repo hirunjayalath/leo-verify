@@ -56,8 +56,8 @@ export function GalleryCloneForm({
             onClick={() => setSelected(g.id)}
             className={
               selected === g.id
-                ? "overflow-hidden rounded-lg border-2 border-accent ring-2 ring-accent/30"
-                : "overflow-hidden rounded-lg border border-border hover:border-accent/50"
+                ? "overflow-hidden rounded-md border-2 border-primary ring-2 ring-primary/20"
+                : "overflow-hidden rounded-md border border-border hover:border-primary/50"
             }
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

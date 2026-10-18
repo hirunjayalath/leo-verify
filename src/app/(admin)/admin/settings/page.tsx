@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ClubBrandingForm } from "@/components/public/club-branding-form";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import { requireClubAdmin, withSessionRls } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
@@ -19,13 +20,12 @@ export default async function AdminSettingsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-muted-foreground">
-          Colors, logo, and public club page used on emails and check pages.
-        </p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Club workspace"
+        title="Settings"
+        description="Shape the club identity shown on public pages, emails, and certificate checks."
+      />
 
       <Card>
         <CardHeader>

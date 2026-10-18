@@ -42,7 +42,7 @@ export default async function AdminLayout({
   const hasClub = Boolean(user.clubId);
 
   return (
-    <div className="flex min-h-full flex-1 bg-background">
+    <div className="admin-shell flex h-screen min-h-0 flex-1 overflow-hidden bg-background">
       <AdminSidebar
         clubName={user.club?.name ?? user.district?.name}
         userEmail={user.email}
@@ -52,27 +52,29 @@ export default async function AdminLayout({
         showClubNav={hasClub}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-card/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between gap-4 border-b border-border/80 bg-background/95 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <AdminBreadcrumbs />
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium leading-none">
+              <p className="text-sm font-semibold leading-none">
                 {user.name || user.email}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                 {user.role === "district_admin" ? "District admin" : "Club admin"}
               </p>
             </div>
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-xs font-semibold text-accent"
+              className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground text-background text-xs font-semibold shadow-sm"
               aria-hidden
             >
               {chip}
             </span>
           </div>
         </header>
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</div>
+        <main className="admin-content min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+          <div className="admin-workspace mx-auto">{children}</div>
+        </main>
       </div>
     </div>
   );

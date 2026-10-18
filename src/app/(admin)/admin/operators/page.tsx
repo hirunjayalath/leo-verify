@@ -1,10 +1,12 @@
 import { requireUomPlatformAdmin } from "@/lib/auth";
 import { prismaService } from "@/lib/db";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
 import {
   CreateDistrictForm,
   DisableDistrictAdminButton,
   InviteDistrictAdminForm,
 } from "@/components/admin/operator-forms";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -39,12 +41,30 @@ export default async function OperatorsPage() {
   ]);
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Operators</h1>
-        <p className="mt-1 text-muted-foreground">
-          Only the UOM club admin can create and disable district admins.
-        </p>
+    <div className="space-y-10 animate-fade-up">
+      <AdminPageHeader
+        eyebrow="Platform operations"
+        title="Operators"
+        description="Create districts and manage the administrators who operate them."
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Card className="p-5 sm:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Districts
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {districts.length}
+          </p>
+        </Card>
+        <Card className="p-5 sm:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            District admins
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {admins.length}
+          </p>
+        </Card>
       </div>
 
       <Card>
@@ -59,36 +79,78 @@ export default async function OperatorsPage() {
           {admins.length === 0 ? (
             <p className="text-sm text-muted-foreground">None yet.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>District</TableHead>
-                  <TableHead>Club</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>District</TableHead>
+                      <TableHead>Club</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {admins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell className="font-medium">{admin.email}</TableCell>
+                        <TableCell>
+                          {admin.district?.name} ({admin.district?.code})
+                        </TableCell>
+                        <TableCell>{admin.club?.name ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={admin.disabledAt ? "muted" : "success"}>
+                            {admin.disabledAt ? "Disabled" : "Active"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {!admin.disabledAt && (
+                            <DisableDistrictAdminButton userId={admin.id} />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <ul className="space-y-3 md:hidden">
                 {admins.map((admin) => (
-                  <TableRow key={admin.id}>
-                    <TableCell>{admin.email}</TableCell>
-                    <TableCell>
-                      {admin.district?.name} ({admin.district?.code})
-                    </TableCell>
-                    <TableCell>{admin.club?.name ?? "—"}</TableCell>
-                    <TableCell>
-                      {admin.disabledAt ? "Disabled" : "Active"}
-                    </TableCell>
-                    <TableCell>
+                  <li
+                    key={admin.id}
+                    className="space-y-4 rounded-md border border-border p-4"
+                  >
+                    <div className="min-w-0">
+                      <p className="break-words font-medium">{admin.email}</p>
+                      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                            District
+                          </dt>
+                          <dd className="mt-1">
+                            {admin.district?.name} ({admin.district?.code})
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                            Club
+                          </dt>
+                          <dd className="mt-1">{admin.club?.name ?? "—"}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+                      <Badge variant={admin.disabledAt ? "muted" : "success"}>
+                        {admin.disabledAt ? "Disabled" : "Active"}
+                      </Badge>
                       {!admin.disabledAt && (
                         <DisableDistrictAdminButton userId={admin.id} />
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </li>
                 ))}
-              </TableBody>
-            </Table>
+              </ul>
+            </>
           )}
         </CardContent>
       </Card>

@@ -77,9 +77,9 @@ export function IssueWizard({
               type="button"
               onClick={() => setStep(Math.min(i, step))}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-medium",
+                "rounded-lg px-3 py-1.5 text-xs font-medium",
                 step === i
-                  ? "bg-brand text-brand-foreground"
+                  ? "bg-foreground text-background"
                   : "bg-muted text-muted-foreground",
               )}
             >
@@ -156,7 +156,7 @@ export function IssueWizard({
             </Button>
           </div>
           {mode === "one" ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="space-y-2">
                 <Label htmlFor="recipientName">Recipient name</Label>
                 <Input
@@ -214,7 +214,7 @@ export function IssueWizard({
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <CsvImportForm
                 events={events.filter((e) => e.id === eventId)}
               />
@@ -228,7 +228,7 @@ export function IssueWizard({
 
       {step === 2 && mode === "one" && (
         <form onSubmit={onIssueOne} className="space-y-4">
-          <div className="rounded-xl border border-border p-4 text-sm">
+          <div className="rounded-md border border-border bg-muted/25 p-4 text-sm">
             <p>
               <span className="text-muted-foreground">Event:</span>{" "}
               {events.find((e) => e.id === eventId)?.name}

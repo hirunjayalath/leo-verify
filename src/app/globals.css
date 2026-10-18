@@ -33,6 +33,8 @@
   /* Charcoal chrome for admin/auth */
   --brand: #18181b;
   --brand-foreground: #ffffff;
+  --admin-rail: #181818;
+  --admin-rail-foreground: #f8f8f8;
   --ring: #ea580c;
   --radius: 1rem;
   --radius-sm: 0.625rem;
@@ -73,6 +75,8 @@ html.dark {
   --info-muted: #431407;
   --brand: #1b1913;
   --brand-foreground: #edecec;
+  --admin-rail: #101010;
+  --admin-rail-foreground: #f5f5f5;
   --ring: #ea580c;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   --shadow-md: 0 6px 18px -2px rgba(0, 0, 0, 0.5);
@@ -136,6 +140,8 @@ html.dark .auth-brand-panel {
   --color-info-muted: var(--info-muted);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-admin-rail: var(--admin-rail);
+  --color-admin-rail-foreground: var(--admin-rail-foreground);
   --color-ring: var(--ring);
   --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
@@ -181,6 +187,77 @@ body {
   color: var(--foreground);
   font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
+/* Admin workspace tokens stay local so public and auth surfaces keep their existing palette. */
+.admin-shell {
+  --background: #eeeeec;
+  --foreground: #1a1a19;
+  --card: #f8f8f6;
+  --card-foreground: #1a1a19;
+  --muted: #e4e4e1;
+  --muted-foreground: #686865;
+  --border: #cfcfcb;
+  --primary: #1c1c1c;
+  --primary-foreground: #ffffff;
+  --accent: #333333;
+  --accent-foreground: #ffffff;
+  --admin-rail: #181818;
+  --admin-rail-foreground: #f8f8f8;
+  --ring: #333333;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+html.dark .admin-shell {
+  --background: #141414;
+  --foreground: #f5f5f5;
+  --card: #1b1b1b;
+  --card-foreground: #f5f5f5;
+  --muted: #262626;
+  --muted-foreground: #a6a6a2;
+  --border: #383836;
+  --primary: #f5f7f9;
+  --primary-foreground: #151515;
+  --accent: #c7c7c7;
+  --accent-foreground: #151515;
+  --success: #d0d0cc;
+  --success-muted: #2a2a28;
+  --danger: #d0d0cc;
+  --danger-muted: #2a2a28;
+  --info: #d0d0cc;
+  --info-muted: #2a2a28;
+  --admin-rail: #101010;
+  --admin-rail-foreground: #f5f5f5;
+  --ring: #c7c7c7;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.admin-shell :is(input, select, textarea, button, a):focus-visible {
+  outline-color: var(--ring);
+}
+
+.admin-shell .admin-content {
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
+}
+
+.admin-shell .admin-workspace {
+  width: min(100%, 1440px);
+}
+
+.admin-shell .admin-content {
+  background-color: transparent;
+}
+
+.admin-shell .admin-rule {
+  border-color: color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+
 
 :focus-visible {
   outline: 2px solid var(--ring);
