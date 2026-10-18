@@ -1,0 +1,86 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test & Verify
+    runs-on: ubuntu-24.04
+    env:
+      CI: true
+      CERT_HMAC_SECRET: ${{ secrets.CERT_HMAC_SECRET || 'ci-hmac-secret-at-least-32-characters-long' }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://leoverify_app:ci-app-pass@localhost:5432/postgres' }}
+      SERVICE_DATABASE_URL: ${{ secrets.SERVICE_DATABASE_URL || 'postgresql://leoverify_service:ci-service-pass@localhost:5432/postgres' }}
+      DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Test Suite
+        run: npm test
+
+  deploy:
+    name: Deploy to Vercel Production
+    needs: test
+    runs-on: ubuntu-24.04
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Validate Vercel Credentials
+        id: check-credentials
+        run: |
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ] || [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "::error ::Missing VERCEL_TOKEN or VERCEL_PROJECT_ID secrets."
+            echo "To enable automated Vercel deployment, please add the following secrets to GitHub:"
+            echo "  1. VERCEL_TOKEN (from https://vercel.com/account/tokens)"
+            echo "  2. VERCEL_PROJECT_ID (from Project Settings -> General)"
+            echo "  3. VERCEL_ORG_ID (from Project Settings -> General or Team Settings)"
+            exit 1
+          fi
+
+      - name: Pull Vercel Environment Information
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        id: deploy
+        run: |
+          DEPLOYMENT_URL=$(npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "### 🚀 Vercel Production Deployment Succeeded!" >> $GITHUB_STEP_SUMMARY
+          echo "Production URL: $DEPLOYMENT_URL" >> $GITHUB_STEP_SUMMARY

@@ -14,7 +14,10 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate-deploy": "prisma db execute --file supabase/auth-uid-stub.sql --config prisma7.config.ts && prisma migrate deploy --config prisma7.config.ts",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:demo": "npx tsx prisma/demo-showcase.ts"
+    "db:demo": "npx tsx prisma/demo-showcase.ts",
+    "postinstall": "prisma generate",
+    "sync:github": "node scripts/sync-secrets-to-github.mjs",
+    "sync:vercel": "node scripts/sync-env-to-vercel.mjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
