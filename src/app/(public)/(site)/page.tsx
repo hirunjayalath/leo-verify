@@ -7,17 +7,13 @@ import {
   Shield,
   UserCheck,
 } from "lucide-react";
+import { HomeEditorialHero } from "@/components/public/home-editorial";
+import { HomeJourneyMark } from "@/components/public/home-journey-mark";
 import { HomeFeaturesShowcase } from "@/components/public/home-features-showcase";
-import {
-  HomeQuickPathCard,
-  type HomeQuickPathItem,
-} from "@/components/public/home-quick-path-card";
+import type { HomeQuickPathItem } from "@/components/public/home-quick-path-card";
+import { HomeQuickPathsSection } from "@/components/public/home-quick-paths-section";
 import type { JourneyCardItem } from "@/components/public/home-journey-illustration-card";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { CredentialMark } from "@/components/ui/credential-mark";
 import { VerifyForm } from "@/components/verify/verify-form";
-import { cn } from "@/lib/utils";
 
 const journey: JourneyCardItem[] = [
   {
@@ -63,13 +59,6 @@ const trustStrip = [
     title: "No account needed",
     body: "Public verification stays open for everyone.",
   },
-];
-
-const resourceLinks = [
-  { href: "/about", label: "Security whitepaper" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/how-it-works", label: "Issuing guide" },
-  { href: "/login", label: "Admin sign in" },
 ];
 
 const quickPaths: HomeQuickPathItem[] = [
@@ -135,140 +124,104 @@ function JsonLd() {
 
 export default function HomePage() {
   return (
-    <div>
+    <div className="home-editorial">
       <JsonLd />
 
-      <section className="surface-hero relative overflow-hidden pt-12 pb-20 sm:pt-16 sm:pb-28">
-        <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
-          <div className="flex flex-col items-center text-center">
-            <CredentialMark size="md" className="mb-6" />
-
-            <Badge
-              variant="accent"
-              className="mb-4 normal-case tracking-normal text-xs font-medium"
-            >
-              Leo Club of University of Moratuwa · District 306 A2
-            </Badge>
-
-            <h1 className="display-title text-3xl font-semibold text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
-              Verify credentials with{" "}
-              <span className="text-accent">total certainty.</span>
-            </h1>
-            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Live database verification backed by cryptographic HMAC signatures.
-              The website is the authentic record, not the static PDF.
+      <HomeEditorialHero>
+        <div className="flex w-full min-w-0 flex-col">
+          <div className="min-w-0 pr-[3.5rem] sm:pr-[4.75rem]">
+            <p className="text-[10px] font-medium leading-snug tracking-wide text-[var(--he-muted)] sm:text-[11px]">
+              Leo Club of University of Moratuwa
+              <span className="hidden sm:inline"> · </span>
+              <span className="block sm:inline">District 306 A2</span>
             </p>
-
-            <div className="mt-8 w-full max-w-2xl">
-              <VerifyForm layout="prompt" />
-            </div>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[var(--he-fg)] sm:mt-1 sm:text-2xl md:text-3xl">
+              Verify credentials with certainty.
+            </h2>
           </div>
-
-          <div className="mx-auto mt-10 max-w-3xl">
-            <div className="mb-3 flex flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/75">
-                Get started with an action below
-              </span>
-              <span className="text-[11px] text-muted-foreground/60">
-                Instant check · No sign-in
-              </span>
-            </div>
-            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {quickPaths.map((item) => (
-                <div key={item.title} className="min-w-0">
-                  <HomeQuickPathCard item={item} />
-                </div>
-              ))}
-            </div>
+          <div className="mt-4 w-full sm:mt-6">
+            <VerifyForm layout="prompt" variant="editorial" />
           </div>
+          <p className="mt-2 text-right text-[10px] text-[var(--he-muted)] sm:mt-3 sm:text-xs">
+            Instant check · No sign-in
+          </p>
         </div>
-      </section>
+      </HomeEditorialHero>
 
-      <section
-        id="features"
-        className="scroll-mt-24 border-t border-border/60 bg-muted/20 py-16 sm:py-20"
-      >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="max-w-2xl">
-            <span className="caption-caps text-accent">System architecture</span>
-            <h2 className="mt-1 heading-title text-2xl font-semibold text-foreground sm:text-3xl">
+      <div className="flex flex-col gap-12 pb-16 sm:gap-20 sm:pb-24 md:gap-24 md:pb-28">
+        <HomeQuickPathsSection items={quickPaths} />
+
+        <section id="features" className="scroll-mt-24 border-t border-[var(--he-line)]">
+          <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 md:py-24">
+            <p className="text-xs text-[var(--he-muted)]">System architecture</p>
+            <h2 className="mt-3 max-w-2xl text-2xl font-medium tracking-tight text-[var(--he-fg)] sm:text-3xl md:text-4xl">
               From template to live check in five steps
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--he-muted)]">
               Designed for club administrators and recipients to verify
               achievements with complete confidence.
             </p>
-          </div>
-
-          <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            {trustStrip.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li
-                  key={item.title}
-                  className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/80 px-4 py-3.5 shadow-sm"
-                >
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">
+            <ul className="mt-8 grid grid-cols-1 gap-3 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+              {trustStrip.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li
+                    key={item.title}
+                    className="home-editorial-trust-card flex flex-col items-start border border-[var(--he-line)] bg-[var(--he-panel)] px-5 py-7 sm:px-8 sm:py-10"
+                  >
+                    <Icon
+                      className="size-8 text-[var(--he-fg)]"
+                      aria-hidden="true"
+                      strokeWidth={1.25}
+                    />
+                    <p className="mt-6 text-base font-medium text-[var(--he-fg)]">
                       {item.title}
                     </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    <span className="mt-3 h-px w-8 bg-[var(--he-line-strong)]" aria-hidden="true" />
+                    <p className="mt-3 text-sm leading-relaxed text-[var(--he-muted)]">
                       {item.body}
                     </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-10">
-            <HomeFeaturesShowcase items={journey} />
+                  </li>
+                );
+              })}
+            </ul>
           </div>
+          <HomeFeaturesShowcase items={journey} variant="editorial" />
+        </section>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            {resourceLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-border/60 bg-muted/20 py-12 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div
-            className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-border/80 bg-card p-8 shadow-card sm:flex-row sm:items-center sm:p-10"
-          >
-            <div>
-              <p className="caption-caps text-accent">Ready to verify?</p>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                Issue tamper-proof certificates for your club.
-              </h2>
-              <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                Create a custom template, import your member roster, and
-                distribute authenticated credentials.
-              </p>
+        <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="grid overflow-hidden border border-[var(--he-line)] lg:grid-cols-[1fr_16rem]">
+            <div className="home-editorial-panel flex flex-col items-start gap-6 px-5 py-10 sm:flex-row sm:items-center sm:gap-8 sm:px-8 sm:py-12 md:px-12 md:py-16">
+              <HomeJourneyMark
+                step="01"
+                className="h-24 w-32 shrink-0 sm:h-32 sm:w-40 md:h-40 md:w-48"
+              />
+              <div>
+                <p className="text-xs text-[var(--he-muted)]">Ready to verify?</p>
+                <h2 className="mt-2 max-w-lg text-xl font-medium tracking-tight text-[var(--he-fg)] sm:mt-3 sm:text-2xl md:text-3xl">
+                  Issue tamper-proof certificates for your club.
+                </h2>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--he-muted)]">
+                  Create a custom template, import your member roster, and
+                  distribute authenticated credentials.
+                </p>
+              </div>
             </div>
             <Link
               href="/signup"
-              className={cn(
-                buttonVariants({ variant: "accent", size: "lg" }),
-                "shrink-0",
-              )}
+              className="home-editorial-tile home-editorial-tile-dark group flex min-h-[5.5rem] flex-row items-center justify-center gap-4 px-6 py-8 text-center transition-opacity hover:opacity-95 sm:min-h-[8rem] lg:min-h-[12rem] lg:flex-col lg:gap-0 lg:px-8 lg:py-12"
             >
-              Create organization
+              <span className="text-sm font-medium tracking-wide text-white">
+                Create organization
+              </span>
+              <span
+                className="mt-3 h-px w-8 bg-white/70 transition-all group-hover:w-12"
+                aria-hidden="true"
+              />
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

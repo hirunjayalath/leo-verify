@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AuthShell } from "@/components/public/auth-shell";
+import {
+  AuthShell,
+  AuthShellFootnote,
+  AuthShellLink,
+} from "@/components/public/auth-shell";
 import { ClaimForm } from "@/components/public/claim-form";
 import { RecipientSignOut } from "@/components/public/recipient-sign-out";
 import { getRecipientDashboard } from "@/app/(public)/(auth)/claim/actions";
@@ -35,19 +39,17 @@ export default async function ClaimPage() {
       <AuthShell
         title="Claim your certificates"
         description="Sign in with the email on your certificates. They stay on a private profile unless you publish it."
+        asideLabel="Claim"
+        illustration="verify"
       >
         <ClaimForm authEmail={null} initialSettings={null} />
-        <p className="mt-5 text-center text-sm text-muted-foreground">
+        <AuthShellFootnote>
           Club admin?{" "}
-          <Link href="/login" className="font-medium underline-offset-4 hover:underline">
-            Sign in to dashboard
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-sm text-muted-foreground">
-          <Link href="/" className="underline-offset-4 hover:underline">
-            Back to home
-          </Link>
-        </p>
+          <AuthShellLink href="/login">Sign in to dashboard</AuthShellLink>
+        </AuthShellFootnote>
+        <AuthShellFootnote className="mt-2">
+          <AuthShellLink href="/">Back to home</AuthShellLink>
+        </AuthShellFootnote>
       </AuthShell>
     );
   }

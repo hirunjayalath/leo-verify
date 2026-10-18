@@ -1,5 +1,8 @@
-import Link from "next/link";
-import { AuthShell } from "@/components/public/auth-shell";
+import {
+  AuthShell,
+  AuthShellFootnote,
+  AuthShellLink,
+} from "@/components/public/auth-shell";
 import { SignupForm } from "@/components/public/signup-form";
 import { getSupabaseAuthUser } from "@/lib/auth";
 
@@ -10,19 +13,18 @@ export default async function SignupPage() {
     <AuthShell
       title="Create an organization"
       description="Create a club account. Design templates, issue certificates, and put a check page online."
+      asideLabel="Sign up"
+      illustration="register"
     >
       <SignupForm signedInEmail={auth?.email ?? null} />
-      <p className="mt-5 text-center text-sm text-muted-foreground">
+      <AuthShellFootnote>
         Already have an account?{" "}
-        <Link href="/login" className="font-medium underline-offset-4 hover:underline">
-          Sign in
-        </Link>
-      </p>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        <Link href="/" className="underline-offset-4 hover:underline">
-          Back to home
-        </Link>
-      </p>
+        <AuthShellLink href="/login">Sign in</AuthShellLink>
+      </AuthShellFootnote>
+      <AuthShellFootnote className="mt-2">
+        Recipient only?{" "}
+        <AuthShellLink href="/login?mode=signup">Create a recipient account</AuthShellLink>
+      </AuthShellFootnote>
     </AuthShell>
   );
 }

@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useTransition } from "react";
 import { toast } from "sonner";
 import { signupPublicOrgAction } from "@/app/(public)/(auth)/signup/actions";
-import { Button } from "@/components/ui/button";
+import {
+  authEditorialFieldClass,
+  authEditorialSubmitClass,
+} from "@/components/public/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
@@ -39,15 +42,13 @@ export function SignupForm({
 
   if (!signedInEmail) {
     return (
-      <div className="space-y-4 rounded-xl border border-border bg-muted/40 p-4">
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-4 border border-[var(--he-line)] bg-[var(--he-panel)] p-4">
+        <p className="text-sm leading-relaxed text-[var(--he-muted)]">
           Sign in first. Your signed-in email becomes the organization admin. We
           do not accept a pasted Auth user id.
         </p>
-        <Link href="/login?next=/signup">
-          <Button type="button" variant="brand" size="lg" className="w-full">
-            Sign in to continue
-          </Button>
+        <Link href="/login?next=/signup" className={authEditorialSubmitClass}>
+          Sign in to continue
         </Link>
       </div>
     );
@@ -55,27 +56,54 @@ export function SignupForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+      <div className="border border-[var(--he-line)] bg-[var(--he-panel)] px-3 py-2.5 text-sm text-[var(--he-muted)]">
         Admin email (from session):{" "}
-        <span className="font-medium text-foreground">{signedInEmail}</span>
+        <span className="font-medium text-[var(--he-fg)]">{signedInEmail}</span>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="orgName">Organization name</Label>
-        <Input id="orgName" name="orgName" autoFocus required />
+        <Label htmlFor="orgName" className="text-[var(--he-muted)]">
+          Organization name
+        </Label>
+        <Input
+          id="orgName"
+          name="orgName"
+          autoFocus
+          required
+          className={authEditorialFieldClass}
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="orgCode">Short code</Label>
-        <Input id="orgCode" name="orgCode" required placeholder="ACME" />
+        <Label htmlFor="orgCode" className="text-[var(--he-muted)]">
+          Short code
+        </Label>
+        <Input
+          id="orgCode"
+          name="orgCode"
+          required
+          placeholder="ACME"
+          className={authEditorialFieldClass}
+        />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="adminName">Admin name</Label>
-        <Input id="adminName" name="adminName" required />
+        <Label htmlFor="adminName" className="text-[var(--he-muted)]">
+          Admin name
+        </Label>
+        <Input
+          id="adminName"
+          name="adminName"
+          required
+          className={authEditorialFieldClass}
+        />
       </div>
 
-      <Button type="submit" variant="brand" size="lg" className="w-full" disabled={pending}>
+      <button
+        type="submit"
+        className={authEditorialSubmitClass}
+        disabled={pending}
+      >
         {pending && <Spinner />}
         {pending ? "Creating…" : "Create organization"}
-      </Button>
+      </button>
     </form>
   );
 }

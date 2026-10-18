@@ -1,98 +1,181 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Sparkles } from "lucide-react";
-import { BrandLockup } from "@/components/public/brand-logo";
-import { CredentialMark } from "@/components/ui/credential-mark";
+import type { ComponentProps } from "react";
+import { HomeLoginIllustration } from "@/components/public/home-login-illustration";
+import { HomeRegisterIllustration } from "@/components/public/home-register-illustration";
+import { HomeVerifyIllustration } from "@/components/public/home-verify-illustration";
+import { cn } from "@/lib/utils";
+
+function GridMark() {
+  return (
+    <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
+      <span className="size-2 bg-[var(--he-fg)]" />
+      <span className="size-2 bg-[var(--he-fg)]" />
+      <span className="size-2 bg-[var(--he-fg)]" />
+      <span className="size-2 bg-[var(--he-fg)]" />
+    </span>
+  );
+}
 
 export function AuthShell({
   title,
   description,
   children,
+  asideLabel = "Account access",
+  illustration = "register",
 }: {
   title: string;
   description: string;
   children: React.ReactNode;
+  asideLabel?: string;
+  illustration?: "verify" | "register" | "login";
 }) {
+  const AsideIllustration =
+    illustration === "login"
+      ? HomeLoginIllustration
+      : illustration === "register"
+        ? HomeRegisterIllustration
+        : HomeVerifyIllustration;
+
   return (
-    <div className="grid min-h-screen flex-1 lg:grid-cols-12 bg-background">
-      {/* Brand Hero Panel */}
-      <aside className="auth-brand-panel relative hidden overflow-hidden text-white lg:col-span-5 lg:flex lg:flex-col lg:justify-between lg:p-14">
-        {/* Ambient specular highlight */}
-        <div
-          className="pointer-events-none absolute -left-12 -top-12 h-96 w-96 rounded-full bg-accent/20 blur-3xl"
-          aria-hidden
-        />
-
-        <div className="relative">
-          <Link href="/" className="inline-flex transition-opacity hover:opacity-90">
-            <BrandLockup
-              size={36}
-              wordmarkClassName="text-white"
-              priority
-            />
-          </Link>
-
-          <div className="mt-16">
-            <CredentialMark size="sm" className="mb-6" />
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-md">
-              <Sparkles className="h-3 w-3" />
-              <span>District 306 A2 Security Standard</span>
-            </div>
-            <h1 className="mt-4 font-display text-3xl font-semibold tracking-[-0.03em] leading-snug text-white/95 xl:text-4xl">
-              Cryptographic integrity for every credential.
-            </h1>
-            <p className="mt-4 text-sm leading-relaxed text-white/70">
-              The live online database is the ground truth. No forged PDF or
-              tampered printout can falsify the record.
-            </p>
-          </div>
-        </div>
-
-        <div className="relative border-t border-white/10 pt-8">
-          <ul className="space-y-3.5 text-xs font-medium text-white/80">
-            {[
-              "Zero-account public verification via QR code",
-              "PostgreSQL Row-Level Security (RLS) tenant isolation",
-              "Idempotent CSV and Excel roster imports",
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-2.5">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </aside>
-
-      {/* Form Content Side */}
-      <div className="flex items-center justify-center px-4 py-12 sm:px-8 lg:col-span-7 lg:py-16 bg-muted/20">
-        <div className="w-full max-w-md animate-fade-up">
-          <div className="mb-6 flex items-center justify-between">
+    <div className="home-editorial w-full flex-1">
+      <section
+        className="border-b border-[var(--he-line)]"
+        aria-labelledby="auth-shell-title"
+      >
+        <div className="flex w-full flex-col lg:flex-row">
+          <div
+            className="home-editorial-panel flex flex-row items-center justify-between gap-4 border-b border-[var(--he-line)] px-4 py-3 lg:hidden"
+          >
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground shadow-xs"
+              className="inline-flex shrink-0 p-1 transition-opacity hover:opacity-70"
+              aria-label="LeoVerify home"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to home</span>
+              <GridMark />
             </Link>
-            <div className="lg:hidden">
-              <BrandLockup size={28} priority />
+            <p className="text-xs font-medium text-[var(--he-muted)]">{asideLabel}</p>
+          </div>
+
+          <div
+            className="home-editorial-panel hidden shrink-0 flex-col items-center justify-between border-b border-[var(--he-line)] px-0 py-8 lg:flex lg:w-14 lg:border-b-0 lg:border-r"
+          >
+            <Link
+              href="/"
+              className="inline-flex p-1 transition-opacity hover:opacity-70"
+              aria-label="LeoVerify home"
+            >
+              <GridMark />
+            </Link>
+            <p
+              className="text-[10px] font-medium tracking-[0.2em] text-[var(--he-muted)] [writing-mode:vertical-rl] rotate-180"
+            >
+              {asideLabel}
+            </p>
+            <span className="h-8 w-px bg-[var(--he-line-strong)]" aria-hidden="true" />
+          </div>
+
+          <div
+            className="grid min-w-0 flex-1 lg:grid-cols-2 lg:min-h-[min(40rem,calc(100svh-9rem))]"
+          >
+            <div
+              className="order-2 flex flex-col items-center border-b border-[var(--he-line)] bg-[var(--he-surface)] px-4 py-6 sm:px-6 sm:py-8 lg:order-1 lg:items-stretch lg:border-b-0 lg:border-r lg:py-12"
+            >
+              <div
+                className="flex w-full min-h-[8rem] items-center justify-center sm:min-h-[10rem] md:min-h-[12rem] lg:min-h-0 lg:flex-1 lg:[container-type:size]"
+              >
+                <AsideIllustration
+                  className="max-w-[min(100%,14rem)] sm:max-w-[16rem] lg:max-w-sm"
+                />
+              </div>
+              <p
+                className="mt-3 hidden max-w-[16rem] text-center text-[11px] leading-relaxed text-[var(--he-muted)] lg:mt-6 lg:block lg:max-w-xs lg:border-t lg:border-[var(--he-line)] lg:pt-5 lg:text-left"
+              >
+                Sign in to issue or claim certificates. Public verification
+                needs no account.
+              </p>
+            </div>
+
+            <div
+              className="home-editorial-panel order-1 flex min-h-[28rem] flex-col justify-center px-4 py-8 sm:min-h-[30rem] sm:px-6 sm:py-12 md:px-10 md:py-14 lg:order-2 lg:min-h-0 lg:px-12 lg:py-16"
+            >
+              <div className="mx-auto w-full max-w-md">
+                <p className="text-[11px] font-medium tracking-wide text-[var(--he-muted)]">
+                  LeoVerify
+                </p>
+                <h1
+                  id="auth-shell-title"
+                  className="mt-2 text-xl font-semibold tracking-tight text-[var(--he-fg)] sm:text-2xl md:text-3xl"
+                >
+                  {title}
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--he-muted)] sm:mt-3">
+                  {description}
+                </p>
+
+                <div
+                  className={cn(
+                    "auth-editorial-card mt-6 border border-[var(--he-line)] bg-[var(--he-surface)] p-4 sm:mt-8 sm:p-6 md:p-8",
+                  )}
+                >
+                  {children}
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold tracking-[-0.025em] text-foreground sm:text-3xl">
-              {title}
-            </h2>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-              {description}
-            </p>
-          </div>
-
-          <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-card sm:p-8">
-            {children}
-          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
+
+export function AuthShellFootnote({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      className={cn(
+        "auth-editorial-footnote mt-4 text-center text-xs leading-relaxed text-[var(--he-muted)] sm:mt-5 sm:text-sm",
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+const authInlineActionClass =
+  "font-medium text-[var(--he-fg)] underline-offset-4 transition-colors hover:text-[var(--he-muted)] hover:underline disabled:opacity-50";
+
+export function AuthShellLink({
+  children,
+  className,
+  ...props
+}: ComponentProps<typeof Link>) {
+  return (
+    <Link className={cn(authInlineActionClass, className)} {...props}>
+      {children}
+    </Link>
+  );
+}
+
+export function AuthShellInlineButton({
+  className,
+  ...props
+}: ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      className={cn(authInlineActionClass, className)}
+      {...props}
+    />
+  );
+}
+
+export const authEditorialSubmitClass =
+  "auth-editorial-submit inline-flex h-11 w-full items-center justify-center gap-2 text-sm font-medium text-white transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45";
+
+export const authEditorialFieldClass = "auth-editorial-field";

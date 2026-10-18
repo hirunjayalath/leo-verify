@@ -2,6 +2,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export const LEO_EMBLEM_SRC = "/brand/leo-emblem.png";
+export const CLUB_UOM_LOGO_SRC = "/club-leo-uom-logo.png";
 
 type BrandMarkProps = {
   size?: number;

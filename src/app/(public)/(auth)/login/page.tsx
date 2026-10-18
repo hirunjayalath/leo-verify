@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormEvent,
@@ -11,10 +10,17 @@ import {
 } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { AuthShell } from "@/components/public/auth-shell";
-import { Button } from "@/components/ui/button";
+import {
+  AuthShell,
+  AuthShellFootnote,
+  AuthShellInlineButton,
+  AuthShellLink,
+  authEditorialFieldClass,
+  authEditorialSubmitClass,
+} from "@/components/public/auth-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { continueHref } from "@/lib/auth-redirect";
@@ -52,7 +58,9 @@ function PasswordField({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <Label htmlFor={id}>{label}</Label>
+        <Label htmlFor={id} className="text-[var(--he-muted)]">
+          {label}
+        </Label>
         {extra}
       </div>
       <div className="relative">
@@ -65,11 +73,11 @@ function PasswordField({
           onChange={(e) => onChange(e.target.value)}
           required
           autoFocus={autoFocus}
-          className="pr-11"
+          className={cn(authEditorialFieldClass, "pr-11")}
         />
         <button
           type="button"
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[var(--he-muted)] hover:text-[var(--he-fg)]"
           onClick={() => setVisible((open) => !open)}
           aria-label={visible ? "Hide password" : "Show password"}
         >
@@ -222,19 +230,14 @@ function LoginForm() {
     }
   }
 
-  const title =
-    mode === "recovery"
-      ? "Choose a new password"
-      : mode === "signup"
-        ? "Create recipient account"
-        : "Sign in";
-
   return (
     <>
       <form onSubmit={onSubmit} className="space-y-4">
         {mode !== "recovery" && (
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-[var(--he-muted)]">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -244,6 +247,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className={authEditorialFieldClass}
             />
           </div>
         )}
@@ -258,14 +262,13 @@ function LoginForm() {
           autoFocus={mode === "recovery"}
           extra={
             mode === "signin" ? (
-              <button
-                type="button"
-                className="text-sm font-medium text-accent underline-offset-4 hover:underline disabled:opacity-50"
+              <AuthShellInlineButton
+                className="text-sm"
                 onClick={onForgotPassword}
                 disabled={resetting}
               >
                 {resetting ? "Sending…" : "Forgot password?"}
-              </button>
+              </AuthShellInlineButton>
             ) : undefined
           }
         />
@@ -278,11 +281,9 @@ function LoginForm() {
             onChange={setConfirmPassword}
           />
         )}
-        <Button
+        <button
           type="submit"
-          variant="brand"
-          size="lg"
-          className="w-full"
+          className={authEditorialSubmitClass}
           disabled={loading}
         >
           {loading && <Spinner />}
@@ -297,45 +298,33 @@ function LoginForm() {
               : mode === "signup"
                 ? "Create account"
                 : "Sign in"}
-        </Button>
+        </button>
       </form>
 
       {mode === "signin" && (
-        <p className="mt-5 text-center text-sm text-muted-foreground">
+        <AuthShellFootnote>
           Certificate holder?{" "}
-          <button
-            type="button"
-            className="font-medium text-accent underline-offset-4 hover:underline"
-            onClick={() => setAccountMode("signup")}
-          >
+          <AuthShellInlineButton onClick={() => setAccountMode("signup")}>
             Create a recipient account
-          </button>
-        </p>
+          </AuthShellInlineButton>
+        </AuthShellFootnote>
       )}
       {mode === "signup" && (
-        <p className="mt-5 text-center text-sm text-muted-foreground">
+        <AuthShellFootnote>
           Already have an account?{" "}
-          <button
-            type="button"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            onClick={() => setAccountMode("signin")}
-          >
+          <AuthShellInlineButton onClick={() => setAccountMode("signin")}>
             Sign in
-          </button>
-        </p>
+          </AuthShellInlineButton>
+        </AuthShellFootnote>
       )}
       {mode === "recovery" && (
-        <p className="mt-5 text-center text-sm text-muted-foreground">
+        <AuthShellFootnote>
           After updating, you can claim certificates with this email.
-        </p>
+        </AuthShellFootnote>
       )}
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        <Link href="/" className="underline-offset-4 hover:underline">
-          Back to home
-        </Link>
-      </p>
-      {/* Keep title in sync for screen readers via visually tied copy */}
-      <span className="sr-only">{title}</span>
+      <AuthShellFootnote className="mt-2">
+        <AuthShellLink href="/">Back to home</AuthShellLink>
+      </AuthShellFootnote>
     </>
   );
 }
@@ -354,7 +343,9 @@ export default function LoginPage() {
   return (
     <AuthShell
       title="Sign in"
-      description="Club admins and certificate holders use the same sign-in. Recipients can create an account to claim certificates. Club admins should use the account their district linked."
+      description="Club admins and recipients use one sign-in. Admins use the account your district linked."
+      asideLabel="Sign in"
+      illustration="login"
     >
       <Suspense fallback={<LoginFallback />}>
         <LoginForm />
