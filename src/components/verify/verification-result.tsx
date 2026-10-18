@@ -30,8 +30,8 @@ export function VerificationResult({
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      toast.success("Check link copied");
-      setTimeout(() => setCopied(false), 2000);
+      toast.success("Verification link copied to clipboard");
+      setTimeout(() => setCopied(false), 2200);
     } catch {
       toast.error("Could not copy link");
     }
@@ -40,7 +40,7 @@ export function VerificationResult({
   // Policy: revoked pages show only the revocation message — no ID, seal chrome, or actions.
   if (result.status === "revoked") {
     return (
-      <div className="animate-fade-up rounded-2xl border border-border bg-card px-6 py-10 shadow-float sm:px-8">
+      <div className="animate-fade-up rounded-3xl border border-danger/30 bg-card/90 px-6 py-12 shadow-elevated sm:px-8">
         <p className="text-center text-base font-medium text-danger">
           {result.message}
         </p>
@@ -52,81 +52,139 @@ export function VerificationResult({
   const eventName = result.status === "valid" ? result.eventName : null;
 
   return (
-    <div className="animate-fade-up relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
+    <div className="animate-fade-up relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 shadow-glass backdrop-blur-xl">
       <BrandMark
-        size={112}
-        className="pointer-events-none absolute -right-2 -top-2 opacity-[0.06]"
+        size={120}
+        className="pointer-events-none absolute -right-3 -top-3 opacity-[0.04] dark:opacity-[0.07]"
       />
 
-      <div className="border-b border-border bg-brand px-6 py-5 text-white sm:px-8">
-        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-accent">
-          Public check
-        </p>
-        <p className="mt-1 font-mono text-sm text-white/80">{uniqueId}</p>
+      {/* Top Pass Header */}
+      <div className="border-b border-white/10 bg-gradient-to-r from-[#18181b] to-[#27272a] px-6 py-4.5 text-white sm:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="caption-caps text-accent">
+              Official Credential Record
+            </p>
+            <p className="mt-0.5 font-mono text-xs font-semibold tracking-wide text-white/90">
+              {uniqueId}
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Verified
+          </span>
+        </div>
       </div>
 
-      <div className="relative px-6 py-8 sm:px-8">
+      <div className="relative p-6 sm:p-8">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          {/* Status Banner & Action Dock */}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <StatusSeal status={result.status} />
-            <div className="no-print flex shrink-0 flex-wrap gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={copyLink}>
+
+            <div className="no-print flex shrink-0 flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={copyLink}
+                className="shadow-sm"
+              >
                 {copied ? (
-                  <Check className="h-4 w-4" aria-hidden />
+                  <Check className="h-3.5 w-3.5 text-success" aria-hidden />
                 ) : (
-                  <Copy className="h-4 w-4" aria-hidden />
+                  <Copy className="h-3.5 w-3.5" aria-hidden />
                 )}
-                Copy link
+                <span>{copied ? "Copied" : "Copy link"}</span>
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => window.print()}
+                className="shadow-sm"
               >
-                <Printer className="h-4 w-4" aria-hidden />
+                <Printer className="h-3.5 w-3.5" aria-hidden />
                 Print
               </Button>
             </div>
           </div>
 
+          {/* Issuer Box */}
           {(issuerName || eventName) && (
-            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 backdrop-blur-sm sm:p-5">
+              <p className="caption-caps text-muted-foreground">
                 Issued by
               </p>
-              <p className="mt-1 font-semibold text-foreground">{issuerName}</p>
+              <p className="mt-1 text-base font-semibold text-foreground">
+                {issuerName}
+              </p>
               {eventName && (
                 <p className="mt-0.5 text-sm text-muted-foreground">{eventName}</p>
               )}
             </div>
           )}
 
+          {/* Credential Attributes */}
           <div>
             {result.status === "valid" && (
-              <dl className="grid gap-5 sm:grid-cols-2">
-                <Field
-                  label="Recipient"
-                  value={result.recipientName}
-                  display
-                />
-                <Field
-                  label="Role / achievement"
-                  value={`${result.role}${result.achievement ? ` · ${result.achievement}` : ""}`}
-                />
-                <Field label="Issue date" value={result.issueDate} />
-                <Field label="Status" value="Issued" accent="success" />
-              </dl>
+              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 divide-y divide-border/60">
+                <div className="p-4 sm:p-5">
+                  <dt className="caption-caps text-muted-foreground">
+                    Recipient
+                  </dt>
+                  <dd className="mt-1 font-display text-2xl font-semibold tracking-[-0.02em] text-foreground">
+                    {result.recipientName}
+                  </dd>
+                </div>
+
+                <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+                  <div>
+                    <dt className="caption-caps text-muted-foreground">
+                      Role / Achievement
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium text-foreground">
+                      {result.role}
+                      {result.achievement ? ` · ${result.achievement}` : ""}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="caption-caps text-muted-foreground">
+                      Issue Date
+                    </dt>
+                    <dd className="mt-1 font-mono text-sm font-medium text-foreground">
+                      {result.issueDate}
+                    </dd>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5 flex items-center justify-between">
+                  <div>
+                    <dt className="caption-caps text-muted-foreground">
+                      Verification Ground Truth
+                    </dt>
+                    <dd className="mt-0.5 text-xs text-muted-foreground">
+                      Verified directly against Supabase authoritative records
+                    </dd>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-muted/70 px-3 py-1 text-xs font-semibold text-success">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Valid & Active
+                  </span>
+                </div>
+              </div>
             )}
 
             {result.status === "invalid" && (
-              <div className="space-y-3">
-                <p className="rounded-xl bg-muted px-5 py-4 text-sm text-muted-foreground">
+              <div className="space-y-4 rounded-2xl border border-border/80 bg-muted/30 p-5">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {result.message}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Open the QR or share link from the certificate. The check needs
-                  both the ID and the code in that link.
+                <p className="text-xs text-muted-foreground">
+                  Please verify that you have pasted the complete link including the{" "}
+                  <code className="font-mono text-foreground font-semibold">?t=</code> parameter,
+                  or scan the original physical QR code.
                 </p>
               </div>
             )}
@@ -145,28 +203,32 @@ export function VerificationResult({
             </p>
           )}
 
-          <p className="text-xs text-muted-foreground">
-            Checked live{" "}
+          <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span>Checked live at</span>
             <time dateTime={checkedAt} className="font-medium text-foreground">
               {formatCheckedAt(checkedAt)}
             </time>
-          </p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-3 border-t border-border bg-muted/40 px-6 py-4 text-xs leading-relaxed text-muted-foreground sm:px-8">
+      {/* Security and Privacy Notes */}
+      <div className="space-y-3 border-t border-border/70 bg-muted/30 p-6 text-xs leading-relaxed text-muted-foreground sm:px-8">
         <div>
-          <p className="font-medium text-foreground">What this check means</p>
-          <p className="mt-1">
-            This page checks the LeoVerify record. If a downloaded PDF
-            disagrees with these details, believe this page.
+          <p className="font-semibold text-foreground">What this check means</p>
+          <p className="mt-0.5">
+            This verification is evaluated live against the database. If any
+            downloaded PDF or paper certificate disagrees with these details,
+            this live web verification is the sole authoritative record.
           </p>
         </div>
         <div>
-          <p className="font-medium text-foreground">Privacy</p>
-          <p className="mt-1">
-            This page shows name, club, event, date, role, and status. It never
-            shows email or phone.
+          <p className="font-semibold text-foreground">Privacy Protection</p>
+          <p className="mt-0.5">
+            Public verification displays only the recipient name, issuing club,
+            event, date, role, and verification status. Personal emails and phone
+            numbers are never disclosed publicly.
           </p>
         </div>
       </div>
@@ -177,16 +239,16 @@ export function VerificationResult({
 function StatusSeal({ status }: { status: PublicVerificationResult["status"] }) {
   if (status === "valid") {
     return (
-      <div className="animate-seal flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-success-muted text-success ring-4 ring-success/20">
+      <div className="animate-seal flex items-center gap-3.5">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-success-muted text-success ring-4 ring-success/20 shadow-sm">
           <ShieldCheck className="h-7 w-7" aria-hidden />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-success">
-            Valid
+          <p className="caption-caps text-success">
+            Status: Valid
           </p>
-          <p className="text-lg font-semibold text-foreground">
-            This certificate is valid
+          <p className="text-lg font-semibold tracking-tight text-foreground">
+            Official Authenticated Certificate
           </p>
         </div>
       </div>
@@ -194,61 +256,32 @@ function StatusSeal({ status }: { status: PublicVerificationResult["status"] }) 
   }
   if (status === "revoked") {
     return (
-      <div className="animate-scale-in flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-muted text-danger ring-4 ring-danger/15">
+      <div className="animate-scale-in flex items-center gap-3.5">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-danger-muted text-danger ring-4 ring-danger/20 shadow-sm">
           <ShieldOff className="h-7 w-7" aria-hidden />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-danger">
-            Revoked
+          <p className="caption-caps text-danger">
+            Status: Revoked
           </p>
-          <p className="text-lg font-semibold text-foreground">No longer valid</p>
+          <p className="text-lg font-semibold tracking-tight text-foreground">No longer valid</p>
         </div>
       </div>
     );
   }
   return (
-    <div className="animate-scale-in flex items-center gap-3">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground ring-4 ring-border">
+    <div className="animate-scale-in flex items-center gap-3.5">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground ring-4 ring-border shadow-sm">
         <ShieldAlert className="h-7 w-7" aria-hidden />
       </div>
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Invalid
+        <p className="caption-caps text-muted-foreground">
+          Status: Invalid
         </p>
-        <p className="text-lg font-semibold text-foreground">Could not check this certificate</p>
+        <p className="text-lg font-semibold tracking-tight text-foreground">
+          Could not verify certificate
+        </p>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  accent,
-  display,
-}: {
-  label: string;
-  value: string;
-  accent?: "success";
-  display?: boolean;
-}) {
-  return (
-    <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
-      <dd
-        className={
-          accent === "success"
-            ? "mt-1 font-medium text-success"
-            : display
-              ? "mt-1 font-display text-xl font-semibold text-foreground"
-              : "mt-1 font-medium text-foreground"
-        }
-      >
-        {value}
-      </dd>
     </div>
   );
 }

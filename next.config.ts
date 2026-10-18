@@ -1,5 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const supabaseHost = (() => {
   try {
@@ -30,6 +35,9 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
+  turbopack: {
+    root: projectRoot,
+  },
   async headers() {
     return [
       {
@@ -57,6 +65,16 @@ const nextConfig: NextConfig = {
         // Vercel CDN already caches public/ — reinforce long cache for gallery PNGs
         source: "/template-gallery/:path*",
         headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/dotlottie-player.wasm",
+        headers: [
+          { key: "Content-Type", value: "application/wasm" },
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { FileBadge2 } from "lucide-react";
 import { openPublicVerifyAction } from "@/app/(public)/(site)/u/[slug]/actions";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CertificateStatus } from "@/generated/prisma/client";
 import { prismaService } from "@/lib/db";
+import { cn } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -80,47 +82,78 @@ export default async function PublicProfilePage({ params }: PageProps) {
   }
 
   const name = recipient.name ?? "LeoVerify recipient";
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ).replace(/\/$/, "");
+  const shareUrl = `${appUrl}/u/${encodeURIComponent(slug)}`;
 
   return (
-    <div className="surface-grid">
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-        <p className="mb-6">
+    <div className="surface-grid min-h-[calc(100vh-4rem)]">
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+        <p className="mb-8">
           <Link
             href="/"
-            className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
             ← Back to home
           </Link>
         </p>
-        <div className="flex items-start gap-4">
-          <span
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-accent shadow-elevated"
-            aria-hidden
-          >
-            {initials(recipient.name)}
-          </span>
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Public profile
-            </p>
-            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-foreground">
-              {name}
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              This person chose to list certificates here. You can still check
-              one certificate from the QR without a profile.
-            </p>
+
+        {/* Profile Header Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+            <span
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-xl font-bold text-accent shadow-elevated border-t border-white/20"
+              aria-hidden
+            >
+              {initials(recipient.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="caption-caps text-accent">
+                  Verified Recipient Portfolio
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-success">
+                  Public Profile Active
+                </span>
+              </div>
+              <h1 className="mt-1 font-display text-3xl font-semibold tracking-[-0.025em] text-foreground sm:text-4xl">
+                {name}
+              </h1>
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed sm:text-sm">
+                Authentic certifications issued by Leo Clubs in Sri Lanka,
+                verified live against the central cryptographic database.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(buttonVariants({ size: "sm", variant: "outline" }), "shadow-sm")}
+                >
+                  Share Portfolio on LinkedIn
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Certificates Grid */}
         <div className="mt-10">
-          <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 className="text-lg font-semibold">Certificates</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="mb-5 flex items-baseline justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                Earned Credentials
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Click any credential to inspect the live authoritative record.
+              </p>
+            </div>
+            <span className="rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
               {recipient.certificates.length === 0
-                ? "None listed"
-                : `${recipient.certificates.length} visible`}
-            </p>
+                ? "0 records"
+                : `${recipient.certificates.length} verified`}
+            </span>
           </div>
 
           {recipient.certificates.length === 0 ? (
@@ -130,35 +163,40 @@ export default async function PublicProfilePage({ params }: PageProps) {
               description="When this person lists issued certificates, they show up here."
             />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid gap-5 sm:grid-cols-2">
               {recipient.certificates.map((cert) => (
                 <li
                   key={cert.id}
-                  className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-elevated"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium leading-snug text-foreground">
-                      {cert.event.name}
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-base leading-snug text-foreground">
+                        {cert.event.name}
+                      </p>
+                      <Badge variant="success" className="shrink-0">
+                        Valid
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-foreground/90 font-medium">
+                      {cert.role}
+                      {cert.achievement ? ` · ${cert.achievement}` : ""}
                     </p>
-                    <Badge variant="success">Valid</Badge>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {cert.event.club.name}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                      Issued {cert.issueDate.toISOString().slice(0, 10)}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {cert.role}
-                    {cert.achievement ? ` · ${cert.achievement}` : ""}
-                  </p>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    {cert.event.club.name}
-                  </p>
-                  <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                    {cert.issueDate.toISOString().slice(0, 10)}
-                  </p>
-                  <form action={openPublicVerifyAction} className="mt-4">
+
+                  <form action={openPublicVerifyAction} className="mt-6">
                     <input type="hidden" name="uniqueId" value={cert.uniqueId} />
                     <button
                       type="submit"
-                      className="inline-flex h-9 w-full items-center justify-center rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground hover:opacity-90"
+                      className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-brand px-4 text-xs font-semibold text-brand-foreground shadow-sm transition-all hover:bg-brand/90 active:scale-[0.98]"
                     >
-                      Verify
+                      Verify Record
                     </button>
                   </form>
                 </li>

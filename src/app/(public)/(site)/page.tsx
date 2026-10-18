@@ -1,98 +1,107 @@
 import Link from "next/link";
 import {
-  BadgeCheck,
-  LayoutTemplate,
-  Mail,
+  Building2,
+  Database,
+  Inbox,
   QrCode,
-  Share2,
-  ShieldCheck,
+  Shield,
+  UserCheck,
 } from "lucide-react";
-import { BrandMark } from "@/components/public/brand-logo";
-import { VerifyForm } from "@/components/verify/verify-form";
-import { buttonVariants } from "@/components/ui/button";
+import { HomeFeaturesShowcase } from "@/components/public/home-features-showcase";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  HomeQuickPathCard,
+  type HomeQuickPathItem,
+} from "@/components/public/home-quick-path-card";
+import type { JourneyCardItem } from "@/components/public/home-journey-illustration-card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { CredentialMark } from "@/components/ui/credential-mark";
+import { VerifyForm } from "@/components/verify/verify-form";
 import { cn } from "@/lib/utils";
 
-const journey = [
+const journey: JourneyCardItem[] = [
   {
-    icon: LayoutTemplate,
+    step: "01",
     title: "Design",
-    body: "Drag fields onto a club template. Start from a gallery or upload your own background.",
+    body: "Drag dynamic fields onto high-resolution club templates with the Fabric.js visual designer.",
   },
   {
-    icon: BadgeCheck,
+    step: "02",
     title: "Generate",
-    body: "Issue one certificate or import a roster. Each one gets a check link and a QR code.",
+    body: "Issue single certificates or import rosters. Every record gets a unique HMAC token and QR code.",
   },
   {
-    icon: Mail,
-    title: "Send",
-    body: "We email the check link and PDF. You do not attach files by hand.",
+    step: "03",
+    title: "Deliver",
+    body: "Automated email delivery via Resend sends both the high-res PDF and the permanent check link.",
   },
   {
-    icon: Share2,
-    title: "Share",
-    body: "Recipients share the check link. Preview cards stay private unless the link is valid.",
+    step: "04",
+    title: "Showcase",
+    body: "Recipients add credentials to LinkedIn or publish an opt-in public portfolio of their awards.",
   },
   {
-    icon: ShieldCheck,
+    step: "05",
     title: "Verify",
-    body: "Anyone can open the link and see if the certificate is still valid.",
+    body: "Anyone scans the QR to verify authenticity instantly against the live authoritative database.",
   },
 ];
 
-function MockCertificate() {
-  return (
-    <div className="relative animate-fade-up-delay-2">
-      <div className="absolute -inset-4 rounded-3xl bg-accent/10 blur-2xl" aria-hidden />
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-float">
-        <div className="border-b border-border bg-brand px-6 py-4 text-white">
-          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-accent">
-            Certificate
-          </p>
-          <p className="mt-1 text-lg font-semibold">Certificate of Completion</p>
-        </div>
-        <div className="relative px-6 py-8">
-          <BrandMark
-            size={64}
-            className="pointer-events-none absolute right-4 top-4 opacity-[0.08]"
-          />
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Presented to
-          </p>
-          <p className="mt-1 font-display text-2xl font-semibold tracking-tight text-foreground">
-            Ada Lovelace
-          </p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            for completing{" "}
-            <span className="font-medium text-foreground">Leadership Lab</span>
-          </p>
-          <div className="mt-8 flex items-end justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] text-muted-foreground">
-                LEO-UOM-2026-000123
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Scan to confirm</p>
-            </div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-md border-2 border-dashed border-accent/60 bg-accent/10">
-              <QrCode className="h-8 w-8 text-accent" aria-hidden />
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 border-t border-border bg-success-muted/40 px-6 py-3 text-xs font-medium text-success">
-          <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-          Anyone can check this. No account needed.
-        </div>
-      </div>
-    </div>
-  );
-}
+const trustStrip = [
+  {
+    icon: Database,
+    title: "Live database",
+    body: "Every check reads current status from PostgreSQL.",
+  },
+  {
+    icon: Shield,
+    title: "HMAC tokens",
+    body: "Signed links and QR codes prevent ID-only guessing.",
+  },
+  {
+    icon: UserCheck,
+    title: "No account needed",
+    body: "Public verification stays open for everyone.",
+  },
+];
+
+const resourceLinks = [
+  { href: "/about", label: "Security whitepaper" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/how-it-works", label: "Issuing guide" },
+  { href: "/login", label: "Admin sign in" },
+];
+
+const quickPaths: HomeQuickPathItem[] = [
+  {
+    href: "/v/LEO-UOM-2026-000123",
+    title: "Inspect sample certificate",
+    description: "See a sample verification page and seal.",
+    icon: UserCheck,
+    code: "DEMO-001",
+  },
+  {
+    href: "#verify",
+    title: "Scan certificate QR",
+    description: "Open the camera scanner on this device.",
+    icon: QrCode,
+    code: "CAMERA",
+  },
+  {
+    href: "/claim",
+    title: "Claim your certificates",
+    description: "Get your awards portfolio by email.",
+    icon: Inbox,
+    code: "CLAIM",
+  },
+  {
+    href: "/signup",
+    title: "Issue for your club",
+    description: "Sign up your club to issue certificates.",
+    icon: Building2,
+    code: "NEW CLUB",
+  },
+];
 
 function JsonLd() {
   const base =
@@ -128,163 +137,136 @@ export default function HomePage() {
   return (
     <div>
       <JsonLd />
-      <section className="surface-hero relative overflow-hidden">
-        <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p className="animate-fade-up text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-              Certificate checks for Leo Clubs
+
+      <section className="surface-hero relative overflow-hidden pt-12 pb-20 sm:pt-16 sm:pb-28">
+        <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="flex flex-col items-center text-center">
+            <CredentialMark size="md" className="mb-6" />
+
+            <Badge
+              variant="accent"
+              className="mb-4 normal-case tracking-normal text-xs font-medium"
+            >
+              Leo Club of University of Moratuwa · District 306 A2
+            </Badge>
+
+            <h1 className="display-title text-3xl font-semibold text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
+              Verify credentials with{" "}
+              <span className="text-accent">total certainty.</span>
+            </h1>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Live database verification backed by cryptographic HMAC signatures.
+              The website is the authentic record, not the static PDF.
             </p>
-            <div className="animate-fade-up mt-4 flex items-center gap-4">
-              <BrandMark
-                size={64}
-                labeled
-                priority
-                className="rounded-xl shadow-elevated"
-              />
-              <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-                LeoVerify
-              </h1>
-            </div>
-            <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Make a certificate, email the link, anyone can open it and check.
-            </p>
-            <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/signup"
-                className={cn(buttonVariants({ variant: "brand" }))}
-              >
-                Sign up
-              </Link>
-              <a
-                href="#verify"
-                className={cn(buttonVariants({ variant: "outline" }))}
-              >
-                Verify a certificate
-              </a>
+
+            <div className="mt-8 w-full max-w-2xl">
+              <VerifyForm layout="prompt" />
             </div>
           </div>
-          <MockCertificate />
-        </div>
-        <div className="relative mx-auto max-w-6xl px-4 pb-10 sm:px-6">
-          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border/60 pt-8 text-sm text-muted-foreground">
-            {[
-              "Live check",
-              "Drag-and-drop designer",
-              "CSV and Excel import",
-              "Club pages",
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
+
+          <div className="mx-auto mt-10 max-w-3xl">
+            <div className="mb-3 flex flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/75">
+                Get started with an action below
+              </span>
+              <span className="text-[11px] text-muted-foreground/60">
+                Instant check · No sign-in
+              </span>
+            </div>
+            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {quickPaths.map((item) => (
+                <div key={item.title} className="min-w-0">
+                  <HomeQuickPathCard item={item} />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="features" className="scroll-mt-24 border-t border-border bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            How it works
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            How a certificate gets issued and checked
-          </h2>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Design the template, send the certificate, then anyone can open the
-            link.
-          </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {journey.map((item) => {
+      <section
+        id="features"
+        className="scroll-mt-24 border-t border-border/60 bg-muted/20 py-16 sm:py-20"
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="max-w-2xl">
+            <span className="caption-caps text-accent">System architecture</span>
+            <h2 className="mt-1 heading-title text-2xl font-semibold text-foreground sm:text-3xl">
+              From template to live check in five steps
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Designed for club administrators and recipients to verify
+              achievements with complete confidence.
+            </p>
+          </div>
+
+          <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+            {trustStrip.map((item) => {
               const Icon = item.icon;
               return (
-                <div
+                <li
                   key={item.title}
-                  className="rounded-xl border border-border bg-background p-5 shadow-elevated"
+                  className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card/80 px-4 py-3.5 shadow-sm"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/15 text-accent">
-                    <Icon className="h-5 w-5" aria-hidden />
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <Icon className="size-4" aria-hidden="true" />
                   </div>
-                  <h3 className="mt-4 font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {item.body}
-                  </p>
-                </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">
+                      {item.title}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {item.body}
+                    </p>
+                  </div>
+                </li>
               );
             })}
+          </ul>
+
+          <div className="mt-10">
+            <HomeFeaturesShowcase items={journey} />
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-2">
+            {resourceLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="verify" className="scroll-mt-24 border-t border-border bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="max-w-xl">
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-              Verify a certificate
-            </h2>
-            <p className="mt-2 text-muted-foreground">
-              Paste the full check link, scan a QR, or enter the ID and token.
-            </p>
-          </div>
-          <Card className="mt-8 max-w-xl">
-            <CardHeader>
-              <CardTitle>Lookup</CardTitle>
-              <CardDescription>
-                You need the code from the QR or share link.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <VerifyForm />
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-            Who runs this
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-            Leo Club of University of Moratuwa
-          </h2>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            Leo Club of University of Moratuwa uses this for District 306 A2
-            events. They can revoke a certificate and see who issued it.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+      <section className="border-t border-border/60 bg-muted/20 py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div
+            className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-border/80 bg-card p-8 shadow-card sm:flex-row sm:items-center sm:p-10"
+          >
+            <div>
+              <p className="caption-caps text-accent">Ready to verify?</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                Issue tamper-proof certificates for your club.
+              </h2>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Create a custom template, import your member roster, and
+                distribute authenticated credentials.
+              </p>
+            </div>
             <Link
-              href="/about"
-              className={cn(buttonVariants({ variant: "outline" }))}
+              href="/signup"
+              className={cn(
+                buttonVariants({ variant: "accent", size: "lg" }),
+                "shrink-0",
+              )}
             >
-              About this site
-            </Link>
-            <Link href="/signup" className={cn(buttonVariants())}>
               Create organization
             </Link>
           </div>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-brand text-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-4 py-12 sm:flex-row sm:items-center sm:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-              Get started
-            </p>
-            <p className="mt-2 text-xl font-semibold tracking-tight">
-              Issue your first certificate
-            </p>
-            <p className="mt-1 text-sm text-white/70">
-              Make a template, issue a batch, and put a check page online.
-            </p>
-          </div>
-          <Link
-            href="/signup"
-            className={cn(buttonVariants({ variant: "accent" }))}
-          >
-            Create organization
-          </Link>
         </div>
       </section>
     </div>

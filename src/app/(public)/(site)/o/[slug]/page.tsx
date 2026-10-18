@@ -104,7 +104,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
             Paste the check link or scan the QR. The ID alone is not enough. Use
             the full link from the certificate.
           </p>
-          <VerifyForm compact />
+          <VerifyForm compact layout="standard" />
         </section>
 
         <section className="mt-12">

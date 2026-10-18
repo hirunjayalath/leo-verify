@@ -189,13 +189,13 @@ export function QrScanner({
         <Button
           type="button"
           variant="outline"
-          className="w-full sm:w-auto"
+          className="w-full rounded-full text-xs font-medium sm:w-auto"
           onClick={() => {
             setError(null);
             setOpen(true);
           }}
         >
-          <Camera className="size-4" />
+          <Camera className="size-3.5" />
           Scan QR code
         </Button>
       </div>
@@ -205,29 +205,29 @@ export function QrScanner({
   return (
     <div
       className={cn(
-        "space-y-3 rounded-xl border border-border bg-muted/30 p-3",
+        "space-y-3 rounded-2xl border border-border/80 bg-card p-4 shadow-card",
         className,
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">
+        <p className="text-xs font-semibold text-foreground">
           Point your camera at a LeoVerify QR
         </p>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
           aria-label="Close scanner"
           onClick={() => {
             stop();
             setOpen(false);
           }}
         >
-          <X className="size-4" />
+          <X className="size-3.5" />
         </Button>
       </div>
-      <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
+      <div className="relative aspect-video overflow-hidden rounded-xl bg-neutral-950">
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
@@ -236,19 +236,19 @@ export function QrScanner({
         />
         <canvas ref={canvasRef} className="hidden" aria-hidden />
         {!scanning && !error && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
             Starting camera…
           </div>
         )}
       </div>
       {error && (
-        <p className="flex items-start gap-2 text-sm text-destructive">
-          <CameraOff className="mt-0.5 size-4 shrink-0" />
+        <p className="flex items-start gap-2 text-xs text-danger">
+          <CameraOff className="mt-0.5 size-3.5 shrink-0" />
           {error}
         </p>
       )}
-      <p className="text-xs text-muted-foreground">
-        Scanning stays on this device. Only LeoVerify verify links are accepted.
+      <p className="text-[11px] text-muted-foreground">
+        Scanning stays local on this device. Only LeoVerify links are accepted.
       </p>
     </div>
   );

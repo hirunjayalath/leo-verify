@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Clock, ServerOff } from "lucide-react";
+import { Clock, ServerOff, ArrowLeft, Database, ShieldCheck, FileCheck, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VerificationResult } from "@/components/verify/verification-result";
 import { evaluateVerification } from "@/lib/certificates/verify";
 import { loadPublicVerification } from "@/lib/certificates/verify-lookup";
 import { clientIpFromHeaders } from "@/lib/rate-limit";
+import { cn } from "@/lib/utils";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -127,40 +128,100 @@ export default async function VerificationPage({
   const isRevoked = result.status === "revoked";
 
   return (
-    <div className="surface-grid">
-      <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
+    <div className="min-h-[calc(100vh-4rem)] py-8 sm:py-12 bg-muted/20">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        {/* Navigation Breadcrumb */}
         {!isRevoked && (
-          <>
-            <p className="mb-2 text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              LeoVerify
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              Certificate check
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              This result comes from the site, not from a downloaded PDF.
-            </p>
-          </>
-        )}
-
-        <div className={isRevoked ? "" : "mt-8"}>
-          <VerificationResult
-            uniqueId={uniqueId}
-            result={result}
-            checkedAt={checkedAt}
-          />
-        </div>
-
-        {!isRevoked && (
-          <p className="mt-8 text-sm text-muted-foreground">
+          <div className="mb-6">
             <Link
               href="/#verify"
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:text-foreground hover:border-border shadow-xs"
             >
-              Verify another certificate
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to search</span>
             </Link>
-          </p>
+          </div>
         )}
+
+        {/* 2-Column Responsive Layout Matching Image 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Verification Card */}
+          <div className={cn(isRevoked ? "lg:col-span-12 max-w-xl mx-auto w-full" : "lg:col-span-7")}>
+            <VerificationResult
+              uniqueId={uniqueId}
+              result={result}
+              checkedAt={checkedAt}
+            />
+          </div>
+
+          {/* Side Panels (Sources & Suggested tasks) */}
+          {!isRevoked && (
+            <div className="lg:col-span-5 space-y-5">
+              {/* Sources Panel */}
+              <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-card">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Sources & Evidence
+                  </h3>
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+                </div>
+
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 py-6 px-4 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent mb-2.5">
+                    <Database className="h-5 w-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-foreground">
+                    PostgreSQL Live Query
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Evaluated live with Postgres RLS isolation and HMAC SHA-256 integrity.
+                  </p>
+                </div>
+
+                <div className="mt-4 space-y-2 text-xs">
+                  <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                    <span className="text-muted-foreground">Record state</span>
+                    <span className="font-semibold text-foreground">Live Database</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                    <span className="text-muted-foreground">Privacy scope</span>
+                    <span className="font-semibold text-foreground">Public attributes only</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suggested Tasks Panel */}
+              <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-card">
+                <h3 className="text-sm font-semibold text-foreground mb-3">
+                  Suggested Actions
+                </h3>
+                <div className="space-y-2">
+                  <Link
+                    href="/#verify"
+                    className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/40 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    <span>Check another certificate</span>
+                    <FileCheck className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                  <Link
+                    href="/claim"
+                    className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/40 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    <span>Claim to your recipient profile</span>
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                  <Link
+                    href="/how-it-works"
+                    className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/40 px-3.5 py-2.5 text-xs font-medium text-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    <span>How tamper detection works</span>
+                    <Share2 className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

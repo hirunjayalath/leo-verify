@@ -6,73 +6,76 @@ const supportEmail =
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-card">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+    <footer className="border-t border-border/60 bg-card/60 backdrop-blur-md">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div className="lg:col-span-2">
           <BrandLockup size={32} />
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Scan the QR. The site is the record, not the PDF.
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            The verification URL is the ground truth. Cryptographic HMAC check
+            tokens ensure zero credential tampering.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border/80 bg-background/80 px-3 py-1 text-xs text-muted-foreground shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span>Database Authoritative · Live Verification</span>
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
             Operated by Leo Club of University of Moratuwa · District 306 A2
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="caption-caps text-muted-foreground">
             Product
           </p>
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-4 space-y-2.5 text-sm">
             <li>
-              <Link href="/#features" className="hover:text-foreground">
-                Features
+              <Link href="/#features" className="text-muted-foreground transition-colors hover:text-foreground">
+                Features & Security
               </Link>
             </li>
             <li>
-              <Link href="/#verify" className="hover:text-foreground">
-                Verify
+              <Link href="/#verify" className="text-muted-foreground transition-colors hover:text-foreground">
+                Instant Lookup
               </Link>
             </li>
             <li>
-              <Link href="/signup" className="hover:text-foreground">
-                Sign up
+              <Link href="/signup" className="text-muted-foreground transition-colors hover:text-foreground">
+                Organization Access
               </Link>
             </li>
             <li>
-              <Link href="/claim" className="hover:text-foreground">
-                Claim certificates
+              <Link href="/claim" className="text-muted-foreground transition-colors hover:text-foreground">
+                Claim Certificates
               </Link>
             </li>
           </ul>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Club
+          <p className="caption-caps text-muted-foreground">
+            Organization
           </p>
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-4 space-y-2.5 text-sm">
             <li>
-              <Link href="/about" className="hover:text-foreground">
-                About
+              <Link href="/about" className="text-muted-foreground transition-colors hover:text-foreground">
+                About LeoVerify
               </Link>
             </li>
             <li>
-              <Link href="/privacy" className="hover:text-foreground">
-                Privacy
+              <Link href="/faq" className="text-muted-foreground transition-colors hover:text-foreground">
+                Frequently Asked
               </Link>
             </li>
             <li>
-              <Link href="/login" className="hover:text-foreground">
-                Club admin login
-              </Link>
-            </li>
-            <li>
-              <Link href="/signup" className="hover:text-foreground">
-                Organization signup
+              <Link href="/login" className="text-muted-foreground transition-colors hover:text-foreground">
+                Admin Console
               </Link>
             </li>
             <li>
               <a
                 href={`mailto:${supportEmail}`}
-                className="hover:text-foreground"
+                className="text-muted-foreground transition-colors hover:text-foreground"
               >
                 {supportEmail}
               </a>
@@ -80,10 +83,12 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p suppressHydrationWarning>© {new Date().getFullYear()} LeoVerify</p>
-          <p>Built for Leo Clubs in Sri Lanka</p>
+      <div className="border-t border-border/50">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p suppressHydrationWarning>© {new Date().getFullYear()} LeoVerify. All rights reserved.</p>
+          <p className="flex items-center gap-2">
+            <span>Built with precision for Leo Clubs in Sri Lanka</span>
+          </p>
         </div>
       </div>
     </footer>
