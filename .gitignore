@@ -75,5 +75,6 @@ temp/
 .agents/
 .claude/
 .windsurf/
+.gemini/
 skills-lock.json
 
