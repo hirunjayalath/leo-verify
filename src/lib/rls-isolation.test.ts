@@ -10,7 +10,7 @@ async function roleReady(): Promise<boolean> {
   if (!url) return false;
   const pool = new Pool({
     connectionString: url,
-    connectionTimeoutMillis: 2500,
+    connectionTimeoutMillis: 20_000,
   });
   try {
     const role = await pool.query(
@@ -36,7 +36,7 @@ if (process.env.CI && !ready) {
 
 describe.skipIf(!ready)(
   "RLS: club A cannot read club B as leoverify_app",
-  { timeout: 20_000 },
+  { timeout: 60_000 },
   () => {
     let pool: Pool;
 

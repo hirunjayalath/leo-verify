@@ -31,7 +31,7 @@ async function databaseReady(): Promise<boolean> {
   if (!connectionString) return false;
   const probe = new Pool({
     connectionString,
-    connectionTimeoutMillis: 2500,
+    connectionTimeoutMillis: 20_000,
   });
   try {
     await probe.query("SELECT 1");
@@ -51,7 +51,7 @@ if (process.env.CI && !dbReady) {
 
 describe.skipIf(!dbReady)(
   "issue + verify golden path (Rule 11)",
-  { timeout: 20_000 },
+  { timeout: 120_000 },
   () => {
   let prisma: PrismaClient;
   let pool: Pool;

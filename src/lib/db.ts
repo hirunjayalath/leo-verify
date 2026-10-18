@@ -54,8 +54,8 @@ function createPrismaClient(connectionString: string, cacheKey: "app" | "service
     new Pool({
       connectionString,
       max: poolMax(),
-      idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 30_000,
     });
   globalForPrisma[poolKey] = pool;
   return new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -196,6 +196,6 @@ export async function withRlsContext<T>(
       const client = tx as unknown as PrismaClient;
       return rlsStore.run(client, () => fn(client));
     },
-    { maxWait: 8_000, timeout: 20_000 },
+    { maxWait: 15_000, timeout: 60_000 },
   );
 }

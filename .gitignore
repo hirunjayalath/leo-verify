@@ -25,9 +25,20 @@
 
 # misc
 .DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 *.pem
+*.swp
+*.swo
+*~
 
 # debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -36,6 +47,11 @@ yarn-error.log*
 # env files — never commit secrets
 .env*
 !.env.example
+.env.sentry-build-plugin
+
+# local uploads in development
+/public/uploads/*
+!/public/uploads/.gitignore
 
 # vercel
 .vercel
@@ -46,8 +62,18 @@ next-env.d.ts
 
 /src/generated/prisma
 
+# IDE & Editors
+.vscode/
+.idea/
+.cursor/*
+!.cursor/rules/
+.turbo/
+tmp/
+temp/
+
 # Prisma CLI agent skill installs (local tooling noise)
 .agents/
 .claude/
 .windsurf/
 skills-lock.json
+

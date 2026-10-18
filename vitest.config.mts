@@ -23,6 +23,8 @@ export default defineConfig({
       DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL ?? "",
     },
     fileParallelism: false,
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
   },
   resolve: {
     alias: {

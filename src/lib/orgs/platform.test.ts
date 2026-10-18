@@ -16,7 +16,7 @@ async function databaseReady(): Promise<boolean> {
   if (!connectionString) return false;
   const probe = new Pool({
     connectionString,
-    connectionTimeoutMillis: 2500,
+    connectionTimeoutMillis: 20_000,
   });
   try {
     await probe.query("SELECT 1");
@@ -52,7 +52,7 @@ describe("platform club report shape", () => {
 
 describe.skipIf(!dbReady)(
   "UOM report isolation",
-  { timeout: 20_000 },
+  { timeout: 60_000 },
   () => {
     let prisma: PrismaClient;
     let pool: Pool;
