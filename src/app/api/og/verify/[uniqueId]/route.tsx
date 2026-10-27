@@ -29,7 +29,7 @@ async function genericCard() {
           flexDirection: "column",
           justifyContent: "space-between",
           background:
-            "linear-gradient(145deg, #323232 0%, #2a2a2a 45%, #1f1f1f 100%)",
+            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #050E1A 100%)",
           color: "#ffffff",
           padding: 72,
         }}
@@ -56,11 +56,11 @@ async function genericCard() {
           >
             Certificate check
           </div>
-          <div style={{ fontSize: 26, color: "#c8c8c8", maxWidth: 820 }}>
+          <div style={{ fontSize: 26, color: "#cbd5e1", maxWidth: 820 }}>
             Open the full check link. The site is the record, not the PDF.
           </div>
         </div>
-        <div style={{ fontSize: 22, color: "#38a3e3" }}>leoverify</div>
+        <div style={{ fontSize: 22, color: "#FFC72C" }}>leoverify</div>
       </div>
     ),
     { width: 1200, height: 630 },

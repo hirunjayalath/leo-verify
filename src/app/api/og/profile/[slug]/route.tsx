@@ -32,7 +32,7 @@ async function genericCard() {
           flexDirection: "column",
           justifyContent: "space-between",
           background:
-            "linear-gradient(145deg, #323232 0%, #2a2a2a 45%, #1f1f1f 100%)",
+            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #050E1A 100%)",
           color: "#ffffff",
           padding: 72,
         }}
@@ -59,11 +59,11 @@ async function genericCard() {
           >
             Public profile
           </div>
-          <div style={{ fontSize: 26, color: "#c8c8c8", maxWidth: 820 }}>
+          <div style={{ fontSize: 26, color: "#cbd5e1", maxWidth: 820 }}>
             Certificates stay private unless the recipient publishes them.
           </div>
         </div>
-        <div style={{ fontSize: 22, color: "#38a3e3" }}>leoverify</div>
+        <div style={{ fontSize: 22, color: "#FFC72C" }}>leoverify</div>
       </div>
     ),
     { width: 1200, height: 630 },
@@ -87,7 +87,7 @@ async function publicCard(input: { name: string; certCount: number }) {
           flexDirection: "column",
           justifyContent: "space-between",
           background:
-            "linear-gradient(145deg, #323232 0%, #323232dd 55%, #38a3e355 100%)",
+            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #00338D 100%)",
           color: "#ffffff",
           padding: 72,
         }}
@@ -118,7 +118,7 @@ async function publicCard(input: { name: string; certCount: number }) {
           </div>
           <div style={{ fontSize: 28, color: "#e8e8e8" }}>{countLabel}</div>
         </div>
-        <div style={{ fontSize: 20, color: "#38a3e3" }}>
+        <div style={{ fontSize: 20, color: "#FFC72C" }}>
           Shared with the recipient’s consent
         </div>
       </div>

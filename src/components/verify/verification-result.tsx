@@ -59,7 +59,7 @@ export function VerificationResult({
       />
 
       {/* Top Pass Header */}
-      <div className="border-b border-white/10 bg-gradient-to-r from-[#18181b] to-[#27272a] px-6 py-4.5 text-white sm:px-8">
+      <div className="border-b border-white/10 bg-gradient-to-r from-[#0C2340] to-[#00338D] px-6 py-4.5 text-white sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="caption-caps text-accent">

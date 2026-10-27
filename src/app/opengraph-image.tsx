@@ -22,7 +22,7 @@ export default async function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           background:
-            "linear-gradient(145deg, #323232 0%, #2a2a2a 45%, #1f1f1f 100%)",
+            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #050E1A 100%)",
           color: "#ffffff",
           padding: 72,
         }}
@@ -54,11 +54,11 @@ export default async function OpenGraphImage() {
           >
             Check a Leo Club certificate
           </div>
-          <div style={{ fontSize: 28, color: "#c8c8c8", maxWidth: 820 }}>
+          <div style={{ fontSize: 28, color: "#cbd5e1", maxWidth: 820 }}>
             If the PDF and the site disagree, believe the site.
           </div>
         </div>
-        <div style={{ fontSize: 22, color: "#38a3e3" }}>
+        <div style={{ fontSize: 22, color: "#FFC72C" }}>
           Leo Club of University of Moratuwa · District 306 D2
         </div>
       </div>
