@@ -133,7 +133,7 @@ export default function HomePage() {
             <p className="text-[10px] font-medium leading-snug tracking-wide text-[var(--he-muted)] sm:text-[11px]">
               Leo Club of University of Moratuwa
               <span className="hidden sm:inline"> · </span>
-              <span className="block sm:inline">District 306 A2</span>
+              <span className="block sm:inline">District 306 D2</span>
             </p>
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-[var(--he-fg)] sm:mt-1 sm:text-2xl md:text-3xl">
               Verify credentials with certainty.

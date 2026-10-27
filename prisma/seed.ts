@@ -54,12 +54,22 @@ async function main() {
   const clubAdminLoginEmail = process.env.SEED_CLUB_ADMIN_LOGIN_EMAIL;
   const recipientEmail = process.env.SEED_RECIPIENT_EMAIL;
 
-  const district = await prisma.district.upsert({
+  const legacyDistrict = await prisma.district.findUnique({
     where: { code: "306A2" },
-    update: { name: "District 306 A2" },
+  });
+  if (legacyDistrict) {
+    await prisma.district.update({
+      where: { id: legacyDistrict.id },
+      data: { code: "306D2", name: "District 306 D2" },
+    });
+  }
+
+  const district = await prisma.district.upsert({
+    where: { code: "306D2" },
+    update: { name: "District 306 D2" },
     create: {
-      code: "306A2",
-      name: "District 306 A2",
+      code: "306D2",
+      name: "District 306 D2",
     },
   });
 

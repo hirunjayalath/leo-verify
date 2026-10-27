@@ -59,7 +59,7 @@ export default async function OpenGraphImage() {
           </div>
         </div>
         <div style={{ fontSize: 22, color: "#38a3e3" }}>
-          Leo Club of University of Moratuwa · District 306 A2
+          Leo Club of University of Moratuwa · District 306 D2
         </div>
       </div>
     ),

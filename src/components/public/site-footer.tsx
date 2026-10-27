@@ -22,7 +22,7 @@ export function SiteFooter() {
             <span>Database Authoritative · Live Verification</span>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Operated by Leo Club of University of Moratuwa · District 306 A2
+            Operated by Leo Club of University of Moratuwa · District 306 D2
           </p>
         </div>
         <div>

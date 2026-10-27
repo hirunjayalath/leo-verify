@@ -22,7 +22,7 @@ export default function AboutPage() {
       </p>
       <h2 className="text-lg font-semibold tracking-tight">Who runs this</h2>
       <p>
-        Leo Club of University of Moratuwa (District 306 A2) runs the site and
+        Leo Club of University of Moratuwa (District 306 D2) runs the site and
         can add other Leo clubs in the district. Other groups can sign up when
         the operator allows it.
       </p>

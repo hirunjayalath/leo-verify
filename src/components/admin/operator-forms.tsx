@@ -36,11 +36,11 @@ export function CreateDistrictForm() {
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="district-name">Name</Label>
-        <Input id="district-name" name="name" required placeholder="District 306 A2" />
+        <Input id="district-name" name="name" required placeholder="District 306 D2" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="district-code">Code</Label>
-        <Input id="district-code" name="code" required placeholder="306A2" />
+        <Input id="district-code" name="code" required placeholder="306D2" />
       </div>
       <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
         {pending && <Spinner />}

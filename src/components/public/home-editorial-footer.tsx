@@ -84,7 +84,7 @@ export function HomeEditorialFooter() {
             <p className="mt-6 text-[11px] font-medium leading-relaxed tracking-wide text-[var(--he-muted)]">
               Leo Club of University of Moratuwa
               <br />
-              District 306 A2 · Sri Lanka
+              District 306 D2 · Sri Lanka
             </p>
           </div>
 
