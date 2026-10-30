@@ -128,7 +128,7 @@ export default async function VerificationPage({
   const isRevoked = result.status === "revoked";
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] py-8 sm:py-12 bg-muted/20">
+    <div className="site-page-shell min-h-[calc(100vh-4rem)] py-8 sm:py-12">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {/* Navigation Breadcrumb */}
         {!isRevoked && (
@@ -158,7 +158,7 @@ export default async function VerificationPage({
           {!isRevoked && (
             <div className="lg:col-span-5 space-y-5">
               {/* Sources Panel */}
-              <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-card">
+              <div className="site-section-card p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-foreground">
                     Sources & Evidence
@@ -191,7 +191,7 @@ export default async function VerificationPage({
               </div>
 
               {/* Suggested Tasks Panel */}
-              <div className="rounded-3xl border border-border/80 bg-card p-6 shadow-card">
+              <div className="site-section-card p-6">
                 <h3 className="text-sm font-semibold text-foreground mb-3">
                   Suggested Actions
                 </h3>

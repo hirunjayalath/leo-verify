@@ -16,23 +16,26 @@ export function AdminPageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="admin-rule flex flex-col gap-7 border-b pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div className="relative overflow-hidden rounded-[1.5rem] border border-primary/10 bg-[linear-gradient(135deg,#0c2340_0%,#123b72_66%,#1e40af_100%)] p-6 text-white shadow-lg sm:p-8">
+      <div className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full border-[48px] border-white/[0.04]" />
+      <div className="relative flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-4 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="mb-4 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ffd95e]">
             {eyebrow}
           </p>
         )}
-        <h1 className="max-w-4xl text-4xl font-semibold leading-[0.98] tracking-[-0.04em] text-foreground sm:text-6xl">
+        <h1 className="max-w-4xl text-3xl font-semibold leading-[1.02] tracking-[-0.035em] text-white sm:text-5xl">
           {title}
         </h1>
         {description && (
-          <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/68 sm:text-base">
             {description}
           </p>
         )}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="shrink-0 [&_a]:border-white/15 [&_button]:border-white/15">{action}</div>}
+      </div>
     </div>
   );
 }
@@ -53,25 +56,25 @@ export function AdminStatCard({
   href?: string;
 }) {
   const content = (
-    <Card className={cn("h-full rounded-none border-x-0 border-b-0 bg-transparent transition-colors", href && "group-hover:border-foreground/40") }>
-      <CardHeader className="gap-5 px-0 pb-5 pt-0">
+    <Card className={cn("h-full overflow-hidden border-primary/10 bg-card/95 transition-all", href && "group-hover:-translate-y-0.5 group-hover:border-primary/25 group-hover:shadow-lg") }>
+      <CardHeader className="gap-5 pb-4">
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {label}
           </p>
           <span
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center border border-border text-muted-foreground",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground",
               tint,
             )}
           >
             <Icon className="h-4 w-4" aria-hidden />
           </span>
         </div>
-        <CardTitle className="mt-1 text-4xl font-medium tabular-nums tracking-[-0.04em]">{value}</CardTitle>
+        <CardTitle className="mt-1 text-4xl font-semibold tabular-nums tracking-[-0.04em]">{value}</CardTitle>
       </CardHeader>
       {hint && (
-        <CardContent className="px-0 pb-0 pt-0">
+        <CardContent className="pb-5 pt-0">
           <p className="text-xs text-muted-foreground">{hint}</p>
         </CardContent>
       )}
@@ -100,11 +103,11 @@ export function AdminSectionHeading({
   return (
     <div className="admin-rule flex items-start justify-between gap-4 border-b pb-4">
       <div>
-        <h2 className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em]">{title}</h2>
+        <h2 className="text-sm font-bold tracking-tight text-foreground">{title}</h2>
         {description && <p className="mt-2 text-sm text-muted-foreground">{description}</p>}
       </div>
       {href && (
-        <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-foreground hover:underline">
+        <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">
           {linkLabel}
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
         </Link>

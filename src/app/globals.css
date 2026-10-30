@@ -192,52 +192,64 @@ body {
 }
 /* Admin workspace tokens stay local so public and auth surfaces keep their existing palette. */
 .admin-shell {
-  --background: #eeeeec;
-  --foreground: #1a1a19;
-  --card: #f8f8f6;
-  --card-foreground: #1a1a19;
-  --muted: #e4e4e1;
-  --muted-foreground: #686865;
-  --border: #cfcfcb;
-  --primary: #1c1c1c;
+  --background: #f3f6fb;
+  --foreground: #10233f;
+  --card: #ffffff;
+  --card-foreground: #10233f;
+  --muted: #eaf0f8;
+  --muted-foreground: #5d6d82;
+  --border: #d9e2ef;
+  --primary: #164194;
   --primary-foreground: #ffffff;
-  --accent: #333333;
-  --accent-foreground: #ffffff;
-  --admin-rail: #181818;
+  --accent: #ffc72c;
+  --accent-foreground: #0c2340;
+  --success: #157347;
+  --success-muted: #e2f5eb;
+  --danger: #c92a3e;
+  --danger-muted: #fee9ec;
+  --info: #1d5fc2;
+  --info-muted: #e5effd;
+  --admin-rail: #07182f;
   --admin-rail-foreground: #f8f8f8;
-  --ring: #333333;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  background-color: var(--background);
+  --ring: #164194;
+  --shadow-sm: 0 1px 3px rgba(12, 35, 64, 0.08);
+  --shadow-md: 0 10px 30px -16px rgba(12, 35, 64, 0.32);
+  --shadow-lg: 0 22px 60px -28px rgba(12, 35, 64, 0.42);
+  --shadow-card: 0 18px 46px -30px rgba(12, 35, 64, 0.42), 0 1px 2px rgba(12, 35, 64, 0.05);
+  background:
+    radial-gradient(circle at 82% -10%, rgba(147, 197, 253, 0.28), transparent 34rem),
+    linear-gradient(180deg, #f7f9fd 0%, var(--background) 44%, #eef3f9 100%);
   color: var(--foreground);
 }
 
 html.dark .admin-shell {
-  --background: #141414;
-  --foreground: #f5f5f5;
-  --card: #1b1b1b;
-  --card-foreground: #f5f5f5;
-  --muted: #262626;
-  --muted-foreground: #a6a6a2;
-  --border: #383836;
-  --primary: #f5f7f9;
-  --primary-foreground: #151515;
-  --accent: #c7c7c7;
-  --accent-foreground: #151515;
-  --success: #d0d0cc;
-  --success-muted: #2a2a28;
-  --danger: #d0d0cc;
-  --danger-muted: #2a2a28;
-  --info: #d0d0cc;
-  --info-muted: #2a2a28;
-  --admin-rail: #101010;
+  --background: #07111f;
+  --foreground: #eef4fb;
+  --card: #0d1b2d;
+  --card-foreground: #eef4fb;
+  --muted: #14243a;
+  --muted-foreground: #9fb0c5;
+  --border: #22344c;
+  --primary: #7db2ff;
+  --primary-foreground: #07111f;
+  --accent: #ffc72c;
+  --accent-foreground: #07111f;
+  --success: #73d6a5;
+  --success-muted: #123c2d;
+  --danger: #ff91a0;
+  --danger-muted: #48202a;
+  --info: #83b7ff;
+  --info-muted: #132e55;
+  --admin-rail: #030b16;
   --admin-rail-foreground: #f5f5f5;
-  --ring: #c7c7c7;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  background-color: var(--background);
+  --ring: #ffc72c;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 12px 34px -16px rgba(0, 0, 0, 0.75);
+  --shadow-lg: 0 24px 64px -28px rgba(0, 0, 0, 0.9);
+  --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.025);
+  background:
+    radial-gradient(circle at 82% -10%, rgba(30, 64, 175, 0.24), transparent 34rem),
+    linear-gradient(180deg, #091526 0%, var(--background) 55%, #050c16 100%);
   color: var(--foreground);
 }
 
@@ -250,15 +262,39 @@ html.dark .admin-shell {
 }
 
 .admin-shell .admin-workspace {
-  width: min(100%, 1440px);
+  width: min(100%, 1480px);
 }
 
 .admin-shell .admin-content {
-  background-color: transparent;
+  background-image:
+    linear-gradient(rgba(22, 65, 148, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 65, 148, 0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
 }
 
 .admin-shell .admin-rule {
-  border-color: color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 16%, var(--border));
+}
+
+.site-page-shell {
+  background:
+    radial-gradient(circle at 88% 2%, rgba(255, 199, 44, 0.13), transparent 24rem),
+    radial-gradient(circle at 8% 28%, rgba(147, 197, 253, 0.22), transparent 28rem),
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 38%, #f3f7fc 100%);
+}
+
+html.dark .site-page-shell {
+  background:
+    radial-gradient(circle at 88% 2%, rgba(255, 199, 44, 0.08), transparent 24rem),
+    radial-gradient(circle at 8% 28%, rgba(30, 64, 175, 0.22), transparent 28rem),
+    linear-gradient(180deg, #07111f 0%, #091526 42%, #060d18 100%);
+}
+
+.site-section-card {
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: var(--shadow-card);
 }
 
 
@@ -752,12 +788,12 @@ html.dark .home-editorial-page {
 }
 
 .home-editorial .auth-editorial-card {
-  box-shadow: none;
+  box-shadow: 0 24px 60px -42px rgba(12, 35, 64, 0.5);
 }
 
 .home-editorial .auth-editorial-field {
   height: 2.75rem;
-  border-radius: 0;
+  border-radius: 0.75rem;
   border-color: color-mix(in srgb, var(--he-fg) 14%, transparent);
   background: var(--he-surface);
   color: var(--he-fg);
@@ -780,7 +816,8 @@ html.dark .home-editorial-page {
 
 .home-editorial .auth-editorial-submit {
   border: 1px solid var(--he-line-strong);
-  background: var(--he-tile-dark);
+  background: var(--he-accent);
+  color: #0c2340;
 }
 
 .home-editorial .auth-editorial-submit:hover:not(:disabled) {
