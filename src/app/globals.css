@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
+/* Dark rules stay in this file. They apply only with a .dark ancestor, never from the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Lions Clubs International & Leo aligned theme: authoritative Lions Blue, energetic Gold accents, deep midnight navy */
 :root {
   --ash-1: #0C2340;
   --ash-2: #64748b;
-  --brand-primary: #00338D;
+  --brand-primary: #93C5FD;
   --brand-secondary: #0C2340;
 
   --ease-apple-spring: cubic-bezier(0.16, 1, 0.3, 1);
@@ -18,7 +21,7 @@
   --muted: #f1f5f9;
   --muted-foreground: #475569;
   --border: #e2e8f0;
-  --primary: #00338D;
+  --primary: #1E40AF;
   --primary-foreground: #ffffff;
   --accent: #EBB700;
   --accent-foreground: #0C2340;
@@ -28,14 +31,14 @@
   --success-muted: #dcfce7;
   --danger: #dc2626;
   --danger-muted: #fee2e2;
-  --info: #00338D;
+  --info: #1E40AF;
   --info-muted: #eef4fc;
   /* Lions Midnight Navy rail for admin/auth */
-  --brand: #00338D;
-  --brand-foreground: #ffffff;
+  --brand: #93C5FD;
+  --brand-foreground: #1E40AF;
   --admin-rail: #0a192f;
   --admin-rail-foreground: #f8fafc;
-  --ring: #00338D;
+  --ring: #1E40AF;
   --radius: 1rem;
   --radius-sm: 0.625rem;
   --radius-lg: 1.25rem;
@@ -45,7 +48,7 @@
   --shadow-lg: 0 18px 36px -6px rgba(0, 0, 0, 0.07), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
   --shadow-card: 0 2px 10px -2px rgba(0, 0, 0, 0.04), 0 12px 28px -4px rgba(0, 0, 0, 0.04);
   --shadow-float: 0 20px 40px -15px rgba(0, 0, 0, 0.07), 0 0 1px 1px rgba(0, 0, 0, 0.04);
-  --shadow-orb: 0 20px 50px -10px rgba(0, 51, 141, 0.35);
+  --shadow-orb: 0 20px 50px -10px rgba(147, 197, 253, 0.35);
   --shadow-glass: 0 12px 36px -4px rgba(12, 35, 64, 0.06), 0 2px 8px -2px rgba(12, 35, 64, 0.03);
   --glass-bg: rgba(255, 255, 255, 0.88);
   --glass-border: rgba(226, 232, 240, 0.85);
@@ -295,7 +298,7 @@ html.dark ::selection {
 
 .surface-grid {
   background-image:
-    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(0, 51, 141, 0.08), transparent 70%),
+    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(147, 197, 253, 0.08), transparent 70%),
     radial-gradient(circle 320px at 90% 20%, rgba(235, 183, 0, 0.06), transparent),
     linear-gradient(to bottom, #f8fafc, #ffffff);
 }
@@ -303,9 +306,9 @@ html.dark ::selection {
 .surface-hero {
   position: relative;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 51, 141, 0.08), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(147, 197, 253, 0.08), transparent 70%),
     radial-gradient(circle 480px at 85% 15%, rgba(235, 183, 0, 0.07), transparent 60%),
-    radial-gradient(circle 420px at 15% 75%, rgba(0, 51, 141, 0.05), transparent 60%),
+    radial-gradient(circle 420px at 15% 75%, rgba(147, 197, 253, 0.05), transparent 60%),
     linear-gradient(to bottom, #f8fafc, #ffffff 45%, #f8fafc);
   background-size: auto, auto, auto, auto;
 }
@@ -315,8 +318,8 @@ html.dark ::selection {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(0, 51, 141, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 51, 141, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(147, 197, 253, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(147, 197, 253, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 25%, black 40%, transparent 85%);
   pointer-events: none;
@@ -347,7 +350,7 @@ html.dark .surface-hero::before {
 .auth-brand-panel {
   background-image:
     radial-gradient(circle at 15% 15%, rgba(235, 183, 0, 0.25), transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(0, 51, 141, 0.35), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(147, 197, 253, 0.35), transparent 45%),
     linear-gradient(155deg, #0C2340 0%, #081729 60%, #050E1A 100%);
 }
 
@@ -635,8 +638,9 @@ html.dark .specular-border {
   --he-fg: #0c2340;
   --he-muted: #475569;
   --he-line: rgba(12, 35, 64, 0.09);
-  --he-line-strong: #00338D;
-  --he-tile-dark: #00338D;
+  --he-line-strong: #93C5FD;
+  --he-tile-dark: #93C5FD;
+  --he-tile-ink: #1E40AF;
   --he-tile-mid: #0c2340;
   background: var(--he-surface);
   color: var(--he-fg);
@@ -653,6 +657,7 @@ html.dark .home-editorial-page {
   --he-line: rgba(255, 255, 255, 0.08);
   --he-line-strong: #FFC72C;
   --he-tile-dark: #00266B;
+  --he-tile-ink: #f8fafc;
   --he-tile-mid: #0c2340;
   --he-tile-hover: #122a4e;
   background: #070D18;
@@ -729,6 +734,12 @@ html.dark .home-editorial .auth-editorial-submit:hover:not(:disabled) {
 
 .home-editorial-tile-dark {
   background: var(--he-tile-dark);
+}
+
+.home-editorial-footer-bar,
+.site-footer-bar {
+  background: #0a1220;
+  color: #f8fafc;
 }
 
 .home-editorial-tile-mid {

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { BrandLockup } from "@/components/public/brand-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -53,19 +52,15 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
             })}
           </nav>
 
-          <div className="flex items-center gap-1.5 pl-1">
-            <ThemeToggle className="h-8 w-8" />
-            <Link
-              href="/signup"
-              className={cn(buttonVariants({ variant: "accent", size: "sm" }))}
-            >
-              Sign up
-            </Link>
-          </div>
+          <Link
+            href="/signup"
+            className={cn(buttonVariants({ variant: "accent", size: "sm" }), "ml-1")}
+          >
+            Sign up
+          </Link>
         </div>
 
         <div className="flex items-center gap-1.5 md:hidden">
-          <ThemeToggle />
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/70 text-foreground shadow-sm backdrop-blur-md transition-all hover:bg-muted active:scale-95"

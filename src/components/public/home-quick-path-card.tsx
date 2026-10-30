@@ -15,7 +15,7 @@ export type HomeQuickPathItem = {
 const editorialTones = {
   surface: "bg-[var(--he-surface)] text-[var(--he-fg)]",
   panel: "bg-[var(--he-panel)] text-[var(--he-fg)]",
-  dark: "home-editorial-tile-dark text-white",
+  dark: "home-editorial-tile-dark text-[var(--he-tile-ink)]",
   mid: "home-editorial-tile-mid text-white",
 } as const;
 

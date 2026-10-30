@@ -83,8 +83,8 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-border/50">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="site-footer-bar border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-white/80 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p suppressHydrationWarning>© {new Date().getFullYear()} LeoVerify. All rights reserved.</p>
           <p className="flex items-center gap-2">
             <span>Built with precision for Leo Clubs in Sri Lanka</span>

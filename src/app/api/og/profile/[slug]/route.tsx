@@ -87,7 +87,7 @@ async function publicCard(input: { name: string; certCount: number }) {
           flexDirection: "column",
           justifyContent: "space-between",
           background:
-            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #00338D 100%)",
+            "linear-gradient(145deg, #0C2340 0%, #081729 60%, #93C5FD 100%)",
           color: "#ffffff",
           padding: 72,
         }}

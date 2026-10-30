@@ -91,11 +91,11 @@ export function HomeEditorialHero({
                     href="/how-it-works"
                     className="home-editorial-tile home-editorial-tile-dark group flex min-h-[4.5rem] flex-col items-center justify-center px-4 py-5 text-center transition-opacity hover:opacity-95 sm:min-h-[6.5rem] sm:py-6"
                   >
-                    <span className="text-xs font-medium tracking-wide text-white sm:text-sm">
+                    <span className="text-xs font-medium tracking-wide text-[var(--he-tile-ink)] sm:text-sm">
                       How it works
                     </span>
                     <span
-                      className="mt-3 h-px w-8 bg-white/70 transition-all group-hover:w-12"
+                      className="mt-3 h-px w-8 bg-[var(--he-tile-ink)] opacity-70 transition-all group-hover:w-12"
                       aria-hidden="true"
                     />
                   </Link>

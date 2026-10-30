@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { BrandLockup } from "@/components/public/brand-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -54,7 +53,6 @@ export function HomeEditorialHeader() {
               );
             })}
           </nav>
-          <ThemeToggle className="h-8 w-8 rounded-none text-[var(--he-fg)] hover:bg-[var(--he-panel)]" />
           <Link
             href="/signup"
             className="home-editorial-outline-btn hidden px-4 py-2 text-xs font-medium lg:inline-flex"
@@ -64,7 +62,6 @@ export function HomeEditorialHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle className="h-8 w-8 rounded-none text-[var(--he-fg)] hover:bg-[var(--he-panel)]" />
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center border border-[var(--he-line-strong)] text-[var(--he-fg)]"

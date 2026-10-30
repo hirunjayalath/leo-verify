@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBreadcrumbs, AdminSidebar } from "@/components/admin/admin-sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { isUomPlatformAdmin, requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +54,6 @@ export default async function AdminLayout({
         <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between gap-4 border-b border-border/80 bg-background/95 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <AdminBreadcrumbs />
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold leading-none">
                 {user.name || user.email}

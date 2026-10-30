@@ -111,10 +111,10 @@ export function HomeEditorialFooter() {
         </div>
 
       <div
-        className="home-editorial-tile-dark flex w-full flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-6 lg:px-12"
+        className="home-editorial-footer-bar flex w-full flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-10 sm:py-6 lg:px-12"
       >
           <p
-            className="home-editorial-footer-copy text-[11px] leading-relaxed text-white/55"
+            className="home-editorial-footer-copy text-[11px] leading-relaxed text-white"
             suppressHydrationWarning
           >
             © {new Date().getFullYear()} LeoVerify. Operated by Leo Club of

@@ -211,11 +211,11 @@ export default function HomePage() {
               href="/signup"
               className="home-editorial-tile home-editorial-tile-dark group flex min-h-[5.5rem] flex-row items-center justify-center gap-4 px-6 py-8 text-center transition-opacity hover:opacity-95 sm:min-h-[8rem] lg:min-h-[12rem] lg:flex-col lg:gap-0 lg:px-8 lg:py-12"
             >
-              <span className="text-sm font-medium tracking-wide text-white">
+              <span className="text-sm font-medium tracking-wide text-[var(--he-tile-ink)]">
                 Create organization
               </span>
               <span
-                className="mt-3 h-px w-8 bg-white/70 transition-all group-hover:w-12"
+                className="mt-3 h-px w-8 bg-[var(--he-tile-ink)] opacity-70 transition-all group-hover:w-12"
                 aria-hidden="true"
               />
             </Link>

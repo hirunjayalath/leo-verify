@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
-import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -60,7 +59,9 @@ export default function RootLayout({
     >
       <head>
         <script
-          dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }}
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var root=document.documentElement;root.classList.remove("dark");root.style.colorScheme="light";try{localStorage.removeItem("leoverify-theme")}catch(e){}})();`,
+          }}
         />
       </head>
       <body className="flex min-h-full flex-col font-sans">

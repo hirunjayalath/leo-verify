@@ -176,6 +176,6 @@ export function AuthShellInlineButton({
 }
 
 export const authEditorialSubmitClass =
-  "auth-editorial-submit inline-flex h-11 w-full items-center justify-center gap-2 text-sm font-medium text-white transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45";
+  "auth-editorial-submit inline-flex h-11 w-full items-center justify-center gap-2 text-sm font-medium text-[var(--he-tile-ink)] transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45";
 
 export const authEditorialFieldClass = "auth-editorial-field";
