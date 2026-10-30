@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const REGISTER_ART_SRC = "/illustration/register-transparent.png";
+const REGISTER_ART_SRC = "/illustration/register-premium.png";
 const ART_SIZE = 2048;
 
 export function HomeRegisterIllustration({ className }: { className?: string }) {

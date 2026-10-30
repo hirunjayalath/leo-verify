@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const CERTIFICATE_ART_SRC = "/illustration/certificate-1-transparent.png";
+const CERTIFICATE_ART_SRC = "/illustration/verify-premium.png";
 const ART_SIZE = 2048;
 
 export function HomeVerifyIllustration({ className }: { className?: string }) {
