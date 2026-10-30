@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const LOGIN_ART_SRC = "/illustration/login-transparent.png";
+const LOGIN_ART_SRC = "/illustration/login-premium.png";
 const ART_SIZE = 2048;
 
 export function HomeLoginIllustration({ className }: { className?: string }) {
