@@ -60,8 +60,8 @@ export default async function ClaimPage() {
     auth.email.split("@")[0];
 
   return (
-    <div className="surface-grid">
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <div className="site-page-shell min-h-[calc(100vh-4rem)]">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="mb-6 flex items-center justify-between gap-3">
           <Link
             href="/"
@@ -71,25 +71,28 @@ export default async function ClaimPage() {
           </Link>
           <RecipientSignOut />
         </div>
-        <div className="flex items-start gap-4">
+        <div className="relative overflow-hidden rounded-[1.75rem] bg-[linear-gradient(135deg,#0c2340_0%,#164194_72%,#1e40af_100%)] p-6 text-white shadow-lg sm:p-8">
+          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border-[42px] border-white/[0.05]" />
+          <div className="relative flex items-start gap-4">
           <span
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand text-lg font-semibold text-accent shadow-elevated"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#ffc72c] text-lg font-bold text-[#0c2340] shadow-lg"
             aria-hidden
           >
             {initials(displayName)}
           </span>
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#ffd95e]">
               Your certificates
             </p>
-            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-foreground">
+            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               {displayName}
             </h1>
-            <p className="mt-2 text-muted-foreground">{auth.email}</p>
+            <p className="mt-2 text-sm text-white/65">{auth.email}</p>
+          </div>
           </div>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-6">
           <ClaimForm
             authEmail={auth.email}
             initialSettings={initialSettings}

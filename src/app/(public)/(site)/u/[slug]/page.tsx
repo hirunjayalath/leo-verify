@@ -88,8 +88,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const shareUrl = `${appUrl}/u/${encodeURIComponent(slug)}`;
 
   return (
-    <div className="surface-grid min-h-[calc(100vh-4rem)]">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
+    <div className="site-page-shell min-h-[calc(100vh-4rem)]">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <p className="mb-8">
           <Link
             href="/"
@@ -100,27 +100,28 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </p>
 
         {/* Profile Header Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-glass backdrop-blur-xl sm:p-8">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[linear-gradient(135deg,#0c2340_0%,#164194_72%,#1e40af_100%)] p-6 text-white shadow-lg sm:p-9">
+          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full border-[42px] border-white/[0.05]" />
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
             <span
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-xl font-bold text-accent shadow-elevated border-t border-white/20"
+              className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#ffc72c] text-xl font-bold text-[#0c2340] shadow-lg"
               aria-hidden
             >
               {initials(recipient.name)}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="caption-caps text-accent">
+                <span className="caption-caps text-[#ffd95e]">
                   Verified Recipient Portfolio
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-muted/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-success">
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white/85">
                   Public Profile Active
                 </span>
               </div>
-              <h1 className="mt-1 font-display text-3xl font-semibold tracking-[-0.025em] text-foreground sm:text-4xl">
+              <h1 className="mt-1 font-display text-3xl font-semibold tracking-[-0.025em] text-white sm:text-4xl">
                 {name}
               </h1>
-              <p className="mt-2 text-xs text-muted-foreground leading-relaxed sm:text-sm">
+              <p className="mt-2 text-xs leading-relaxed text-white/65 sm:text-sm">
                 Authentic certifications issued by Leo Clubs in Sri Lanka,
                 verified live against the central cryptographic database.
               </p>
@@ -129,7 +130,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                   href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className={cn(buttonVariants({ size: "sm", variant: "outline" }), "shadow-sm")}
+                  className={cn(buttonVariants({ size: "sm", variant: "accent" }), "shadow-sm")}
                 >
                   Share Portfolio on LinkedIn
                 </a>
@@ -167,7 +168,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
               {recipient.certificates.map((cert) => (
                 <li
                   key={cert.id}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-primary/10 bg-card p-6 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3">
@@ -194,7 +195,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
                     <input type="hidden" name="uniqueId" value={cert.uniqueId} />
                     <button
                       type="submit"
-                      className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-brand px-4 text-xs font-semibold text-brand-foreground shadow-sm transition-all hover:bg-brand/90 active:scale-[0.98]"
+                      className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
                     >
                       Verify Record
                     </button>

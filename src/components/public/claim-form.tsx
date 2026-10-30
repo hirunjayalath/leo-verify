@@ -61,7 +61,7 @@ export function ClaimForm({
 
   if (!authEmail) {
     return (
-      <div className="space-y-4 rounded-xl border border-border bg-muted/40 px-4 py-5 text-sm">
+      <div className="space-y-4 rounded-2xl border border-primary/15 bg-primary/[0.035] px-5 py-6 text-sm">
         <p className="font-medium text-foreground">Sign in required</p>
         <p className="text-muted-foreground">
           Claim uses your signed-in email so only you can link certificates
@@ -89,7 +89,7 @@ export function ClaimForm({
     <div className="space-y-10">
       <form
         onSubmit={onSubmit}
-        className="grid gap-4 rounded-2xl border border-border bg-card p-5 shadow-elevated sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        className="grid gap-4 rounded-2xl border border-primary/10 bg-card p-5 shadow-card sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:p-6"
       >
         <div className="space-y-2">
           <Label htmlFor="email">Email used on certificates</Label>
@@ -126,7 +126,7 @@ export function ClaimForm({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/u/${successSlug}`}
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-brand px-3 text-sm font-medium text-brand-foreground hover:opacity-90"
+                className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 View public profile
               </Link>

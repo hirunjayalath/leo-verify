@@ -52,14 +52,14 @@ export function VerificationResult({
   const eventName = result.status === "valid" ? result.eventName : null;
 
   return (
-    <div className="animate-fade-up relative overflow-hidden rounded-3xl border border-border/80 bg-card/90 shadow-glass backdrop-blur-xl">
+    <div className="animate-fade-up relative overflow-hidden rounded-[1.75rem] border border-primary/10 bg-card shadow-lg">
       <BrandMark
         size={120}
         className="pointer-events-none absolute -right-3 -top-3 opacity-[0.04] dark:opacity-[0.07]"
       />
 
       {/* Top Pass Header */}
-      <div className="border-b border-white/10 bg-gradient-to-r from-[#0C2340] to-[#93C5FD] px-6 py-4.5 text-white sm:px-8">
+      <div className="border-b border-white/10 bg-[linear-gradient(135deg,#0c2340_0%,#164194_72%,#1e40af_100%)] px-6 py-5 text-white sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <p className="caption-caps text-accent">
@@ -112,7 +112,7 @@ export function VerificationResult({
 
           {/* Issuer Box */}
           {(issuerName || eventName) && (
-            <div className="rounded-2xl border border-border/70 bg-muted/40 p-4 backdrop-blur-sm sm:p-5">
+            <div className="rounded-2xl border border-primary/10 bg-primary/[0.035] p-4 sm:p-5">
               <p className="caption-caps text-muted-foreground">
                 Issued by
               </p>
@@ -128,7 +128,7 @@ export function VerificationResult({
           {/* Credential Attributes */}
           <div>
             {result.status === "valid" && (
-              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 divide-y divide-border/60">
+              <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-card">
                 <div className="p-4 sm:p-5">
                   <dt className="caption-caps text-muted-foreground">
                     Recipient

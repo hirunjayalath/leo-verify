@@ -79,8 +79,8 @@ export function RecipientSettings({
 
   return (
     <div className="space-y-10">
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-elevated">
-        <p className="text-sm font-medium">Public profile</p>
+      <div className="rounded-2xl border border-primary/10 bg-card p-5 shadow-card sm:p-6">
+        <p className="text-base font-semibold">Public profile</p>
         <p className="mt-1 text-sm text-muted-foreground">
           When this is on, anyone can see your listed certificates at{" "}
           {slug ? (
@@ -134,7 +134,7 @@ export function RecipientSettings({
             {certs.map((cert) => (
               <li
                 key={cert.id}
-                className="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-elevated"
+                className="group flex flex-col rounded-2xl border border-primary/10 bg-card p-5 shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg"
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium leading-snug text-foreground">

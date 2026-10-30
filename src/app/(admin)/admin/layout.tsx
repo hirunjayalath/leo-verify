@@ -51,7 +51,7 @@ export default async function AdminLayout({
         showClubNav={hasClub}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between gap-4 border-b border-border/80 bg-background/95 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-4 border-b border-border/75 bg-card/85 px-4 shadow-sm backdrop-blur-2xl sm:px-6 lg:px-8">
           <AdminBreadcrumbs />
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
@@ -63,14 +63,14 @@ export default async function AdminLayout({
               </p>
             </div>
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground text-background text-xs font-semibold shadow-sm"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-xs font-bold text-primary shadow-sm"
               aria-hidden
             >
               {chip}
             </span>
           </div>
         </header>
-        <main className="admin-content min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <main className="admin-content min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 xl:px-10">
           <div className="admin-workspace mx-auto">{children}</div>
         </main>
       </div>

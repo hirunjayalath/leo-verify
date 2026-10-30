@@ -64,9 +64,9 @@ function SidebarNav({
             href="/admin/operators"
             onClick={onNavigate}
             className={cn(
-              "relative flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-colors",
+              "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 pathname.startsWith("/admin/operators")
-                ? "bg-white/12 text-white shadow-sm"
+                ? "bg-white/12 text-white shadow-sm ring-1 ring-white/10"
                 : "text-white/65 hover:bg-white/8 hover:text-white",
             )}
           >
@@ -77,9 +77,9 @@ function SidebarNav({
             href="/admin/reports"
             onClick={onNavigate}
             className={cn(
-              "relative mt-0.5 flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm transition-colors",
+              "relative mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 pathname.startsWith("/admin/reports")
-                ? "bg-white/12 text-white shadow-sm"
+                ? "bg-white/12 text-white shadow-sm ring-1 ring-white/10"
                 : "text-white/65 hover:bg-white/8 hover:text-white",
             )}
           >
@@ -97,14 +97,14 @@ function SidebarNav({
             href="/admin/district"
             onClick={onNavigate}
             className={cn(
-              "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+              "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 pathname.startsWith("/admin/district")
-                ? "bg-white/12 text-white shadow-sm"
+                ? "bg-white/12 text-white shadow-sm ring-1 ring-white/10"
                 : "text-white/65 hover:bg-white/8 hover:text-white",
             )}
           >
             {pathname.startsWith("/admin/district") && (
-              <span className="absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-white" />
+              <span className="absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-accent" />
             )}
             <Map className="h-4 w-4" aria-hidden />
             District
@@ -129,14 +129,14 @@ function SidebarNav({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                          "relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                          "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                     active
-                            ? "bg-white/12 text-white shadow-sm"
+                            ? "bg-white/12 text-white shadow-sm ring-1 ring-white/10"
                             : "text-white/65 hover:bg-white/8 hover:text-white",
                   )}
                 >
                   {active && (
-                    <span className="absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-white" />
+                    <span className="absolute left-1 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-accent" />
                   )}
                   <Icon className="h-4 w-4" aria-hidden />
                   {item.label}
@@ -170,25 +170,27 @@ export function AdminSidebar({
   const chip = initials(userEmail, userName);
 
   const panel = (
-    <aside className="flex h-full min-h-screen w-72 shrink-0 flex-col bg-admin-rail text-admin-rail-foreground shadow-lg lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:h-screen">
-      <div className="flex min-h-14 items-center gap-3 border-b border-white/10 px-5">
-          <BrandMark size={32} className="rounded-sm shadow-sm" />
+    <aside className="flex h-full min-h-screen w-72 shrink-0 flex-col bg-[linear-gradient(180deg,#0c2340_0%,#07182f_62%,#040c17_100%)] text-admin-rail-foreground shadow-2xl lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:h-screen">
+      <div className="flex min-h-16 items-center gap-3 border-b border-white/10 px-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white p-1 shadow-lg ring-1 ring-white/15">
+            <BrandMark size={34} className="rounded-lg" />
+          </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight">LeoVerify</p>
-          <p className="truncate text-[11px] uppercase tracking-[0.08em] text-white/50">
+          <p className="text-sm font-bold tracking-tight text-white">LeoVerify</p>
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-white/48">
             {clubName ?? "Club admin"}
           </p>
         </div>
         <button
           type="button"
-          className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-sm text-white/70 hover:bg-white/8 lg:hidden"
+          className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-xl text-white/70 hover:bg-white/8 lg:hidden"
           aria-label="Close navigation"
           onClick={() => setMobileOpen(false)}
         >
           <X className="h-4 w-4" />
         </button>
       </div>
-      <nav className="min-h-0 flex-1 overflow-y-auto p-4" aria-label="Admin">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-4 py-5" aria-label="Admin">
         <SidebarNav
           pathname={pathname}
           showDistrict={showDistrict}
@@ -198,8 +200,8 @@ export function AdminSidebar({
         />
       </nav>
       <div className="sticky bottom-0 z-10 shrink-0 space-y-3 border-t border-white/10 bg-admin-rail p-4">
-        <div className="flex items-center gap-3 rounded-md bg-white/7 px-3 py-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white/12 text-xs font-semibold text-white/85">
+        <div className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.06] px-3 py-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-xs font-bold text-[#0c2340] shadow-sm">
             {chip}
           </span>
           <div className="min-w-0">
@@ -229,7 +231,7 @@ export function AdminSidebar({
     <>
       <button
         type="button"
-        className="fixed bottom-4 left-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-md bg-admin-rail text-white shadow-float lg:hidden"
+        className="fixed bottom-4 left-4 z-40 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-admin-rail text-white shadow-float ring-1 ring-white/10 lg:hidden"
         aria-label="Open navigation"
         onClick={() => setMobileOpen(true)}
       >

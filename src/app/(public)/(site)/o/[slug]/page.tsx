@@ -59,12 +59,12 @@ export default async function OrgPortalPage({ params }: PageProps) {
   const accent = club.accentColor || "#38a3e3";
 
   return (
-    <div className="surface-grid">
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <div className="site-page-shell min-h-[calc(100vh-4rem)]">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
         <div
-          className="rounded-2xl border border-border p-6 sm:p-8"
+          className="relative overflow-hidden rounded-[1.75rem] border border-white/10 p-6 shadow-lg sm:p-9"
           style={{
-            background: `linear-gradient(145deg, ${primary} 0%, ${primary}ee 60%, ${accent}33 100%)`,
+            background: `radial-gradient(circle at 92% 8%, ${accent}55 0%, transparent 34%), linear-gradient(135deg, ${primary} 0%, ${primary}ee 68%, #0c2340 100%)`,
             color: "#fff",
           }}
         >
@@ -98,8 +98,8 @@ export default async function OrgPortalPage({ params }: PageProps) {
           </p>
         </div>
 
-        <section className="mt-10 space-y-4" id="verify">
-          <h2 className="text-lg font-semibold">Check a certificate</h2>
+        <section className="site-section-card mt-6 space-y-4 p-5 sm:p-7" id="verify">
+          <h2 className="text-xl font-semibold tracking-tight">Check a certificate</h2>
           <p className="text-sm text-muted-foreground">
             Paste the check link or scan the QR. The ID alone is not enough. Use
             the full link from the certificate.
@@ -107,7 +107,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
           <VerifyForm compact layout="standard" />
         </section>
 
-        <section className="mt-12">
+        <section className="site-section-card mt-6 p-5 sm:p-7">
           <div className="mb-4 flex items-baseline justify-between gap-3">
             <h2 className="text-lg font-semibold">Public certificates</h2>
             <p className="text-sm text-muted-foreground">
@@ -130,7 +130,7 @@ export default async function OrgPortalPage({ params }: PageProps) {
               {publicCerts.map((cert) => (
                 <li
                   key={cert.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/25 px-4 py-4 transition-colors hover:border-primary/20 hover:bg-primary/[0.035]"
                 >
                   <div>
                     <p className="font-medium">{cert.recipientName}</p>

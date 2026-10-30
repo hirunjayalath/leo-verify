@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { BrandLockup } from "@/components/public/brand-logo";
 import { buttonVariants } from "@/components/ui/button";
@@ -17,8 +17,8 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl transition-colors duration-200">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-card/88 shadow-sm backdrop-blur-2xl transition-colors duration-200">
+      <div className="mx-auto flex h-17 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90 active:scale-[0.98]"
@@ -29,7 +29,7 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
         {/* Right side navigation and actions */}
         <div className="hidden items-center gap-2 md:flex">
           <nav
-            className="flex items-center gap-1 rounded-full border border-border/70 bg-card/80 p-1 text-xs font-medium shadow-sm backdrop-blur-md"
+            className="flex items-center gap-1 rounded-xl border border-border/70 bg-muted/45 p-1 text-xs font-semibold shadow-sm"
             aria-label="Main"
           >
             {links.map((link) => {
@@ -40,7 +40,7 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
                   href={link.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-3.5 py-1.5 transition-all duration-150",
+                    "rounded-lg px-3.5 py-2 transition-all duration-150",
                     active
                       ? "bg-foreground text-background font-semibold shadow-xs"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
@@ -56,14 +56,15 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
             href="/signup"
             className={cn(buttonVariants({ variant: "accent", size: "sm" }), "ml-1")}
           >
-            Sign up
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            Join LeoVerify
           </Link>
         </div>
 
         <div className="flex items-center gap-1.5 md:hidden">
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/70 text-foreground shadow-sm backdrop-blur-md transition-all hover:bg-muted active:scale-95"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border/70 bg-card text-foreground shadow-sm transition-all hover:bg-muted active:scale-95"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -75,12 +76,12 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
 
       <div
         className={cn(
-          "border-b border-border/60 bg-card/95 backdrop-blur-2xl transition-all duration-200 md:hidden",
+          "border-b border-border/60 bg-card/98 shadow-lg backdrop-blur-2xl transition-all duration-200 md:hidden",
           open ? "block" : "hidden",
         )}
       >
         <nav
-          className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3"
+          className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3"
           aria-label="Mobile"
         >
           {links.map((link) => {
@@ -110,7 +111,7 @@ function SiteHeaderInner({ pathname }: { pathname: string }) {
             )}
             onClick={() => setOpen(false)}
           >
-            Sign up
+            Join LeoVerify
           </Link>
         </nav>
       </div>
