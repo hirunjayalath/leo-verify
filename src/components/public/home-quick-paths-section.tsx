@@ -51,7 +51,7 @@ function QuickPathRow({
   );
 
   const className = cn(
-    "group flex min-w-0 items-center gap-2.5 border-b border-[var(--he-line)] px-4 py-4 transition-colors last:border-b-0 hover:bg-[var(--he-panel)] sm:gap-4 sm:px-6 sm:py-6",
+    "group flex min-w-0 items-center gap-2.5 border-b border-[var(--he-line)] px-4 py-4 transition-colors last:border-b-0 hover:bg-[var(--he-panel)] focus-visible:bg-[var(--he-panel)] focus-visible:outline-none sm:gap-4 sm:px-6 sm:py-6",
   );
 
   if (isAnchor) {
@@ -83,7 +83,7 @@ export function HomeQuickPathsSection({
       className="mt-12 border-t border-[var(--he-line)] bg-[var(--he-surface)] sm:mt-16 md:mt-24"
       aria-labelledby="quick-paths-heading"
     >
-      <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-[minmax(0,13.5rem)_minmax(0,1fr)] lg:items-stretch">
+      <div className="mx-auto max-w-6xl overflow-hidden border-y border-[var(--he-line)] sm:rounded-[1.75rem] sm:border lg:grid lg:grid-cols-[minmax(0,13.5rem)_minmax(0,1fr)] lg:items-stretch">
         <div className="border-b border-[var(--he-line)] px-4 py-8 sm:px-6 sm:py-10 md:py-12 lg:border-b-0 lg:border-r lg:py-14">
           <p className="text-[11px] font-medium tracking-wide text-[var(--he-muted)]">
             Quick paths

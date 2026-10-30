@@ -19,8 +19,8 @@ export function HomeEditorialHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="home-editorial-header sticky top-0 z-40 border-b border-[var(--he-line)] bg-[var(--he-surface)]">
-      <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+    <header className="home-editorial-header sticky top-0 z-40 border-b border-[var(--he-line)] bg-[var(--he-surface)]/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
         <Link href="/" className="inline-flex min-w-0 shrink">
           <BrandLockup
             size={26}
@@ -55,7 +55,7 @@ export function HomeEditorialHeader() {
           </nav>
           <Link
             href="/signup"
-            className="home-editorial-outline-btn hidden px-4 py-2 text-xs font-medium lg:inline-flex"
+            className="home-editorial-primary-link hidden rounded-full px-4 py-2.5 text-xs font-semibold transition-transform hover:-translate-y-0.5 lg:inline-flex"
           >
             Create organization
           </Link>
@@ -64,7 +64,7 @@ export function HomeEditorialHeader() {
         <div className="flex items-center gap-2 md:hidden">
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center border border-[var(--he-line-strong)] text-[var(--he-fg)]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--he-line-strong)] text-[var(--he-fg)]"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -100,7 +100,7 @@ export function HomeEditorialHeader() {
           })}
           <Link
             href="/signup"
-            className="home-editorial-outline-btn mt-2 px-4 py-2 text-center text-sm"
+            className="home-editorial-primary-link mt-2 rounded-full px-4 py-2.5 text-center text-sm font-semibold"
             onClick={() => setOpen(false)}
           >
             Create organization

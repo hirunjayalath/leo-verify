@@ -129,21 +129,23 @@ export default function HomePage() {
 
       <HomeEditorialHero>
         <div className="flex w-full min-w-0 flex-col">
-          <div className="min-w-0 pr-[3.5rem] sm:pr-[4.75rem]">
-            <p className="text-[10px] font-medium leading-snug tracking-wide text-[var(--he-muted)] sm:text-[11px]">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase leading-snug tracking-[0.16em] text-[var(--he-accent-ink)] sm:text-[11px]">
               Leo Club of University of Moratuwa
-              <span className="hidden sm:inline"> · </span>
-              <span className="block sm:inline">District 306 D2</span>
             </p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[var(--he-fg)] sm:mt-1 sm:text-2xl md:text-3xl">
-              Verify credentials with certainty.
-            </h2>
+            <h1 className="mt-3 max-w-xl text-3xl font-semibold leading-[1.08] tracking-[-0.035em] text-[var(--he-fg)] sm:text-4xl lg:text-5xl">
+              Verify a certificate. Trust the record.
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-relaxed text-[var(--he-muted)] sm:text-base">
+              Enter a certificate number, paste its secure link, or scan the
+              QR code to confirm an achievement against the live registry.
+            </p>
           </div>
-          <div className="mt-4 w-full sm:mt-6">
+          <div className="mt-6 w-full sm:mt-8">
             <VerifyForm layout="prompt" variant="editorial" />
           </div>
-          <p className="mt-2 text-right text-[10px] text-[var(--he-muted)] sm:mt-3 sm:text-xs">
-            Instant check · No sign-in
+          <p className="mt-3 text-[10px] text-[var(--he-muted)] sm:text-xs">
+            Instant verification · No account required
           </p>
         </div>
       </HomeEditorialHero>
@@ -167,7 +169,7 @@ export default function HomePage() {
                 return (
                   <li
                     key={item.title}
-                    className="home-editorial-trust-card flex flex-col items-start border border-[var(--he-line)] bg-[var(--he-panel)] px-5 py-7 sm:px-8 sm:py-10"
+                    className="home-editorial-trust-card flex flex-col items-start rounded-2xl border border-[var(--he-line)] bg-[var(--he-panel)] px-5 py-7 sm:px-8 sm:py-10"
                   >
                     <Icon
                       className="size-8 text-[var(--he-fg)]"
@@ -190,7 +192,7 @@ export default function HomePage() {
         </section>
 
         <section className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <div className="grid overflow-hidden border border-[var(--he-line)] lg:grid-cols-[1fr_16rem]">
+          <div className="grid overflow-hidden rounded-[1.75rem] border border-[var(--he-line)] shadow-[0_24px_70px_-42px_rgba(12,35,64,0.45)] lg:grid-cols-[1fr_16rem]">
             <div className="home-editorial-panel flex flex-col items-start gap-6 px-5 py-10 sm:flex-row sm:items-center sm:gap-8 sm:px-8 sm:py-12 md:px-12 md:py-16">
               <HomeJourneyMark
                 step="01"
